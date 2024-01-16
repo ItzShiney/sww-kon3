@@ -1,0 +1,23 @@
+[package]
+name = "wgpu_test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = "*"
+bytemuck = { version = "*", features = ["derive"] }
+cfg-if = "*"
+encase = "*"
+flume = "*"
+getrandom = "*"
+glam = { version = "*", features = ["bytemuck"] }
+ktx2 = "*"
+log = "*"
+nanorand = "*"
+noise = "*"
+obj = "*"
+png = "*"
+pollster = "*"
+web-time = "*"
+winit = { version = "*", features = ["rwh_05"] }
+env_logger = "*"
