@@ -48,9 +48,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     size.width = size.width.max(1);
     size.height = size.height.max(1);
 
-    let instance = wgpu::Instance::default();
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
 
-    let surface = unsafe { instance.create_surface(&window) }.unwrap();
+    let surface = instance.create_surface(&window).unwrap();
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: Default::default(),
@@ -60,19 +60,6 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         .await
         .expect("failed to find an adapter");
 
-    let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                features: wgpu::Features::empty(),
-                limits: wgpu::Limits::downlevel_webgl2_defaults()
-                    .using_resolution(adapter.limits()),
-            },
-            None,
-        )
-        .await
-        .expect("failed to create device");
-
     let swapchain_capabilities = surface.get_capabilities(&adapter);
     let swapchain_format = swapchain_capabilities.formats[0];
 
@@ -81,17 +68,31 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         format: swapchain_format,
         width: size.width,
         height: size.height,
-        present_mode: Default::default(),
+        present_mode: wgpu::PresentMode::Immediate,
+        desired_maximum_frame_latency: 2,
         alpha_mode: swapchain_capabilities.alpha_modes[0],
         view_formats: vec![],
     };
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_webgl2_defaults()
+                    .using_resolution(adapter.limits()),
+            },
+            None,
+        )
+        .await
+        .expect("failed to create device");
 
     surface.configure(&device, &config);
 
     let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
 
     let white = Color::splat(0.7);
-    let black = Color::splat(0.2);
+    let black = Color::splat(0.3);
     let size = 0.1;
 
     let mut transforms = Vec::default();
@@ -112,56 +113,54 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let instances = Instances::new(&device, &transforms);
 
     event_loop
-        .run(move |event, target| {
-            if let Event::WindowEvent {
+        .run(|event, target| match event {
+            Event::WindowEvent {
                 window_id: _,
                 event,
-            } = event
-            {
-                match event {
-                    WindowEvent::Resized(new_size) => {
-                        config.width = new_size.width.max(1);
-                        config.height = new_size.height.max(1);
-                        surface.configure(&device, &config);
+            } => match event {
+                WindowEvent::Resized(new_size) => {
+                    config.width = new_size.width.max(1);
+                    config.height = new_size.height.max(1);
+                    surface.configure(&device, &config);
 
-                        window.request_redraw();
+                    window.request_redraw();
+                }
+
+                WindowEvent::RedrawRequested => {
+                    let frame = surface
+                        .get_current_texture()
+                        .expect("failed to acquire next swapchain texture");
+
+                    let view = frame.texture.create_view(&Default::default());
+                    let mut command_encoder = device.create_command_encoder(&Default::default());
+
+                    {
+                        let mut render_pass =
+                            command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                ..Default::default()
+                            });
+
+                        mesh_drawer.draw(&mut render_pass, &square, &instances);
                     }
 
-                    WindowEvent::RedrawRequested => {
-                        let frame = surface
-                            .get_current_texture()
-                            .expect("failed to acquire next swapchain texture");
+                    queue.submit(Some(command_encoder.finish()));
+                    frame.present();
+                }
 
-                        let view = frame.texture.create_view(&Default::default());
-                        let mut command_encoder =
-                            device.create_command_encoder(&Default::default());
+                WindowEvent::CloseRequested => target.exit(),
 
-                        {
-                            let mut render_pass =
-                                command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: &view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                            store: wgpu::StoreOp::Store,
-                                        },
-                                    })],
-                                    ..Default::default()
-                                });
+                _ => {}
+            },
 
-                            mesh_drawer.draw(&mut render_pass, &square, &instances);
-                        }
-
-                        queue.submit(Some(command_encoder.finish()));
-                        frame.present();
-                    }
-
-                    WindowEvent::CloseRequested => target.exit(),
-
-                    _ => {}
-                };
-            }
+            _ => {}
         })
         .unwrap();
 }

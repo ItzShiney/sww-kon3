@@ -12,7 +12,7 @@ flume = "*"
 getrandom = "*"
 glam = { version = "*", features = ["bytemuck"] }
 ktx2 = "*"
-log = "*"
+log = "*" # { version = "*", features = ["release_max_level_off"] }
 nanorand = "*"
 noise = "*"
 obj = "*"
