@@ -1,23 +1,34 @@
-mod polygon;
-mod polygon_drawer;
+mod affine2;
+mod color;
+mod field_attributes;
+mod instances;
+mod mesh;
+mod mesh_drawer;
+mod transform;
 mod vertex;
-mod vertex_attribute;
 mod vertex_attributes;
 
-use winit::{
-    event::{
-        Event,
-        WindowEvent,
-    },
-    event_loop::EventLoop,
-    window::Window,
-};
 pub use {
-    polygon::*,
-    polygon_drawer::*,
+    affine2::*,
+    color::*,
+    field_attributes::*,
+    instances::*,
+    mesh::*,
+    mesh_drawer::*,
+    transform::*,
     vertex::*,
-    vertex_attribute::*,
     vertex_attributes::*,
+};
+use {
+    glam::vec2,
+    winit::{
+        event::{
+            Event,
+            WindowEvent,
+        },
+        event_loop::EventLoop,
+        window::Window,
+    },
 };
 
 pub fn main() {
@@ -54,7 +65,6 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::empty(),
-                // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the swapchain.
                 limits: wgpu::Limits::downlevel_webgl2_defaults()
                     .using_resolution(adapter.limits()),
             },
@@ -78,31 +88,28 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     surface.configure(&device, &config);
 
-    let color1 = [0.3, 0.5, 0.7, 1.];
-    let color2 = [0.7, 0.1, 0.9, 1.];
-    let size = 0.5;
+    let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
 
-    let polygon1 = Polygon::new_indexed(
-        &device,
-        &[
-            Vertex::new([-size, -size], color1),
-            Vertex::new([-size, size], color1),
-            Vertex::new([size, size], color2),
-            Vertex::new([size, -size], color1),
-        ],
-        &[0, 1, 2, 0, 2, 3],
-    );
-    let polygon2 = Polygon::new_indexed(
-        &device,
-        &[
-            Vertex::new([0., -0.1], color2),
-            Vertex::new([-0.3, 0.7], color2),
-            Vertex::new([0., 0.6], color2),
-            Vertex::new([0.3, -0.2], color2),
-        ],
-        &[0, 1, 2, 0, 2, 3],
-    );
-    let polygon_drawer = PolygonDrawer::new(&device, swapchain_format);
+    let white = Color::splat(0.7);
+    let black = Color::splat(0.2);
+    let size = 0.1;
+
+    let mut transforms = Vec::default();
+    for y in -4..4_i32 {
+        for x in -4..4_i32 {
+            let translation = vec2(x as f32, y as f32) * size;
+            let color = [black, white][(x + y).rem_euclid(2) as usize];
+
+            let affine_scale = glam::Affine2::from_scale(vec2(size, size));
+            let affine_translation = glam::Affine2::from_translation(translation);
+            let affine = affine_translation * affine_scale;
+
+            transforms.push(Transform::new(affine, color));
+        }
+    }
+
+    let square = Mesh::rect(&device);
+    let instances = Instances::new(&device, &transforms);
 
     event_loop
         .run(move |event, target| {
@@ -143,8 +150,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                                     ..Default::default()
                                 });
 
-                            polygon_drawer.draw(&mut render_pass, &polygon1);
-                            polygon_drawer.draw(&mut render_pass, &polygon2);
+                            mesh_drawer.draw(&mut render_pass, &square, &instances);
                         }
 
                         queue.submit(Some(command_encoder.finish()));

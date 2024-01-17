@@ -1,22 +1,24 @@
 use {
     crate::{
-        Polygon,
+        Attributes,
+        Instances,
+        Mesh,
+        Transform,
         Vertex,
-        VertexAttributes,
         INDEX_FORMAT,
     },
     std::borrow::Cow,
 };
 
-pub struct PolygonDrawer {
+pub struct MeshDrawer {
     pipeline: wgpu::RenderPipeline,
 }
 
-impl PolygonDrawer {
+impl MeshDrawer {
     pub fn new(device: &wgpu::Device, swapchain_format: wgpu::TextureFormat) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("polygon.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("mesh.wgsl"))),
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -31,7 +33,10 @@ impl PolygonDrawer {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[VertexAttributes::<Vertex>::new(0).layout()],
+                buffers: &[
+                    Attributes::<Vertex>::new_vertex(0).layout(),
+                    Attributes::<Transform>::new_instance(2).layout(),
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -47,15 +52,22 @@ impl PolygonDrawer {
         Self { pipeline }
     }
 
-    pub fn draw<'s>(&'s self, render_pass: &mut wgpu::RenderPass<'s>, polygon: &'s Polygon) {
+    pub fn draw<'s>(
+        &'s self,
+        render_pass: &mut wgpu::RenderPass<'s>,
+        mesh: &'s Mesh,
+        instances: &'s Instances<Transform>,
+    ) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_vertex_buffer(0, polygon.vertex_buffer().slice(..));
+        render_pass.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
+        render_pass.set_vertex_buffer(1, instances.buffer().slice(..));
 
-        if let Some((index_buffer, indices_count)) = polygon.index_buffer() {
+        let instances = 0..instances.len() as _;
+        if let Some((index_buffer, indices_count)) = mesh.index_buffer() {
             render_pass.set_index_buffer(index_buffer.slice(..), INDEX_FORMAT);
-            render_pass.draw_indexed(0..indices_count as _, 0, 0..1);
+            render_pass.draw_indexed(0..indices_count as _, 0, instances);
         } else {
-            render_pass.draw(0..polygon.vertices_count() as _, 0..1);
+            render_pass.draw(0..mesh.vertices_count() as _, instances);
         }
     }
 }

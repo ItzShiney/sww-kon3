@@ -3,16 +3,17 @@ use {
         Index,
         Vertex,
     },
+    glam::vec2,
     wgpu::util::DeviceExt,
 };
 
-pub struct Polygon {
+pub struct Mesh {
     vertex_buffer: wgpu::Buffer,
     vertices_count: usize,
     index_buffer: Option<(wgpu::Buffer, usize)>,
 }
 
-impl Polygon {
+impl Mesh {
     pub fn new(device: &wgpu::Device, vertices: &[Vertex]) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -38,6 +39,19 @@ impl Polygon {
             index_buffer: Some((index_buffer, indices.len())),
             ..Self::new(device, vertices)
         }
+    }
+
+    pub fn rect(device: &wgpu::Device) -> Self {
+        Self::new_indexed(
+            &device,
+            &[
+                Vertex::new_white(vec2(0., 0.)),
+                Vertex::new_white(vec2(0., 1.)),
+                Vertex::new_white(vec2(1., 1.)),
+                Vertex::new_white(vec2(1., 0.)),
+            ],
+            &[0, 1, 2, 0, 2, 3],
+        )
     }
 
     pub fn vertex_buffer(&self) -> &wgpu::Buffer {

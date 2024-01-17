@@ -1,6 +1,12 @@
-use crate::VertexAttribute;
+use {
+    crate::{
+        Color,
+        FieldAttributes,
+    },
+    glam::Vec2,
+};
 
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 #[repr(C)]
 pub struct Vertex {
     position: [f32; 2],
@@ -8,13 +14,20 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    pub fn new(position: [f32; 2], color: [f32; 4]) -> Self {
-        Self { position, color }
+    pub fn new(position: Vec2, color: Color) -> Self {
+        Self {
+            position: position.to_array(),
+            color: color.to_array(),
+        }
+    }
+
+    pub fn new_white(position: Vec2) -> Self {
+        Self::new(position, Color::WHITE)
     }
 }
 
-impl VertexAttribute for Vertex {
-    fn vertex_attributes(start: u32) -> Box<[wgpu::VertexAttribute]> {
+impl FieldAttributes for Vertex {
+    fn field_attributes(start: u32) -> Box<[wgpu::VertexAttribute]> {
         Box::new(wgpu::vertex_attr_array![start => Float32x2, start + 1 => Float32x4])
     }
 }
