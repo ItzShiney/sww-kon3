@@ -1,39 +1,20 @@
-use std::marker::PhantomData;
+use encase::internal::BufferRef;
 
 pub trait WgslBytesWriteable: encase::ShaderType + encase::internal::WriteInto {}
 impl<T: encase::ShaderType + encase::internal::WriteInto + ?Sized> WgslBytesWriteable for T {}
 
-pub struct WgslBytesWriter<T: WgslBytesWriteable + ?Sized> {
-    buffer: Vec<u8>,
-    phantom: PhantomData<T>,
-}
-
-impl<T: WgslBytesWriteable + ?Sized> Default for WgslBytesWriter<T> {
-    fn default() -> Self {
-        Self {
-            buffer: Vec::default(),
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl<T: WgslBytesWriteable + ?Sized> WgslBytesWriter<T> {
-    pub fn write(&mut self, value: &T) -> &[u8] {
-        self.buffer.clear();
-
-        let mut buffer = encase::StorageBuffer::new(&mut self.buffer);
-        buffer.write(value).unwrap();
-
-        &self.buffer
-    }
-
-    pub fn into_buffer(self) -> Vec<u8> {
-        self.buffer
-    }
-}
+pub trait WgslBytesReadable: encase::ShaderType + encase::internal::CreateFrom {}
+impl<T: encase::ShaderType + encase::internal::CreateFrom + ?Sized> WgslBytesReadable for T {}
 
 pub fn to_wgsl_bytes<T: WgslBytesWriteable + ?Sized>(value: &T) -> Vec<u8> {
-    let mut res = WgslBytesWriter::default();
-    res.write(value);
-    res.into_buffer()
+    let mut res = Vec::default();
+
+    let mut buffer = encase::StorageBuffer::new(&mut res);
+    buffer.write(value).unwrap();
+
+    res
+}
+
+pub fn from_wgsl_bytes<T: WgslBytesReadable, B: BufferRef>(bytes: B) -> T {
+    encase::StorageBuffer::new(bytes).create().unwrap()
 }

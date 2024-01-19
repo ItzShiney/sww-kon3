@@ -78,7 +78,7 @@ impl MeshDrawer {
         device: &wgpu::Device,
         value: BufferType,
     ) -> BindBuffer<BufferType> {
-        BindBuffer::new(device, &self.bind_group_layout, &value)
+        BindBuffer::new(device, &self.bind_group_layout, value)
     }
 
     pub fn draw<'s>(

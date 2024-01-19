@@ -2,10 +2,8 @@ use {
     crate::{
         to_wgsl_bytes,
         WgslBytesWriteable,
-        WgslBytesWriter,
     },
     std::{
-        marker::PhantomData,
         mem,
         num::NonZeroU64,
     },
@@ -15,7 +13,7 @@ use {
 pub struct BindBuffer<T: WgslBytesWriteable> {
     buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
-    phantom: PhantomData<T>,
+    value: T,
 }
 
 impl<T: WgslBytesWriteable> BindBuffer<T> {
@@ -26,14 +24,10 @@ impl<T: WgslBytesWriteable> BindBuffer<T> {
         None => panic!("size was 0"),
     };
 
-    pub fn new(
-        device: &wgpu::Device,
-        bind_group_layout: &wgpu::BindGroupLayout,
-        value: &T,
-    ) -> Self {
+    pub fn new(device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout, value: T) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: &to_wgsl_bytes(value),
+            contents: &to_wgsl_bytes(&value),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -53,23 +47,20 @@ impl<T: WgslBytesWriteable> BindBuffer<T> {
         Self {
             buffer,
             bind_group,
-            phantom: PhantomData,
+            value,
         }
-    }
-
-    pub fn buffer(&self) -> &wgpu::Buffer {
-        &self.buffer
-    }
-
-    pub fn bind_group(&self) -> &wgpu::BindGroup {
-        &self.bind_group
     }
 
     pub fn bind<'s>(&'s self, index: u32, render_pass: &mut wgpu::RenderPass<'s>) {
         render_pass.set_bind_group(index, &self.bind_group, &[]);
     }
 
-    pub fn write(&self, queue: &wgpu::Queue, bytes_writer: &mut WgslBytesWriter<T>, value: &T) {
-        queue.write_buffer(&self.buffer, 0, bytes_writer.write(value));
+    pub fn write(&mut self, queue: &wgpu::Queue, value: T) {
+        self.value = value;
+        queue.write_buffer(&self.buffer, 0, &to_wgsl_bytes(&self.value));
+    }
+
+    pub fn value(&self) -> &T {
+        &self.value
     }
 }

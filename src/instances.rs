@@ -43,4 +43,8 @@ where
     pub fn transform(&self) -> &BindBuffer<T> {
         &self.transform
     }
+
+    pub fn transform_mut(&mut self) -> &mut BindBuffer<T> {
+        &mut self.transform
+    }
 }

@@ -1,3 +1,5 @@
+use shaders::mesh::Transform;
+
 mod bind_buffer;
 mod bytes;
 mod color;
@@ -15,7 +17,10 @@ pub use {
     mesh_drawer::*,
 };
 use {
-    glam::vec2,
+    glam::{
+        vec2,
+        Mat2,
+    },
     std::iter,
     winit::{
         event::{
@@ -99,7 +104,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     &mut white_transforms
                 };
 
-                colored_transforms.push(shaders::mesh::Transform {
+                colored_transforms.push(Transform {
                     matrix: Default::default(),
                     translation,
                     color: Color::WHITE.into(),
@@ -108,28 +113,26 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         }
     }
 
-    let scale = glam::Mat2::default() * (1. / 8.);
-
     let square = Mesh::rect(&device, vec2(1., 1.));
-    let white_instances = Instances::new(
+    let mut white_instances = Instances::new(
         &device,
         &white_transforms,
         mesh_drawer.make_bind_buffer(
             &device,
-            shaders::mesh::Transform {
-                matrix: scale,
+            Transform {
+                matrix: Default::default(),
                 translation: Default::default(),
                 color: Color::splat(0.7).into(),
             },
         ),
     );
-    let black_instances = Instances::new(
+    let mut black_instances = Instances::new(
         &device,
         &black_transforms,
         mesh_drawer.make_bind_buffer(
             &device,
-            shaders::mesh::Transform {
-                matrix: scale,
+            Transform {
+                matrix: Default::default(),
                 translation: Default::default(),
                 color: Color::splat(0.3).into(),
             },
@@ -151,6 +154,25 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 }
 
                 WindowEvent::RedrawRequested => {
+                    {
+                        let ratio = {
+                            let size = window.inner_size();
+                            size.width as f32 / size.height as f32
+                        };
+
+                        let scale = 1. / 4_f32;
+                        let matrix = Mat2::from_diagonal(vec2(
+                            scale.min(scale / ratio),
+                            scale.min(scale * ratio),
+                        ));
+
+                        for instances in [&mut white_instances, &mut black_instances] {
+                            let mut transform = *instances.transform().value();
+                            transform.matrix = matrix;
+                            instances.transform_mut().write(&queue, transform);
+                        }
+                    }
+
                     let frame = surface
                         .get_current_texture()
                         .expect("failed to acquire next swapchain texture");
