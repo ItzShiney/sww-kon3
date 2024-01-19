@@ -1,26 +1,16 @@
-mod affine;
 mod bytes;
 mod color;
-mod field_attributes;
 mod instances;
 mod mesh;
 mod mesh_drawer;
 pub mod shaders;
-mod transform;
-mod vertex;
-mod vertex_attributes;
 
 pub use {
-    affine::*,
     bytes::*,
     color::*,
-    field_attributes::*,
     instances::*,
     mesh::*,
     mesh_drawer::*,
-    transform::*,
-    vertex::*,
-    vertex_attributes::*,
 };
 use {
     glam::vec2,
@@ -94,32 +84,47 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
 
-    let mut transforms = Vec::default();
+    let mut white_transforms = Vec::default();
+    let mut black_transforms = Vec::default();
     {
-        let white = Color::splat(0.7);
-        let black = Color::splat(0.3);
-        let side = 2. / 8.;
-        let size = vec2(side, side);
-
         for y in -4..4_i32 {
             for x in -4..4_i32 {
-                let translation = vec2(x as f32, y as f32) * size;
-                let color = [black, white][(x + y).rem_euclid(2) as usize];
+                let translation = vec2(x as f32, y as f32);
+                let colored_transforms = if (x + y).rem_euclid(2) == 0 {
+                    &mut black_transforms
+                } else {
+                    &mut white_transforms
+                };
 
-                let affine_scale = glam::Affine2::from_scale(size);
-                let affine_translation = glam::Affine2::from_translation(translation);
-                let affine = affine_translation * affine_scale;
-
-                transforms.push(Transform::new(affine, color));
+                colored_transforms.push(shaders::mesh::Transform {
+                    matrix: Default::default(),
+                    translation,
+                    color: Color::WHITE.into(),
+                });
             }
         }
     }
 
+    let scale = glam::Mat2::default() * (1. / 8.);
+
     let square = Mesh::rect(&device, vec2(1., 1.));
     let white_instances = Instances::new(
         &device,
-        Affine::from_scale_splat(1. / 4.).into(),
-        &transforms,
+        &white_transforms,
+        shaders::mesh::Transform {
+            matrix: scale,
+            translation: Default::default(),
+            color: Color::splat(0.7).into(),
+        },
+    );
+    let black_instances = Instances::new(
+        &device,
+        &black_transforms,
+        shaders::mesh::Transform {
+            matrix: scale,
+            translation: Default::default(),
+            color: Color::splat(0.3).into(),
+        },
     );
 
     event_loop
@@ -159,6 +164,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             });
 
                         mesh_drawer.draw(&mut render_pass, &square, &white_instances);
+                        // mesh_drawer.draw(&mut render_pass, &square, &black_instances);
                     }
 
                     queue.submit(Some(command_encoder.finish()));

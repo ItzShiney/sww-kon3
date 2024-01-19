@@ -1,8 +1,8 @@
 use {
     crate::{
+        shaders::mesh::InVertex,
         to_wgsl_bytes,
-        Index,
-        Vertex,
+        Color,
     },
     glam::{
         vec2,
@@ -11,6 +11,9 @@ use {
     wgpu::util::DeviceExt,
 };
 
+pub type Index = u32;
+pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;
+
 pub struct Mesh {
     vertex_buffer: wgpu::Buffer,
     vertices_count: usize,
@@ -18,7 +21,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new(device: &wgpu::Device, vertices: &[Vertex]) -> Self {
+    pub fn new(device: &wgpu::Device, vertices: &[InVertex]) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: &to_wgsl_bytes(&vertices),
@@ -32,7 +35,7 @@ impl Mesh {
         }
     }
 
-    pub fn new_indexed(device: &wgpu::Device, vertices: &[Vertex], indices: &[Index]) -> Self {
+    pub fn new_indexed(device: &wgpu::Device, vertices: &[InVertex], indices: &[Index]) -> Self {
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: &to_wgsl_bytes(&indices),
@@ -49,10 +52,22 @@ impl Mesh {
         Self::new_indexed(
             &device,
             &[
-                Vertex::new_white(vec2(0., 0.)),
-                Vertex::new_white(vec2(0., size.y)),
-                Vertex::new_white(vec2(size.x, size.y)),
-                Vertex::new_white(vec2(size.x, 0.)),
+                InVertex {
+                    position: vec2(0., 0.),
+                    color: Color::WHITE.into(),
+                },
+                InVertex {
+                    position: vec2(0., size.y),
+                    color: Color::WHITE.into(),
+                },
+                InVertex {
+                    position: vec2(size.x, size.y),
+                    color: Color::WHITE.into(),
+                },
+                InVertex {
+                    position: vec2(size.x, 0.),
+                    color: Color::WHITE.into(),
+                },
             ],
             &[0, 1, 2, 0, 2, 3],
         )

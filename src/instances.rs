@@ -19,7 +19,7 @@ impl<T> Instances<T>
 where
     [T]: WgslBytesWriteable,
 {
-    pub fn new(device: &wgpu::Device, transform: T, transforms: &[T]) -> Self {
+    pub fn new(device: &wgpu::Device, transforms: &[T], transform: T) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: &to_wgsl_bytes(transforms),

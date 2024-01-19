@@ -1,3 +1,5 @@
+use glam::Vec4;
+
 #[derive(Clone, Copy, encase::ShaderType)]
 #[repr(C)]
 pub struct Color {
@@ -39,5 +41,11 @@ impl Color {
 
     pub const fn to_array(self) -> [f32; 4] {
         [self.r, self.g, self.b, self.a]
+    }
+}
+
+impl From<Color> for Vec4 {
+    fn from(value: Color) -> Self {
+        Self::from_array(value.to_array())
     }
 }

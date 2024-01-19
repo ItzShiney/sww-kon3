@@ -1,10 +1,8 @@
 use {
     crate::{
-        Attributes,
+        shaders,
         Instances,
         Mesh,
-        Transform,
-        Vertex,
         WgslBytesWriter,
         INDEX_FORMAT,
     },
@@ -17,7 +15,7 @@ use {
     },
 };
 
-type BufferType = Transform;
+type BufferType = shaders::mesh::Transform;
 
 pub struct MeshDrawer {
     pipeline: wgpu::RenderPipeline,
@@ -86,8 +84,10 @@ impl MeshDrawer {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[
-                    Attributes::<Vertex>::new_vertex(0).layout(),
-                    Attributes::<Transform>::new_instance(2).layout(),
+                    shaders::mesh::InVertex::vertex_buffer_layout(wgpu::VertexStepMode::Vertex),
+                    shaders::mesh::InTransform::vertex_buffer_layout(
+                        wgpu::VertexStepMode::Instance,
+                    ),
                 ],
             },
             fragment: Some(wgpu::FragmentState {
@@ -113,7 +113,7 @@ impl MeshDrawer {
         &'s self,
         render_pass: &mut wgpu::RenderPass<'s>,
         mesh: &'s Mesh,
-        instances: &'s Instances<Transform>,
+        instances: &'s Instances<BufferType>,
     ) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
