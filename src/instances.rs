@@ -1,6 +1,7 @@
 use {
     crate::{
         to_wgsl_bytes,
+        BindBuffer,
         WgslBytesWriteable,
     },
     std::mem,
@@ -9,24 +10,26 @@ use {
 
 pub struct Instances<T>
 where
+    T: WgslBytesWriteable,
     [T]: WgslBytesWriteable,
 {
     buffer: wgpu::Buffer,
-    pub transform: T,
+    transform: BindBuffer<T>,
 }
 
 impl<T> Instances<T>
 where
+    T: WgslBytesWriteable,
     [T]: WgslBytesWriteable,
 {
-    pub fn new(device: &wgpu::Device, transforms: &[T], transform: T) -> Self {
+    pub fn new(device: &wgpu::Device, transforms: &[T], transform: BindBuffer<T>) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: &to_wgsl_bytes(transforms),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        Self { transform, buffer }
+        Self { buffer, transform }
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
@@ -35,5 +38,9 @@ where
 
     pub fn len(&self) -> usize {
         self.buffer.size() as usize / mem::size_of::<T>()
+    }
+
+    pub fn transform(&self) -> &BindBuffer<T> {
+        &self.transform
     }
 }

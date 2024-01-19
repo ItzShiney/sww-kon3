@@ -1,3 +1,4 @@
+mod bind_buffer;
 mod bytes;
 mod color;
 mod instances;
@@ -6,6 +7,7 @@ mod mesh_drawer;
 pub mod shaders;
 
 pub use {
+    bind_buffer::*,
     bytes::*,
     color::*,
     instances::*,
@@ -14,6 +16,7 @@ pub use {
 };
 use {
     glam::vec2,
+    std::iter,
     winit::{
         event::{
             Event,
@@ -71,7 +74,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
+                required_features: wgpu::Features::default(),
                 required_limits: wgpu::Limits::downlevel_webgl2_defaults()
                     .using_resolution(adapter.limits()),
             },
@@ -111,20 +114,26 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let white_instances = Instances::new(
         &device,
         &white_transforms,
-        shaders::mesh::Transform {
-            matrix: scale,
-            translation: Default::default(),
-            color: Color::splat(0.7).into(),
-        },
+        mesh_drawer.make_bind_buffer(
+            &device,
+            shaders::mesh::Transform {
+                matrix: scale,
+                translation: Default::default(),
+                color: Color::splat(0.7).into(),
+            },
+        ),
     );
     let black_instances = Instances::new(
         &device,
         &black_transforms,
-        shaders::mesh::Transform {
-            matrix: scale,
-            translation: Default::default(),
-            color: Color::splat(0.3).into(),
-        },
+        mesh_drawer.make_bind_buffer(
+            &device,
+            shaders::mesh::Transform {
+                matrix: scale,
+                translation: Default::default(),
+                color: Color::splat(0.3).into(),
+            },
+        ),
     );
 
     event_loop
@@ -164,10 +173,10 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             });
 
                         mesh_drawer.draw(&mut render_pass, &square, &white_instances);
-                        // mesh_drawer.draw(&mut render_pass, &square, &black_instances);
+                        mesh_drawer.draw(&mut render_pass, &square, &black_instances);
                     }
 
-                    queue.submit(Some(command_encoder.finish()));
+                    queue.submit(iter::once(command_encoder.finish()));
                     frame.present();
                 }
 
