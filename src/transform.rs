@@ -4,11 +4,10 @@ use crate::{
     FieldAttributes,
 };
 
-#[derive(Default, Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
-#[repr(C)]
+#[derive(Default, Clone, Copy, encase::ShaderType)]
 pub struct Transform {
-    affine: Affine,
-    color: Color,
+    pub affine: Affine,
+    pub color: Color,
 }
 
 impl Transform {
@@ -29,12 +28,6 @@ impl From<Affine> for Transform {
     }
 }
 
-impl From<glam::Affine2> for Transform {
-    fn from(affine: glam::Affine2) -> Self {
-        Self::from(Affine::from(affine))
-    }
-}
-
 impl From<Color> for Transform {
     fn from(color: Color) -> Self {
         Self {
@@ -47,7 +40,7 @@ impl From<Color> for Transform {
 impl FieldAttributes for Transform {
     fn field_attributes(start: u32) -> Box<[wgpu::VertexAttribute]> {
         Box::new(
-            wgpu::vertex_attr_array![start => Float32x2, start + 1 => Float32x2, start + 2 => Float32x2, start + 3 => Float32x4],
+            wgpu::vertex_attr_array![start => Float32x4, start + 1 => Float32x2, start + 2 => Float32x4],
         )
     }
 }

@@ -5,10 +5,12 @@ use {
         Mesh,
         Transform,
         Vertex,
+        WgslBytesWriter,
         INDEX_FORMAT,
     },
     std::{
         borrow::Cow,
+        cell::RefCell,
         io::Write,
         mem,
         num::NonZeroU64,
@@ -22,6 +24,7 @@ pub struct MeshDrawer {
 
     bind_group: wgpu::BindGroup,
     bind_buffer: wgpu::Buffer,
+    bytes_writer: RefCell<WgslBytesWriter<BufferType>>,
 }
 
 impl MeshDrawer {
@@ -42,7 +45,7 @@ impl MeshDrawer {
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size: None, // Some(bind_buffer_size_nonzero),
+                    min_binding_size: Some(bind_buffer_size_nonzero),
                 },
                 count: None,
             }],
@@ -84,7 +87,7 @@ impl MeshDrawer {
                 entry_point: "vs_main",
                 buffers: &[
                     Attributes::<Vertex>::new_vertex(0).layout(),
-                    Attributes::<BufferType>::new_instance(2).layout(),
+                    Attributes::<Transform>::new_instance(2).layout(),
                 ],
             },
             fragment: Some(wgpu::FragmentState {
@@ -102,6 +105,7 @@ impl MeshDrawer {
             pipeline,
             bind_buffer,
             bind_group,
+            bytes_writer: WgslBytesWriter::default().into(),
         }
     }
 
@@ -127,15 +131,13 @@ impl MeshDrawer {
     }
 
     fn bind_buffer<'s>(&'s self, render_pass: &mut wgpu::RenderPass<'s>, value: BufferType) {
-        let bytes = bytemuck::bytes_of(&value);
-        println!("*** {}", bytes.len());
-
         self.bind_buffer
             .slice(..)
             .get_mapped_range_mut()
             .as_mut()
-            .write(bytes)
+            .write(self.bytes_writer.borrow_mut().write(&value))
             .unwrap();
+        self.bind_buffer.unmap();
 
         render_pass.set_bind_group(0, &self.bind_group, &[]);
     }

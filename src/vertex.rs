@@ -6,7 +6,7 @@ use {
     glam::Vec2,
 };
 
-#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+#[derive(Clone, Copy, encase::ShaderType)]
 #[repr(C)]
 pub struct Vertex {
     position: [f32; 2],
@@ -32,5 +32,5 @@ impl FieldAttributes for Vertex {
     }
 }
 
-pub type Index = u16;
-pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint16;
+pub type Index = u32;
+pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;

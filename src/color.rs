@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+#[derive(Clone, Copy, encase::ShaderType)]
 #[repr(C)]
 pub struct Color {
     pub r: f32,

@@ -1,18 +1,28 @@
 use {
+    crate::{
+        to_wgsl_bytes,
+        WgslBytesWriteable,
+    },
     std::mem,
     wgpu::util::DeviceExt,
 };
 
-pub struct Instances<T: bytemuck::Pod> {
+pub struct Instances<T>
+where
+    [T]: WgslBytesWriteable,
+{
     buffer: wgpu::Buffer,
     pub transform: T,
 }
 
-impl<T: bytemuck::Pod> Instances<T> {
+impl<T> Instances<T>
+where
+    [T]: WgslBytesWriteable,
+{
     pub fn new(device: &wgpu::Device, transform: T, transforms: &[T]) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(transforms),
+            contents: &to_wgsl_bytes(transforms),
             usage: wgpu::BufferUsages::VERTEX,
         });
 

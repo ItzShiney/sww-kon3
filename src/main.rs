@@ -1,6 +1,5 @@
-use glam::Vec2;
-
 mod affine;
+mod bytes;
 mod color;
 mod field_attributes;
 mod instances;
@@ -12,6 +11,7 @@ mod vertex_attributes;
 
 pub use {
     affine::*,
+    bytes::*,
     color::*,
     field_attributes::*,
     instances::*,
@@ -117,7 +117,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let square = Mesh::rect(&device, vec2(1., 1.));
     let white_instances = Instances::new(
         &device,
-        glam::Affine2::from_scale(Vec2::splat(1. / 8.)).into(),
+        Affine::from_scale_splat(1. / 4.).into(),
         &transforms,
     );
 

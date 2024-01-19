@@ -1,5 +1,6 @@
 use {
     crate::{
+        to_wgsl_bytes,
         Index,
         Vertex,
     },
@@ -20,7 +21,7 @@ impl Mesh {
     pub fn new(device: &wgpu::Device, vertices: &[Vertex]) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(vertices),
+            contents: &to_wgsl_bytes(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
@@ -34,7 +35,7 @@ impl Mesh {
     pub fn new_indexed(device: &wgpu::Device, vertices: &[Vertex], indices: &[Index]) -> Self {
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(indices),
+            contents: &to_wgsl_bytes(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
 

@@ -1,31 +1,38 @@
-#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
-#[repr(C)]
+use glam::{
+    vec2,
+    Affine2,
+    Mat2,
+    Vec2,
+};
+
+#[derive(Default, Clone, Copy, encase::ShaderType)]
 pub struct Affine {
-    matrix: [[f32; 2]; 2],
-    translation: [f32; 2],
+    pub matrix: Mat2,
+    pub translation: Vec2,
 }
 
-impl Default for Affine {
-    fn default() -> Self {
-        Self::IDENTITY
-    }
-}
-
-impl From<glam::Affine2> for Affine {
-    fn from(value: glam::Affine2) -> Self {
+impl From<Affine2> for Affine {
+    fn from(value: Affine2) -> Self {
         Self::new(value)
     }
 }
 
 impl Affine {
-    pub const ZERO: Self = Self::new(glam::Affine2::ZERO);
-    pub const IDENTITY: Self = Self::new(glam::Affine2::IDENTITY);
-    pub const NAN: Self = Self::new(glam::Affine2::NAN);
+    pub const ZERO: Self = Self::new(Affine2::ZERO);
+    pub const IDENTITY: Self = Self::new(Affine2::IDENTITY);
 
-    pub const fn new(affine: glam::Affine2) -> Self {
+    pub const fn new(affine: Affine2) -> Self {
         Self {
-            matrix: affine.matrix2.to_cols_array_2d(),
-            translation: affine.translation.to_array(),
+            matrix: affine.matrix2,
+            translation: affine.translation,
         }
+    }
+
+    pub fn from_scale(scale: Vec2) -> Self {
+        Self::from(Affine2::from_scale(scale))
+    }
+
+    pub fn from_scale_splat(scale: f32) -> Self {
+        Self::from_scale(vec2(scale, scale))
     }
 }

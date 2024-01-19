@@ -5,19 +5,10 @@ edition = "2021"
 
 [dependencies]
 wgpu = "*"
-bytemuck = { version = "*", features = ["derive"] }
 cfg-if = "*"
-encase = "*"
-flume = "*"
-getrandom = "*"
-glam = { version = "*", features = ["bytemuck"] }
-ktx2 = "*"
+encase = { version = "*", features = ["glam"] }
+glam = "*"
 log = "*" # { version = "*", features = ["release_max_level_off"] }
-nanorand = "*"
-noise = "*"
-obj = "*"
-png = "*"
 pollster = "*"
-web-time = "*"
 winit = { version = "*", features = ["rwh_05"] }
 env_logger = "*"
