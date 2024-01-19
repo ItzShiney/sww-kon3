@@ -3,7 +3,10 @@ use {
         Index,
         Vertex,
     },
-    glam::vec2,
+    glam::{
+        vec2,
+        Vec2,
+    },
     wgpu::util::DeviceExt,
 };
 
@@ -41,17 +44,21 @@ impl Mesh {
         }
     }
 
-    pub fn rect(device: &wgpu::Device) -> Self {
+    pub fn rect(device: &wgpu::Device, size: Vec2) -> Self {
         Self::new_indexed(
             &device,
             &[
                 Vertex::new_white(vec2(0., 0.)),
-                Vertex::new_white(vec2(0., 1.)),
-                Vertex::new_white(vec2(1., 1.)),
-                Vertex::new_white(vec2(1., 0.)),
+                Vertex::new_white(vec2(0., size.y)),
+                Vertex::new_white(vec2(size.x, size.y)),
+                Vertex::new_white(vec2(size.x, 0.)),
             ],
             &[0, 1, 2, 0, 2, 3],
         )
+    }
+
+    pub fn square(device: &wgpu::Device, size: f32, ratio: f32) -> Self {
+        Self::rect(device, vec2(size, size * ratio))
     }
 
     pub fn vertex_buffer(&self) -> &wgpu::Buffer {

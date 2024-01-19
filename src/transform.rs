@@ -1,26 +1,44 @@
 use crate::{
-    Affine2,
+    Affine,
     Color,
     FieldAttributes,
 };
 
-#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+#[derive(Default, Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 #[repr(C)]
 pub struct Transform {
-    affine: Affine2,
+    affine: Affine,
     color: Color,
 }
 
-impl Default for Transform {
-    fn default() -> Self {
-        Self::new(Affine2::IDENTITY, Color::WHITE)
+impl Transform {
+    pub fn new(affine: impl Into<Affine>, color: Color) -> Self {
+        Self {
+            affine: affine.into(),
+            color,
+        }
     }
 }
 
-impl Transform {
-    pub fn new(affine: impl Into<Affine2>, color: Color) -> Self {
+impl From<Affine> for Transform {
+    fn from(affine: Affine) -> Self {
         Self {
-            affine: affine.into(),
+            affine,
+            color: Color::WHITE,
+        }
+    }
+}
+
+impl From<glam::Affine2> for Transform {
+    fn from(affine: glam::Affine2) -> Self {
+        Self::from(Affine::from(affine))
+    }
+}
+
+impl From<Color> for Transform {
+    fn from(color: Color) -> Self {
+        Self {
+            affine: Affine::IDENTITY,
             color,
         }
     }

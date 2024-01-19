@@ -7,6 +7,12 @@ pub struct Color {
     pub a: f32,
 }
 
+impl Default for Color {
+    fn default() -> Self {
+        Self::WHITE
+    }
+}
+
 impl Color {
     pub const WHITE: Self = Self::splat(1.);
     pub const RED: Self = Self::new_rgb(1., 0., 0.);

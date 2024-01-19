@@ -1,4 +1,6 @@
-mod affine2;
+use glam::Vec2;
+
+mod affine;
 mod color;
 mod field_attributes;
 mod instances;
@@ -9,7 +11,7 @@ mod vertex;
 mod vertex_attributes;
 
 pub use {
-    affine2::*,
+    affine::*,
     color::*,
     field_attributes::*,
     instances::*,
@@ -53,7 +55,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let surface = instance.create_surface(&window).unwrap();
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: Default::default(),
+            power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
         })
@@ -71,14 +73,14 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         present_mode: wgpu::PresentMode::Immediate,
         desired_maximum_frame_latency: 2,
         alpha_mode: swapchain_capabilities.alpha_modes[0],
-        view_formats: vec![],
+        view_formats: Vec::default(),
     };
 
     let (device, queue) = adapter
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::empty(),
+                required_features: wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
                 required_limits: wgpu::Limits::downlevel_webgl2_defaults()
                     .using_resolution(adapter.limits()),
             },
@@ -91,26 +93,33 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
 
-    let white = Color::splat(0.7);
-    let black = Color::splat(0.3);
-    let size = 0.1;
-
     let mut transforms = Vec::default();
-    for y in -4..4_i32 {
-        for x in -4..4_i32 {
-            let translation = vec2(x as f32, y as f32) * size;
-            let color = [black, white][(x + y).rem_euclid(2) as usize];
+    {
+        let white = Color::splat(0.7);
+        let black = Color::splat(0.3);
+        let side = 2. / 8.;
+        let size = vec2(side, side);
 
-            let affine_scale = glam::Affine2::from_scale(vec2(size, size));
-            let affine_translation = glam::Affine2::from_translation(translation);
-            let affine = affine_translation * affine_scale;
+        for y in -4..4_i32 {
+            for x in -4..4_i32 {
+                let translation = vec2(x as f32, y as f32) * size;
+                let color = [black, white][(x + y).rem_euclid(2) as usize];
 
-            transforms.push(Transform::new(affine, color));
+                let affine_scale = glam::Affine2::from_scale(size);
+                let affine_translation = glam::Affine2::from_translation(translation);
+                let affine = affine_translation * affine_scale;
+
+                transforms.push(Transform::new(affine, color));
+            }
         }
     }
 
-    let square = Mesh::rect(&device);
-    let instances = Instances::new(&device, &transforms);
+    let square = Mesh::rect(&device, vec2(1., 1.));
+    let white_instances = Instances::new(
+        &device,
+        glam::Affine2::from_scale(Vec2::splat(1. / 8.)).into(),
+        &transforms,
+    );
 
     event_loop
         .run(|event, target| match event {
@@ -148,7 +157,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                                 ..Default::default()
                             });
 
-                        mesh_drawer.draw(&mut render_pass, &square, &instances);
+                        mesh_drawer.draw(&mut render_pass, &square, &white_instances);
                     }
 
                     queue.submit(Some(command_encoder.finish()));

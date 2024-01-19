@@ -7,11 +7,21 @@ use {
         Vertex,
         INDEX_FORMAT,
     },
-    std::borrow::Cow,
+    std::{
+        borrow::Cow,
+        io::Write,
+        mem,
+        num::NonZeroU64,
+    },
 };
+
+type BufferType = Transform;
 
 pub struct MeshDrawer {
     pipeline: wgpu::RenderPipeline,
+
+    bind_group: wgpu::BindGroup,
+    bind_buffer: wgpu::Buffer,
 }
 
 impl MeshDrawer {
@@ -21,9 +31,48 @@ impl MeshDrawer {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("mesh.wgsl"))),
         });
 
+        let bind_buffer_size = mem::size_of::<BufferType>() as wgpu::BufferAddress;
+        let bind_buffer_size_nonzero = NonZeroU64::new(bind_buffer_size).unwrap();
+
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None, // Some(bind_buffer_size_nonzero),
+                },
+                count: None,
+            }],
+        });
+
+        let bind_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: bind_buffer_size,
+            usage: wgpu::BufferUsages::UNIFORM
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::MAP_WRITE,
+            mapped_at_creation: true,
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &bind_buffer,
+                    offset: 0,
+                    size: Some(bind_buffer_size_nonzero),
+                }),
+            }],
+        });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -35,7 +84,7 @@ impl MeshDrawer {
                 entry_point: "vs_main",
                 buffers: &[
                     Attributes::<Vertex>::new_vertex(0).layout(),
-                    Attributes::<Transform>::new_instance(2).layout(),
+                    Attributes::<BufferType>::new_instance(2).layout(),
                 ],
             },
             fragment: Some(wgpu::FragmentState {
@@ -49,7 +98,11 @@ impl MeshDrawer {
             multiview: None,
         });
 
-        Self { pipeline }
+        Self {
+            pipeline,
+            bind_buffer,
+            bind_group,
+        }
     }
 
     pub fn draw<'s>(
@@ -62,6 +115,8 @@ impl MeshDrawer {
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
         render_pass.set_vertex_buffer(1, instances.buffer().slice(..));
 
+        self.bind_buffer(render_pass, instances.transform);
+
         let instances = 0..instances.len() as _;
         if let Some((index_buffer, indices_count)) = mesh.index_buffer() {
             render_pass.set_index_buffer(index_buffer.slice(..), INDEX_FORMAT);
@@ -69,5 +124,19 @@ impl MeshDrawer {
         } else {
             render_pass.draw(0..mesh.vertices_count() as _, instances);
         }
+    }
+
+    fn bind_buffer<'s>(&'s self, render_pass: &mut wgpu::RenderPass<'s>, value: BufferType) {
+        let bytes = bytemuck::bytes_of(&value);
+        println!("*** {}", bytes.len());
+
+        self.bind_buffer
+            .slice(..)
+            .get_mapped_range_mut()
+            .as_mut()
+            .write(bytes)
+            .unwrap();
+
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
     }
 }

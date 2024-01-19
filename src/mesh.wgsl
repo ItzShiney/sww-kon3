@@ -1,3 +1,43 @@
+struct Transform {
+    matrix: mat2x2f,
+    translation: vec2f,
+    color: vec4f,
+}
+
+fn transforms_then(a: Transform, b: Transform) -> Transform {
+    return Transform(
+        b.matrix * a.matrix,
+        b.matrix * a.translation + b.translation,
+        a.color * b.color,
+    );
+}
+
+fn apply_transform_point(transform: Transform, point: vec2f) -> vec2f {
+    return transform.matrix * point + transform.translation;
+}
+
+fn apply_transform_color(transform: Transform, color: vec4f) -> vec4f {
+    return transform.color;
+}
+
+////////////////////////////////////////////////////////////
+
+struct InTransform {
+    @location(2) matrix: vec4f,
+    @location(3) translation: vec2f,
+    @location(4) color: vec4f,
+}
+
+fn vec_to_mat(v: vec4f) -> mat2x2f {
+    return mat2x2f(v.xy, v.zw);
+}
+
+fn in_to_transform(transform: InTransform) -> Transform {
+    return Transform(vec_to_mat(transform.matrix), transform.translation, transform.color);
+}
+
+////////////////////////////////////////////////////////////
+
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) color: vec4f,
@@ -7,40 +47,17 @@ struct FragmentInput {
     @location(0) color: vec4f,
 }
 
-struct TransformInput {
-    @location(2) matrix2_1: vec2f,
-    @location(3) matrix2_2: vec2f,
-    @location(4) translation: vec2f,
-    @location(5) color: vec4f,
-}
-
-struct Transform {
-    matrix2: mat2x2f,
-    translation: vec2f,
-    color: vec4f,
-}
-
-fn parse_transform_input(transform: TransformInput) -> Transform {
-    let matrix2 = mat2x2f(transform.matrix2_1, transform.matrix2_2);
-    let translation = transform.translation;
-    let color = transform.color;
-
-    return Transform(matrix2, translation, color);
-}
-
-fn apply_transform(transform: Transform, point: vec2f) -> vec2f {
-    return transform.matrix2 * point + transform.translation;
-}
+@group(0) @binding(0) var<uniform> global_transform: Transform;
 
 @vertex
 fn vs_main(
     @location(0) in_position: vec2f,
     @location(1) in_color: vec4f,
-    transform_input: TransformInput,
+    in_transform: InTransform,
 ) -> VertexOutput {
-    let transform = parse_transform_input(transform_input);
-    let position = apply_transform(transform, in_position);
-    let color = in_color * transform.color;
+    let transform = transforms_then(in_to_transform(in_transform), global_transform);
+    let position = apply_transform_point(transform, in_position);
+    let color = apply_transform_color(transform, in_color);
 
     return VertexOutput(vec4f(position, 0., 1.), color);
 }
