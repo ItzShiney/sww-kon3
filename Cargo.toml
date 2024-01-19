@@ -12,3 +12,8 @@ log = "*" # { version = "*", features = ["release_max_level_off"] }
 pollster = "*"
 winit = { version = "*", features = ["rwh_05"] }
 env_logger = "*"
+memoffset = "*"
+
+[build-dependencies]
+wgsl_to_wgpu = "*"
+cargo-emit = "*"

@@ -5,6 +5,7 @@ mod field_attributes;
 mod instances;
 mod mesh;
 mod mesh_drawer;
+pub mod shaders;
 mod transform;
 mod vertex;
 mod vertex_attributes;
