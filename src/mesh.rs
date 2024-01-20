@@ -55,18 +55,22 @@ impl Mesh {
                 InVertex {
                     position: vec2(0., 0.),
                     color: Color::WHITE.into(),
+                    texture_coord: vec2(0., 0.),
                 },
                 InVertex {
                     position: vec2(0., size.y),
                     color: Color::WHITE.into(),
+                    texture_coord: vec2(0., 1.),
                 },
                 InVertex {
                     position: vec2(size.x, size.y),
                     color: Color::WHITE.into(),
+                    texture_coord: vec2(1., 1.),
                 },
                 InVertex {
                     position: vec2(size.x, 0.),
                     color: Color::WHITE.into(),
+                    texture_coord: vec2(1., 0.),
                 },
             ],
             &[0, 1, 2, 0, 2, 3],

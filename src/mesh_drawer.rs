@@ -1,12 +1,9 @@
-use {
-    crate::{
-        shaders,
-        BindBuffer,
-        Instances,
-        Mesh,
-        INDEX_FORMAT,
-    },
-    std::borrow::Cow,
+use crate::{
+    shaders,
+    BindBuffer,
+    Instances,
+    Mesh,
+    INDEX_FORMAT,
 };
 
 type BufferType = shaders::mesh::Transform;
@@ -18,47 +15,23 @@ pub struct MeshDrawer {
 
 impl MeshDrawer {
     pub fn new(device: &wgpu::Device, swapchain_format: wgpu::TextureFormat) -> Self {
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("mesh.wgsl"))),
-        });
+        let pipeline_layout = shaders::mesh::create_pipeline_layout(device);
 
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: Some(BindBuffer::<BufferType>::SIZE_NONZERO),
-                },
-                count: None,
-            }],
-        });
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
-        });
+        let shader = shaders::mesh::create_shader_module(device);
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[
-                    shaders::mesh::InVertex::vertex_buffer_layout(wgpu::VertexStepMode::Vertex),
-                    shaders::mesh::InTransform::vertex_buffer_layout(
-                        wgpu::VertexStepMode::Instance,
-                    ),
-                ],
-            },
+            vertex: shaders::mesh::vertex_state(
+                &shader,
+                &shaders::mesh::vs_main_entry(
+                    wgpu::VertexStepMode::Vertex,
+                    wgpu::VertexStepMode::Instance,
+                ),
+            ),
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: shaders::mesh::ENTRY_FS_MAIN,
                 targets: &[Some(swapchain_format.into())],
             }),
             primitive: Default::default(),
@@ -66,6 +39,9 @@ impl MeshDrawer {
             multisample: Default::default(),
             multiview: None,
         });
+
+        let bind_group_layout =
+            shaders::mesh::bind_groups::BindGroup0::get_bind_group_layout(device);
 
         Self {
             pipeline,

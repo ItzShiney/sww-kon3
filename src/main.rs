@@ -1,5 +1,3 @@
-use shaders::mesh::Transform;
-
 mod bind_buffer;
 mod bytes;
 mod color;
@@ -21,6 +19,7 @@ use {
         vec2,
         Mat2,
     },
+    shaders::mesh::Transform,
     std::iter,
     winit::{
         event::{
