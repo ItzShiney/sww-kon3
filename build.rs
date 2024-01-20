@@ -7,6 +7,7 @@ fn main() {
         let input_absolute_path = String::from("../../") + &input_path;
 
         cargo_emit::rerun_if_changed!(input_path);
+        cargo_emit::rerun_if_changed!(output_path);
         let input = fs::read_to_string(&input_path).unwrap();
 
         let options = wgsl_to_wgpu::WriteOptions {

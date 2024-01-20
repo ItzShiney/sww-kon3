@@ -1,18 +1,18 @@
-mod bind_buffer;
 mod bytes;
 mod color;
 mod instances;
 mod mesh;
 mod mesh_drawer;
+mod readable_buffer;
 pub mod shaders;
 
 pub use {
-    bind_buffer::*,
     bytes::*,
     color::*,
     instances::*,
     mesh::*,
     mesh_drawer::*,
+    readable_buffer::*,
 };
 use {
     glam::{
@@ -20,7 +20,10 @@ use {
         Mat2,
     },
     shaders::mesh::Transform,
-    std::iter,
+    std::{
+        iter,
+        mem,
+    },
     winit::{
         event::{
             Event,
@@ -90,6 +93,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     surface.configure(&device, &config);
 
     let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
+    let square = Mesh::rect(&device, vec2(1., 1.));
 
     let mut white_transforms = Vec::default();
     let mut black_transforms = Vec::default();
@@ -112,30 +116,62 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         }
     }
 
-    let square = Mesh::rect(&device, vec2(1., 1.));
-    let mut white_instances = Instances::new(
-        &device,
-        &white_transforms,
-        mesh_drawer.make_bind_buffer(
-            &device,
-            Transform {
-                matrix: Default::default(),
-                translation: Default::default(),
-                color: Color::splat(0.7).into(),
-            },
-        ),
+    let white_instances = Instances::new(&device, &white_transforms);
+
+    let white_global_transform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: None,
+        size: mem::size_of::<shaders::mesh::Transform>() as _,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    let mut white_global_transform = ReadableBuffer::new(
+        &white_global_transform_buffer,
+        Transform {
+            matrix: Default::default(),
+            translation: Default::default(),
+            color: Color::splat(0.7).into(),
+        },
     );
-    let mut black_instances = Instances::new(
+
+    let white_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
         &device,
-        &black_transforms,
-        mesh_drawer.make_bind_buffer(
-            &device,
-            Transform {
-                matrix: Default::default(),
-                translation: Default::default(),
-                color: Color::splat(0.3).into(),
+        shaders::mesh::bind_groups::BindGroupLayout0 {
+            global_transform: wgpu::BufferBinding {
+                buffer: &white_global_transform_buffer,
+                offset: 0,
+                size: None,
             },
-        ),
+        },
+    );
+
+    let black_instances = Instances::new(&device, &black_transforms);
+
+    let black_global_transform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: None,
+        size: mem::size_of::<shaders::mesh::Transform>() as _,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    let mut black_global_transform = ReadableBuffer::new(
+        &black_global_transform_buffer,
+        Transform {
+            matrix: Default::default(),
+            translation: Default::default(),
+            color: Color::splat(0.3).into(),
+        },
+    );
+
+    let black_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
+        &device,
+        shaders::mesh::bind_groups::BindGroupLayout0 {
+            global_transform: wgpu::BufferBinding {
+                buffer: &black_global_transform_buffer,
+                offset: 0,
+                size: None,
+            },
+        },
     );
 
     event_loop
@@ -165,10 +201,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             scale.min(scale * ratio),
                         ));
 
-                        for instances in [&mut white_instances, &mut black_instances] {
-                            let mut transform = *instances.transform().value();
+                        for transform_buffer in
+                            [&mut white_global_transform, &mut black_global_transform]
+                        {
+                            let mut transform = *transform_buffer.value();
                             transform.matrix = matrix;
-                            instances.transform_mut().write(&queue, transform);
+                            transform_buffer.write(&queue, transform);
                         }
                     }
 
@@ -193,8 +231,18 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                                 ..Default::default()
                             });
 
-                        mesh_drawer.draw(&mut render_pass, &square, &white_instances);
-                        mesh_drawer.draw(&mut render_pass, &square, &black_instances);
+                        mesh_drawer.draw(
+                            &mut render_pass,
+                            &square,
+                            &white_instances,
+                            &white_bind_group0,
+                        );
+                        mesh_drawer.draw(
+                            &mut render_pass,
+                            &square,
+                            &black_instances,
+                            &black_bind_group0,
+                        );
                     }
 
                     queue.submit(iter::once(command_encoder.finish()));

@@ -1,6 +1,5 @@
 use crate::{
     shaders,
-    BindBuffer,
     Instances,
     Mesh,
     INDEX_FORMAT,
@@ -10,7 +9,6 @@ type BufferType = shaders::mesh::Transform;
 
 pub struct MeshDrawer {
     pipeline: wgpu::RenderPipeline,
-    bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl MeshDrawer {
@@ -40,21 +38,7 @@ impl MeshDrawer {
             multiview: None,
         });
 
-        let bind_group_layout =
-            shaders::mesh::bind_groups::BindGroup0::get_bind_group_layout(device);
-
-        Self {
-            pipeline,
-            bind_group_layout,
-        }
-    }
-
-    pub fn make_bind_buffer(
-        &self,
-        device: &wgpu::Device,
-        value: BufferType,
-    ) -> BindBuffer<BufferType> {
-        BindBuffer::new(device, &self.bind_group_layout, value)
+        Self { pipeline }
     }
 
     pub fn draw<'s>(
@@ -62,12 +46,13 @@ impl MeshDrawer {
         render_pass: &mut wgpu::RenderPass<'s>,
         mesh: &'s Mesh,
         instances: &'s Instances<BufferType>,
+        bind_group0: &'s shaders::mesh::bind_groups::BindGroup0,
     ) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
         render_pass.set_vertex_buffer(1, instances.buffer().slice(..));
 
-        instances.transform().bind(0, render_pass);
+        bind_group0.set(render_pass);
 
         let instances = 0..instances.len() as _;
         if let Some((index_buffer, indices_count)) = mesh.index_buffer() {
