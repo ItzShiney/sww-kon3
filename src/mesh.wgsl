@@ -22,6 +22,13 @@ fn apply_transform_color(transform: Transform, color: vec4f) -> vec4f {
 
 ////////////////////////////////////////////////////////////
 
+struct Rectangle {
+    start: vec2f,
+    end: vec2f,
+}
+
+////////////////////////////////////////////////////////////
+
 struct InVertex {
     @location(0) position: vec2f,
     @location(1) color: vec4f,
@@ -69,14 +76,18 @@ fn vs_main(
     return OutVertex(vec4f(position, 0., 1.), color, in_vertex.texture_coord);
 }
 
-@group(1) @binding(0) var texture: texture_2d<f32>;
+@group(1) @binding(0) var<uniform> texture_rect: Rectangle;
+@group(1) @binding(1) var texture: texture_2d<f32>;
 
 @fragment
 fn fs_main(in: InFragment) -> @location(0) vec4f {
-    let size = textureDimensions(texture);
-    var texture_coord = vec2u(in.texture_coord * vec2f(size));
-    texture_coord.y = size.y - 1u - texture_coord.y;
-    let texel_color = textureLoad(texture, texture_coord, 0);
+    var texture_coord_f = in.texture_coord;
+    texture_coord_f = texture_coord_f * (texture_rect.end - texture_rect.start) + texture_rect.start;
+    texture_coord_f.y = 1. - texture_coord_f.y;
 
+    let size = textureDimensions(texture);
+    var texture_coord = vec2u(texture_coord_f * vec2f(size));
+
+    let texel_color = textureLoad(texture, texture_coord, 0);
     return in.color * texel_color;
 }

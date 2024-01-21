@@ -3,36 +3,32 @@ use {
         to_wgsl_bytes,
         WgslBytesWriteable,
     },
-    std::{
-        mem,
-        num::NonZeroU64,
-    },
+    wgpu::util::DeviceExt,
 };
 
-pub struct ReadableBuffer<'buffer, T: WgslBytesWriteable> {
-    buffer: &'buffer wgpu::Buffer,
+pub struct ReadableBuffer<T: WgslBytesWriteable> {
+    buffer: wgpu::Buffer,
     value: T,
 }
 
-impl<'buffer, T: WgslBytesWriteable> ReadableBuffer<'buffer, T> {
-    pub const SIZE: wgpu::BufferAddress = mem::size_of::<T>() as _;
+impl<T: WgslBytesWriteable> ReadableBuffer<T> {
+    pub fn new(device: &wgpu::Device, value: T) -> Self {
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: &to_wgsl_bytes(&value),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-    pub const SIZE_NONZERO: NonZeroU64 = match NonZeroU64::new(Self::SIZE) {
-        Some(res) => res,
-        None => panic!("size was 0"),
-    };
-
-    pub fn new(buffer: &'buffer wgpu::Buffer, value: T) -> Self {
         Self { buffer, value }
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
-        self.buffer
+        &self.buffer
     }
 
     pub fn write(&mut self, queue: &wgpu::Queue, value: T) {
         self.value = value;
-        queue.write_buffer(self.buffer, 0, &to_wgsl_bytes(&self.value));
+        queue.write_buffer(&self.buffer, 0, &to_wgsl_bytes(&self.value));
     }
 
     pub fn value(&self) -> &T {

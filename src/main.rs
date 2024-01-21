@@ -29,7 +29,6 @@ use {
     std::{
         io,
         iter,
-        mem,
     },
     wgpu::util::DeviceExt,
     winit::{
@@ -126,15 +125,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let white_instances = Instances::new(&device, &white_transforms);
 
-    let white_global_transform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: None,
-        size: mem::size_of::<shaders::mesh::Transform>() as _,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-
     let mut white_global_transform = ReadableBuffer::new(
-        &white_global_transform_buffer,
+        &device,
         Transform {
             matrix: Default::default(),
             translation: Default::default(),
@@ -146,7 +138,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &device,
         shaders::mesh::bind_groups::BindGroupLayout0 {
             global_transform: wgpu::BufferBinding {
-                buffer: &white_global_transform_buffer,
+                buffer: white_global_transform.buffer(),
                 offset: 0,
                 size: None,
             },
@@ -155,15 +147,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let black_instances = Instances::new(&device, &black_transforms);
 
-    let black_global_transform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: None,
-        size: mem::size_of::<shaders::mesh::Transform>() as _,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-
     let mut black_global_transform = ReadableBuffer::new(
-        &black_global_transform_buffer,
+        &device,
         Transform {
             matrix: Default::default(),
             translation: Default::default(),
@@ -175,10 +160,19 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &device,
         shaders::mesh::bind_groups::BindGroupLayout0 {
             global_transform: wgpu::BufferBinding {
-                buffer: &black_global_transform_buffer,
+                buffer: black_global_transform.buffer(),
                 offset: 0,
                 size: None,
             },
+        },
+    );
+
+    #[allow(unused)]
+    let texture_rect = ReadableBuffer::new(
+        &device,
+        shaders::mesh::Rectangle {
+            start: vec2(0., 0.),
+            end: vec2(1., 1.),
         },
     );
 
@@ -226,6 +220,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
         &device,
         shaders::mesh::bind_groups::BindGroupLayout1 {
+            texture_rect: wgpu::BufferBinding {
+                buffer: &texture_rect.buffer(),
+                offset: 0,
+                size: None,
+            },
             texture: &texture_view,
         },
     );
