@@ -291,7 +291,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             &mut render_pass,
                             &square,
                             &white_instances,
-                            shaders::mesh::bind_groups::BindGroups {
+                            &shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &white_bind_group0,
                                 bind_group1: &bind_group1,
                             },
@@ -300,7 +300,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             &mut render_pass,
                             &square,
                             &black_instances,
-                            shaders::mesh::bind_groups::BindGroups {
+                            &shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &black_bind_group0,
                                 bind_group1: &bind_group1,
                             },

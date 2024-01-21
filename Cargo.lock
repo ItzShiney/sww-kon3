@@ -1073,25 +1073,6 @@ dependencies = [
 
 [[package]]
 name = "naga"
-version = "0.14.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae585df4b6514cf8842ac0f1ab4992edc975892704835b549cf818dc0191249e"
-dependencies = [
- "bit-set",
- "bitflags 2.4.2",
- "codespan-reporting",
- "hexf-parse",
- "indexmap",
- "log",
- "num-traits",
- "rustc-hash",
- "termcolor",
- "thiserror",
- "unicode-xid",
-]
-
-[[package]]
-name = "naga"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8878eb410fc90853da3908aebfe61d73d26d4437ef850b70050461f939509899"
@@ -2043,7 +2024,7 @@ dependencies = [
  "cfg_aliases",
  "js-sys",
  "log",
- "naga 0.19.0",
+ "naga",
  "parking_lot",
  "profiling",
  "raw-window-handle 0.6.0",
@@ -2054,7 +2035,7 @@ dependencies = [
  "web-sys",
  "wgpu-core",
  "wgpu-hal",
- "wgpu-types 0.19.0",
+ "wgpu-types",
 ]
 
 [[package]]
@@ -2070,7 +2051,7 @@ dependencies = [
  "codespan-reporting",
  "indexmap",
  "log",
- "naga 0.19.0",
+ "naga",
  "once_cell",
  "parking_lot",
  "profiling",
@@ -2080,7 +2061,7 @@ dependencies = [
  "thiserror",
  "web-sys",
  "wgpu-hal",
- "wgpu-types 0.19.0",
+ "wgpu-types",
 ]
 
 [[package]]
@@ -2110,7 +2091,7 @@ dependencies = [
  "libloading 0.8.1",
  "log",
  "metal",
- "naga 0.19.0",
+ "naga",
  "objc",
  "once_cell",
  "parking_lot",
@@ -2123,19 +2104,8 @@ dependencies = [
  "thiserror",
  "wasm-bindgen",
  "web-sys",
- "wgpu-types 0.19.0",
+ "wgpu-types",
  "winapi",
-]
-
-[[package]]
-name = "wgpu-types"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d5ed5f0edf0de351fe311c53304986315ce866f394a2e6df0c4b3c70774bcdd"
-dependencies = [
- "bitflags 2.4.2",
- "js-sys",
- "web-sys",
 ]
 
 [[package]]
@@ -2170,17 +2140,16 @@ dependencies = [
 [[package]]
 name = "wgsl_to_wgpu"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaf4721cbedbbf3bfa1a89d7bdb0e5b2120a1a391f649634e8585dcb9e02e9aa"
+source = "git+https://github.com/ScanMountGoat/wgsl_to_wgpu#0900fffe376baf5540007dc922fb0cbf5c25f6df"
 dependencies = [
  "case",
- "naga 0.14.2",
+ "naga",
  "prettyplease",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
  "thiserror",
- "wgpu-types 0.18.0",
+ "wgpu-types",
 ]
 
 [[package]]

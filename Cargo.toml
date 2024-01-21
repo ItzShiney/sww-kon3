@@ -16,5 +16,5 @@ memoffset = "*"
 image = "*"
 
 [build-dependencies]
-wgsl_to_wgpu = "*"
+wgsl_to_wgpu = { git = "https://github.com/ScanMountGoat/wgsl_to_wgpu" }
 cargo-emit = "*"
