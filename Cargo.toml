@@ -13,6 +13,7 @@ pollster = "*"
 winit = { version = "*", features = ["rwh_05"] }
 env_logger = "*"
 memoffset = "*"
+image = "*"
 
 [build-dependencies]
 wgsl_to_wgpu = "*"

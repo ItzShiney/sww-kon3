@@ -1,3 +1,8 @@
+use std::io::{
+    BufRead,
+    Seek,
+};
+
 mod bytes;
 mod color;
 mod instances;
@@ -19,11 +24,14 @@ use {
         vec2,
         Mat2,
     },
+    image::EncodableLayout,
     shaders::mesh::Transform,
     std::{
+        io,
         iter,
         mem,
     },
+    wgpu::util::DeviceExt,
     winit::{
         event::{
             Event,
@@ -174,6 +182,55 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         },
     );
 
+    fn read_texture(reader: impl BufRead + Seek) -> image::RgbaImage {
+        image::io::Reader::new(reader)
+            .with_guessed_format()
+            .expect("failed to guess texture format")
+            .decode()
+            .expect("failed to decode texture")
+            .into_rgba8()
+    }
+
+    let texture = read_texture(io::Cursor::new(include_bytes!("1x1.png")));
+    let texture = device.create_texture_with_data(
+        &queue,
+        &wgpu::TextureDescriptor {
+            label: None,
+            size: wgpu::Extent3d {
+                width: texture.width(),
+                height: texture.height(),
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        },
+        wgpu::util::TextureDataOrder::MipMajor,
+        texture.as_bytes(),
+    );
+
+    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+        label: None,
+        format: None,
+        dimension: None,
+        aspect: wgpu::TextureAspect::All,
+        base_mip_level: 0,
+        mip_level_count: None,
+        base_array_layer: 0,
+        array_layer_count: None,
+    });
+
+    let bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
+        &device,
+        shaders::mesh::bind_groups::BindGroupLayout1 {
+            texture: &texture_view,
+        },
+    );
+
+    #[allow(clippy::single_match)]
     event_loop
         .run(|event, target| match event {
             Event::WindowEvent {
@@ -237,6 +294,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             &white_instances,
                             shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &white_bind_group0,
+                                bind_group1: &bind_group1,
                             },
                         );
                         mesh_drawer.draw(
@@ -245,6 +303,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             &black_instances,
                             shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &black_bind_group0,
+                                bind_group1: &bind_group1,
                             },
                         );
                     }

@@ -1,6 +1,7 @@
 use std::fs;
 
 fn main() {
+    #[allow(clippy::single_element_loop)]
     for file_name in ["mesh"] {
         let input_path = format!("src/{}.wgsl", file_name);
         let output_path = format!("src/shaders/{}.rs", file_name);

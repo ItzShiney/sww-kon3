@@ -50,7 +50,7 @@ impl Mesh {
 
     pub fn rect(device: &wgpu::Device, size: Vec2) -> Self {
         Self::new_indexed(
-            &device,
+            device,
             &[
                 InVertex {
                     position: vec2(0., 0.),

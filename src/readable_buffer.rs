@@ -27,12 +27,12 @@ impl<'buffer, T: WgslBytesWriteable> ReadableBuffer<'buffer, T> {
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
-        &self.buffer
+        self.buffer
     }
 
     pub fn write(&mut self, queue: &wgpu::Queue, value: T) {
         self.value = value;
-        queue.write_buffer(&self.buffer, 0, &to_wgsl_bytes(&self.value));
+        queue.write_buffer(self.buffer, 0, &to_wgsl_bytes(&self.value));
     }
 
     pub fn value(&self) -> &T {

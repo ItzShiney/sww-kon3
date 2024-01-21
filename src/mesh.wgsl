@@ -56,7 +56,6 @@ struct InFragment {
 ////////////////////////////////////////////////////////////
 
 @group(0) @binding(0) var<uniform> global_transform: Transform;
-// @group(1) @binding(0) var texture: texture_2d<f32>;
 
 @vertex
 fn vs_main(
@@ -70,7 +69,14 @@ fn vs_main(
     return OutVertex(vec4f(position, 0., 1.), color, in_vertex.texture_coord);
 }
 
+@group(1) @binding(0) var texture: texture_2d<f32>;
+
 @fragment
 fn fs_main(in: InFragment) -> @location(0) vec4f {
-    return in.color;
+    let size = textureDimensions(texture);
+    var texture_coord = vec2u(in.texture_coord * vec2f(size));
+    texture_coord.y = size.y - 1u - texture_coord.y;
+    let texel_color = textureLoad(texture, texture_coord, 0);
+
+    return in.color * texel_color;
 }
