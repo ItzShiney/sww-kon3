@@ -46,13 +46,13 @@ impl MeshDrawer {
         render_pass: &mut wgpu::RenderPass<'s>,
         mesh: &'s Mesh,
         instances: &'s Instances<BufferType>,
-        bind_group0: &'s shaders::mesh::bind_groups::BindGroup0,
+        bind_groups: shaders::mesh::bind_groups::BindGroups<'s>,
     ) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
         render_pass.set_vertex_buffer(1, instances.buffer().slice(..));
 
-        bind_group0.set(render_pass);
+        shaders::mesh::bind_groups::set_bind_groups(render_pass, bind_groups);
 
         let instances = 0..instances.len() as _;
         if let Some((index_buffer, indices_count)) = mesh.index_buffer() {

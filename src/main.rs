@@ -235,13 +235,17 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             &mut render_pass,
                             &square,
                             &white_instances,
-                            &white_bind_group0,
+                            shaders::mesh::bind_groups::BindGroups {
+                                bind_group0: &white_bind_group0,
+                            },
                         );
                         mesh_drawer.draw(
                             &mut render_pass,
                             &square,
                             &black_instances,
-                            &black_bind_group0,
+                            shaders::mesh::bind_groups::BindGroups {
+                                bind_group0: &black_bind_group0,
+                            },
                         );
                     }
 
