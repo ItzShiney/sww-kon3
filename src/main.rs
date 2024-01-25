@@ -1,8 +1,3 @@
-use std::io::{
-    BufRead,
-    Seek,
-};
-
 mod bytes;
 mod color;
 mod instances;
@@ -27,7 +22,11 @@ use {
     image::EncodableLayout,
     shaders::mesh::Transform,
     std::{
-        io,
+        io::{
+            self,
+            BufRead,
+            Seek,
+        },
         iter,
     },
     wgpu::util::DeviceExt,
@@ -40,6 +39,57 @@ use {
         window::Window,
     },
 };
+
+pub fn read_image(reader: impl BufRead + Seek) -> image::RgbaImage {
+    image::io::Reader::new(reader)
+        .with_guessed_format()
+        .expect("failed to guess texture format")
+        .decode()
+        .expect("failed to decode texture")
+        .into_rgba8()
+}
+
+pub fn read_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    reader: impl BufRead + Seek,
+) -> wgpu::Texture {
+    make_texture(device, queue, &read_image(reader))
+}
+
+pub fn make_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    image: &image::RgbaImage,
+) -> wgpu::Texture {
+    device.create_texture_with_data(
+        queue,
+        &wgpu::TextureDescriptor {
+            label: None,
+            size: wgpu::Extent3d {
+                width: image.width(),
+                height: image.height(),
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        },
+        wgpu::util::TextureDataOrder::MipMajor,
+        image.as_bytes(),
+    )
+}
+
+pub fn make_default_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
+    make_texture(
+        device,
+        queue,
+        &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
+    )
+}
 
 pub fn main() {
     let event_loop = EventLoop::new().unwrap();
@@ -115,9 +165,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 };
 
                 colored_transforms.push(Transform {
-                    matrix: Default::default(),
                     translation,
                     color: Color::WHITE.into(),
+                    ..Default::default()
                 });
             }
         }
@@ -128,9 +178,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut white_global_transform = ReadableBuffer::new(
         &device,
         Transform {
-            matrix: Default::default(),
-            translation: Default::default(),
             color: Color::splat(0.7).into(),
+            ..Default::default()
         },
     );
 
@@ -150,9 +199,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut black_global_transform = ReadableBuffer::new(
         &device,
         Transform {
-            matrix: Default::default(),
-            translation: Default::default(),
             color: Color::splat(0.3).into(),
+            ..Default::default()
         },
     );
 
@@ -167,65 +215,51 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         },
     );
 
-    #[allow(unused)]
-    let texture_rect = ReadableBuffer::new(
-        &device,
-        shaders::mesh::Rectangle {
-            start: vec2(0., 0.),
-            end: vec2(1., 1.),
-        },
-    );
-
-    fn read_texture(reader: impl BufRead + Seek) -> image::RgbaImage {
-        image::io::Reader::new(reader)
-            .with_guessed_format()
-            .expect("failed to guess texture format")
-            .decode()
-            .expect("failed to decode texture")
-            .into_rgba8()
-    }
-
-    let texture = read_texture(io::Cursor::new(include_bytes!("1x1.png")));
-    let texture = device.create_texture_with_data(
-        &queue,
-        &wgpu::TextureDescriptor {
-            label: None,
-            size: wgpu::Extent3d {
-                width: texture.width(),
-                height: texture.height(),
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        },
-        wgpu::util::TextureDataOrder::MipMajor,
-        texture.as_bytes(),
-    );
-
-    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
-        label: None,
-        format: None,
-        dimension: None,
-        aspect: wgpu::TextureAspect::All,
-        base_mip_level: 0,
-        mip_level_count: None,
-        base_array_layer: 0,
-        array_layer_count: None,
-    });
+    let default_texture = make_default_texture(&device, &queue);
+    let default_texture_view = default_texture.create_view(&Default::default());
 
     let bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
         &device,
         shaders::mesh::bind_groups::BindGroupLayout1 {
-            texture_rect: wgpu::BufferBinding {
-                buffer: &texture_rect.buffer(),
+            texture: &default_texture_view,
+        },
+    );
+
+    let pieces_texture = read_texture(
+        &device,
+        &queue,
+        io::Cursor::new(include_bytes!("../assets/pieces.png")),
+    );
+    let pieces_texture_view = pieces_texture.create_view(&Default::default());
+
+    let pieces = Instances::new(
+        &device,
+        &[shaders::mesh::Transform {
+            texture_rect: shaders::mesh::Rectangle {
+                top_left: vec2(0., 0.),
+                size: vec2(1. / 11., 1. / 2.),
+            },
+            ..Default::default()
+        }],
+    );
+
+    let mut pieces_global_transform = ReadableBuffer::new(&device, Transform::default());
+
+    let pieces_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
+        &device,
+        shaders::mesh::bind_groups::BindGroupLayout0 {
+            global_transform: wgpu::BufferBinding {
+                buffer: pieces_global_transform.buffer(),
                 offset: 0,
                 size: None,
             },
-            texture: &texture_view,
+        },
+    );
+
+    let pieces_bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
+        &device,
+        shaders::mesh::bind_groups::BindGroupLayout1 {
+            texture: &pieces_texture_view,
         },
     );
 
@@ -257,12 +291,13 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             scale.min(scale * ratio),
                         ));
 
-                        for transform_buffer in
-                            [&mut white_global_transform, &mut black_global_transform]
-                        {
-                            let mut transform = *transform_buffer.value();
+                        for transform_buffer in [
+                            &mut white_global_transform,
+                            &mut black_global_transform,
+                            &mut pieces_global_transform,
+                        ] {
+                            let mut transform = transform_buffer.value_mut(&queue);
                             transform.matrix = matrix;
-                            transform_buffer.write(&queue, transform);
                         }
                     }
 
@@ -303,6 +338,15 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             &shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &black_bind_group0,
                                 bind_group1: &bind_group1,
+                            },
+                        );
+                        mesh_drawer.draw(
+                            &mut render_pass,
+                            &square,
+                            &pieces,
+                            &shaders::mesh::bind_groups::BindGroups {
+                                bind_group0: &pieces_bind_group0,
+                                bind_group1: &pieces_bind_group1,
                             },
                         );
                     }

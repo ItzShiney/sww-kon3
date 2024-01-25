@@ -30,7 +30,20 @@ impl MeshDrawer {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: shaders::mesh::ENTRY_FS_MAIN,
-                targets: &[Some(swapchain_format.into())],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: swapchain_format.into(),
+
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent::OVER,
+                    }),
+
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             primitive: Default::default(),
             depth_stencil: None,

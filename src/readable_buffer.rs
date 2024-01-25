@@ -3,6 +3,10 @@ use {
         to_wgsl_bytes,
         WgslBytesWriteable,
     },
+    std::ops::{
+        Deref,
+        DerefMut,
+    },
     wgpu::util::DeviceExt,
 };
 
@@ -26,12 +30,48 @@ impl<T: WgslBytesWriteable> ReadableBuffer<T> {
         &self.buffer
     }
 
-    pub fn write(&mut self, queue: &wgpu::Queue, value: T) {
+    pub fn set(&mut self, queue: &wgpu::Queue, value: T) {
         self.value = value;
+        self.update(queue);
+    }
+
+    fn update(&mut self, queue: &wgpu::Queue) {
         queue.write_buffer(&self.buffer, 0, &to_wgsl_bytes(&self.value));
     }
 
     pub fn value(&self) -> &T {
         &self.value
+    }
+
+    pub fn value_mut<'s>(&'s mut self, queue: &'s wgpu::Queue) -> ReadableBufferMut<'s, T> {
+        ReadableBufferMut {
+            buffer: self,
+            queue,
+        }
+    }
+}
+
+pub struct ReadableBufferMut<'s, T: WgslBytesWriteable> {
+    buffer: &'s mut ReadableBuffer<T>,
+    queue: &'s wgpu::Queue,
+}
+
+impl<T: WgslBytesWriteable> Deref for ReadableBufferMut<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.buffer.value
+    }
+}
+
+impl<T: WgslBytesWriteable> DerefMut for ReadableBufferMut<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.buffer.value
+    }
+}
+
+impl<T: WgslBytesWriteable> Drop for ReadableBufferMut<'_, T> {
+    fn drop(&mut self) {
+        self.buffer.update(self.queue);
     }
 }
