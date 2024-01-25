@@ -110,7 +110,7 @@ fn fs_main(in: InFragment) -> @location(0) vec4f {
     texture_coord_f.y = 1. - texture_coord_f.y;
     texture_coord_f = in.texture_rect_top_left + texture_coord_f * in.texture_rect_size;
 
-    let size = textureDimensions(texture) - vec2u(1u);
+    let size = textureDimensions(texture);
     var texture_coord = vec2u(texture_coord_f * vec2f(size));
 
     let texel_color = textureLoad(texture, texture_coord, 0);

@@ -96,6 +96,7 @@ pub fn main() {
 
     let window = winit::window::WindowBuilder::new()
         .with_title("wgpu")
+        .with_inner_size(winit::dpi::PhysicalSize::new(400, 200))
         .build(&event_loop)
         .unwrap();
 
@@ -104,9 +105,7 @@ pub fn main() {
 }
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
-    let mut size = window.inner_size();
-    size.width = size.width.max(1);
-    size.height = size.height.max(1);
+    let size = window.inner_size();
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
 
@@ -152,13 +151,14 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
     let square = Mesh::rect(&device, vec2(1., 1.));
 
-    let mut white_transforms = Vec::default();
-    let mut black_transforms = Vec::default();
-    {
+    let (white_instances, black_instances) = {
+        let mut white_transforms = Vec::default();
+        let mut black_transforms = Vec::default();
+
         for y in -4..4_i32 {
             for x in -4..4_i32 {
                 let translation = vec2(x as f32, y as f32);
-                let colored_transforms = if (x + y).rem_euclid(2) == 0 {
+                let colored_transforms = if (x + y) % 2 == 0 {
                     &mut black_transforms
                 } else {
                     &mut white_transforms
@@ -171,14 +171,61 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 });
             }
         }
-    }
 
-    let white_instances = Instances::new(&device, &white_transforms);
+        (
+            Instances::new(&device, &white_transforms),
+            Instances::new(&device, &black_transforms),
+        )
+    };
+
+    let piece_instances = {
+        fn make_transform(
+            x: i32,
+            y: i32,
+            piece_type: u32,
+            is_white: bool,
+        ) -> shaders::mesh::Transform {
+            const PIECE_TYPES_COUNT: u32 = 11;
+            const COLORS_COUNT: u32 = 2;
+
+            let texture_rect_y = !is_white as u32 as f32 / COLORS_COUNT as f32;
+
+            shaders::mesh::Transform {
+                translation: vec2(x as f32, y as f32),
+                texture_rect: shaders::mesh::Rectangle {
+                    top_left: vec2(piece_type as f32 / PIECE_TYPES_COUNT as f32, texture_rect_y),
+                    size: vec2(1. / PIECE_TYPES_COUNT as f32, 1. / COLORS_COUNT as f32),
+                },
+                ..Default::default()
+            }
+        }
+
+        let mut piece_transforms = Vec::default();
+
+        for (y, is_white) in [(-3, true), (3 - 1, false)] {
+            for x in -4..4 {
+                piece_transforms.push(make_transform(x, y, 1, is_white));
+            }
+        }
+
+        for (y, is_white) in [(-4, true), (4 - 1, false)] {
+            for (pos, piece_type) in [(4, 4), (3, 2), (2, 3)] {
+                for x in [-pos, pos - 1] {
+                    piece_transforms.push(make_transform(x, y, piece_type, is_white));
+                }
+            }
+
+            piece_transforms.push(make_transform(-1, y, 5, is_white));
+            piece_transforms.push(make_transform(0, y, 0, is_white));
+        }
+
+        Instances::new(&device, &piece_transforms)
+    };
 
     let mut white_global_transform = ReadableBuffer::new(
         &device,
         Transform {
-            color: Color::splat(0.7).into(),
+            color: Color::splat(0.45).into(),
             ..Default::default()
         },
     );
@@ -194,12 +241,10 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         },
     );
 
-    let black_instances = Instances::new(&device, &black_transforms);
-
     let mut black_global_transform = ReadableBuffer::new(
         &device,
         Transform {
-            color: Color::splat(0.3).into(),
+            color: Color::splat(0.25).into(),
             ..Default::default()
         },
     );
@@ -231,17 +276,6 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         io::Cursor::new(include_bytes!("../assets/pieces.png")),
     );
     let pieces_texture_view = pieces_texture.create_view(&Default::default());
-
-    let pieces = Instances::new(
-        &device,
-        &[shaders::mesh::Transform {
-            texture_rect: shaders::mesh::Rectangle {
-                top_left: vec2(0., 0.),
-                size: vec2(1. / 11., 1. / 2.),
-            },
-            ..Default::default()
-        }],
-    );
 
     let mut pieces_global_transform = ReadableBuffer::new(&device, Transform::default());
 
@@ -343,7 +377,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         mesh_drawer.draw(
                             &mut render_pass,
                             &square,
-                            &pieces,
+                            &piece_instances,
                             &shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &pieces_bind_group0,
                                 bind_group1: &pieces_bind_group1,
