@@ -69,11 +69,17 @@ impl<T: WgslBytesWriteableSized> VecBuffer<T> {
             panic!("pushing to full VecBuffer");
         }
 
-        let offset = self.size();
-
         self.values.push(value);
-        let value = self.values.last().unwrap();
-        queue.write_buffer(&self.buffer, offset, &to_wgsl_bytes(value));
+        self.update(queue, self.len() - 2..);
+    }
+
+    fn update(&self, queue: &wgpu::Queue, range: impl SliceIndex<[T], Output = [T]>) {
+        let slice = &self.values[range];
+        let start = (slice.as_ptr() as usize - self.values.as_ptr() as usize) / mem::size_of::<T>();
+
+        let offset = start as wgpu::BufferAddress * T::SHADER_SIZE.get();
+
+        queue.write_buffer(&self.buffer, offset, &to_wgsl_bytes(slice))
     }
 
     pub fn pop(&mut self) -> Option<T> {

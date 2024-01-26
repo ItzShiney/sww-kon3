@@ -1,7 +1,4 @@
-use {
-    encase::internal::BufferRef,
-    std::mem,
-};
+use encase::internal::BufferRef;
 
 pub trait WgslBytesWriteable: encase::ShaderType + encase::internal::WriteInto {}
 impl<T: encase::ShaderType + encase::internal::WriteInto + ?Sized> WgslBytesWriteable for T {}
@@ -32,7 +29,7 @@ pub fn create_buffer_partially_init<T: WgslBytesWriteableSized>(
 ) -> wgpu::Buffer {
     let buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
-        size: (values.capacity() * mem::size_of::<T>()) as wgpu::BufferAddress,
+        size: values.capacity() as wgpu::BufferAddress * T::SHADER_SIZE.get(),
         usage,
         mapped_at_creation: true,
     });
