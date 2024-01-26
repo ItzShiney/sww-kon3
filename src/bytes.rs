@@ -3,6 +3,9 @@ use encase::internal::BufferRef;
 pub trait WgslBytesWriteable: encase::ShaderType + encase::internal::WriteInto {}
 impl<T: encase::ShaderType + encase::internal::WriteInto + ?Sized> WgslBytesWriteable for T {}
 
+pub trait WgslBytesWriteableSized: WgslBytesWriteable + encase::ShaderSize {}
+impl<T: WgslBytesWriteable + encase::ShaderSize + ?Sized> WgslBytesWriteableSized for T {}
+
 pub trait WgslBytesReadable: encase::ShaderType + encase::internal::CreateFrom {}
 impl<T: encase::ShaderType + encase::internal::CreateFrom + ?Sized> WgslBytesReadable for T {}
 

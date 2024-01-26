@@ -1,18 +1,18 @@
 mod bytes;
 mod color;
-mod instances;
 mod mesh;
 mod mesh_drawer;
 mod readable_buffer;
 pub mod shaders;
+mod vec_buffer;
 
 pub use {
     bytes::*,
     color::*,
-    instances::*,
     mesh::*,
     mesh_drawer::*,
     readable_buffer::*,
+    vec_buffer::*,
 };
 use {
     glam::{
@@ -151,17 +151,17 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
     let square = Mesh::rect(&device, vec2(1., 1.));
 
-    let (white_instances, black_instances) = {
-        let mut white_transforms = Vec::default();
-        let mut black_transforms = Vec::default();
+    let (white_transforms, black_transforms) = {
+        let mut white = Vec::default();
+        let mut black = Vec::default();
 
         for y in -4..4_i32 {
             for x in -4..4_i32 {
                 let translation = vec2(x as f32, y as f32);
-                let colored_transforms = if (x + y) % 2 == 0 {
-                    &mut black_transforms
+                let colored_transforms = if (x + y).rem_euclid(2) == 0 {
+                    &mut black
                 } else {
-                    &mut white_transforms
+                    &mut white
                 };
 
                 colored_transforms.push(Transform {
@@ -173,12 +173,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         }
 
         (
-            Instances::new(&device, &white_transforms),
-            Instances::new(&device, &black_transforms),
+            VecBuffer::new(&device, white),
+            VecBuffer::new(&device, black),
         )
     };
 
-    let piece_instances = {
+    let piece_transforms = {
         fn make_transform(
             x: i32,
             y: i32,
@@ -219,7 +219,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             piece_transforms.push(make_transform(0, y, 0, is_white));
         }
 
-        Instances::new(&device, &piece_transforms)
+        VecBuffer::new(&device, piece_transforms)
     };
 
     let mut white_global_transform = ReadableBuffer::new(
@@ -359,7 +359,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         mesh_drawer.draw(
                             &mut render_pass,
                             &square,
-                            &white_instances,
+                            white_transforms.slice(..),
                             &shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &white_bind_group0,
                                 bind_group1: &bind_group1,
@@ -368,7 +368,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         mesh_drawer.draw(
                             &mut render_pass,
                             &square,
-                            &black_instances,
+                            black_transforms.slice(..),
                             &shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &black_bind_group0,
                                 bind_group1: &bind_group1,
@@ -377,7 +377,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         mesh_drawer.draw(
                             &mut render_pass,
                             &square,
-                            &piece_instances,
+                            piece_transforms.slice(..),
                             &shaders::mesh::bind_groups::BindGroups {
                                 bind_group0: &pieces_bind_group0,
                                 bind_group1: &pieces_bind_group1,

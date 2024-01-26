@@ -1,7 +1,7 @@
 use crate::{
     shaders,
-    Instances,
     Mesh,
+    VecBufferSlice,
     INDEX_FORMAT,
 };
 
@@ -58,16 +58,16 @@ impl MeshDrawer {
         &'s self,
         render_pass: &mut wgpu::RenderPass<'s>,
         mesh: &'s Mesh,
-        instances: &'s Instances<BufferType>,
+        transforms: VecBufferSlice<'s, BufferType>,
         bind_groups: &shaders::mesh::bind_groups::BindGroups<'s>,
     ) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
-        render_pass.set_vertex_buffer(1, instances.buffer().slice(..));
+        render_pass.set_vertex_buffer(1, transforms.buffer.slice(..));
 
         bind_groups.set(render_pass);
 
-        let instances = 0..instances.len() as _;
+        let instances = 0..transforms.values.len() as _;
         if let Some((index_buffer, indices_count)) = mesh.index_buffer() {
             render_pass.set_index_buffer(index_buffer.slice(..), INDEX_FORMAT);
             render_pass.draw_indexed(0..indices_count as _, 0, instances);
