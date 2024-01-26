@@ -1,5 +1,6 @@
 use {
     crate::{
+        create_buffer_partially_init,
         to_wgsl_bytes,
         WgslBytesWriteable,
         WgslBytesWriteableSized,
@@ -12,7 +13,6 @@ use {
         },
         slice::SliceIndex,
     },
-    wgpu::util::DeviceExt,
 };
 
 pub struct VecBuffer<T: WgslBytesWriteable> {
@@ -22,11 +22,11 @@ pub struct VecBuffer<T: WgslBytesWriteable> {
 
 impl<T: WgslBytesWriteableSized> VecBuffer<T> {
     pub fn new(device: &wgpu::Device, values: Vec<T>) -> Self {
-        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: &to_wgsl_bytes(&values),
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        });
+        let buffer = create_buffer_partially_init(
+            device,
+            &values,
+            wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        );
 
         Self { buffer, values }
     }
@@ -62,6 +62,38 @@ impl<T: WgslBytesWriteableSized> VecBuffer<T> {
             values,
             start,
         }
+    }
+
+    pub fn push(&mut self, queue: &wgpu::Queue, value: T) {
+        if self.len() == self.capacity() {
+            panic!("pushing to full VecBuffer");
+        }
+
+        let offset = self.size();
+
+        self.values.push(value);
+        let value = self.values.last().unwrap();
+        queue.write_buffer(&self.buffer, offset, &to_wgsl_bytes(value));
+    }
+
+    pub fn pop(&mut self) -> Option<T> {
+        self.values.pop()
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() != 0
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.values.capacity()
+    }
+
+    pub fn size(&self) -> wgpu::BufferAddress {
+        (self.len() * mem::size_of::<T>()) as u64
     }
 }
 

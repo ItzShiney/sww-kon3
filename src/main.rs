@@ -178,49 +178,53 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         )
     };
 
-    let piece_transforms = {
-        fn make_transform(
-            x: i32,
-            y: i32,
-            piece_type: u32,
-            is_white: bool,
-        ) -> shaders::mesh::Transform {
-            const PIECE_TYPES_COUNT: u32 = 11;
-            const COLORS_COUNT: u32 = 2;
+    fn make_piece_transform(
+        x: i32,
+        y: i32,
+        piece_type: u32,
+        is_white: bool,
+    ) -> shaders::mesh::Transform {
+        const PIECE_TYPES_COUNT: u32 = 11;
+        const COLORS_COUNT: u32 = 2;
 
-            let texture_rect_y = !is_white as u32 as f32 / COLORS_COUNT as f32;
+        let texture_rect_y = !is_white as u32 as f32 / COLORS_COUNT as f32;
 
-            shaders::mesh::Transform {
-                translation: vec2(x as f32, y as f32),
-                texture_rect: shaders::mesh::Rectangle {
-                    top_left: vec2(piece_type as f32 / PIECE_TYPES_COUNT as f32, texture_rect_y),
-                    size: vec2(1. / PIECE_TYPES_COUNT as f32, 1. / COLORS_COUNT as f32),
-                },
-                ..Default::default()
-            }
+        shaders::mesh::Transform {
+            translation: vec2(x as f32, y as f32),
+            texture_rect: shaders::mesh::Rectangle {
+                top_left: vec2(piece_type as f32 / PIECE_TYPES_COUNT as f32, texture_rect_y),
+                size: vec2(1. / PIECE_TYPES_COUNT as f32, 1. / COLORS_COUNT as f32),
+            },
+            ..Default::default()
         }
+    }
 
+    let mut piece_transforms = {
         let mut piece_transforms = Vec::default();
+        piece_transforms.reserve(8 * 8);
 
         for (y, is_white) in [(-3, true), (3 - 1, false)] {
             for x in -4..4 {
-                piece_transforms.push(make_transform(x, y, 1, is_white));
+                piece_transforms.push(make_piece_transform(x, y, 1, is_white));
             }
         }
 
         for (y, is_white) in [(-4, true), (4 - 1, false)] {
             for (pos, piece_type) in [(4, 4), (3, 2), (2, 3)] {
                 for x in [-pos, pos - 1] {
-                    piece_transforms.push(make_transform(x, y, piece_type, is_white));
+                    piece_transforms.push(make_piece_transform(x, y, piece_type, is_white));
                 }
             }
 
-            piece_transforms.push(make_transform(-1, y, 5, is_white));
-            piece_transforms.push(make_transform(0, y, 0, is_white));
+            piece_transforms.push(make_piece_transform(-1, y, 5, is_white));
+            piece_transforms.push(make_piece_transform(0, y, 0, is_white));
         }
 
         VecBuffer::new(&device, piece_transforms)
     };
+
+    piece_transforms.push(&queue, make_piece_transform(0, 0, 8, true));
+    piece_transforms.push(&queue, make_piece_transform(-1, -1, 8, false));
 
     let mut white_global_transform = ReadableBuffer::new(
         &device,
