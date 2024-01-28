@@ -102,7 +102,7 @@ fn vs_main(
     );
 }
 
-@group(1) @binding(1) var texture: texture_2d<f32>;
+@group(1) @binding(0) var texture: texture_2d<f32>;
 
 @fragment
 fn fs_main(in: InFragment) -> @location(0) vec4f {
