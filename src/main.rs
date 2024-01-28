@@ -173,8 +173,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         }
 
         (
-            VecBuffer::new(&device, white),
-            VecBuffer::new(&device, black),
+            VecBuffer::new(&device, white, wgpu::BufferUsages::VERTEX),
+            VecBuffer::new(&device, black, wgpu::BufferUsages::VERTEX),
         )
     };
 
@@ -220,7 +220,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             piece_transforms.push(make_piece_transform(0, y, 0, is_white));
         }
 
-        VecBuffer::new(&device, piece_transforms)
+        VecBuffer::new(&device, piece_transforms, wgpu::BufferUsages::VERTEX)
     };
 
     piece_transforms.push(&queue, make_piece_transform(0, 0, 8, true));

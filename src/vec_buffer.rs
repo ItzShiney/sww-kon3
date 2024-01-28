@@ -21,12 +21,9 @@ pub struct VecBuffer<T: WgslBytesWriteable> {
 }
 
 impl<T: WgslBytesWriteableSized> VecBuffer<T> {
-    pub fn new(device: &wgpu::Device, values: Vec<T>) -> Self {
-        let buffer = create_buffer_partially_init(
-            device,
-            &values,
-            wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        );
+    pub fn new(device: &wgpu::Device, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
+        let buffer =
+            create_buffer_partially_init(device, &values, usage | wgpu::BufferUsages::COPY_DST);
 
         Self { buffer, values }
     }
