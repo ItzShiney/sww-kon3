@@ -19,6 +19,7 @@ fn main() {
 
         let text =
             wgsl_to_wgpu::create_shader_module(&input, &input_absolute_path, options).unwrap();
+        let text = text.replace("memoffset", "std::mem");
 
         fs::write(output_path, text.as_bytes()).unwrap();
     }

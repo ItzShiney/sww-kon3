@@ -1,5 +1,5 @@
 [package]
-name = "wgpu_test"
+name = "sww"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,5 +16,5 @@ memoffset = "*"
 image = "*"
 
 [build-dependencies]
-wgsl_to_wgpu = { git = "https://github.com/ScanMountGoat/wgsl_to_wgpu" }
+wgsl_to_wgpu = "0.6.0"
 cargo-emit = "*"
