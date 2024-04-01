@@ -1,25 +1,3 @@
-mod app_info;
-mod app_settings;
-mod bytes;
-mod color;
-mod images;
-mod mesh;
-mod mesh_drawer;
-mod readable_buffer;
-pub mod shaders;
-mod vec_buffer;
-
-pub use {
-    app_info::*,
-    app_settings::*,
-    bytes::*,
-    color::*,
-    images::*,
-    mesh::*,
-    mesh_drawer::*,
-    readable_buffer::*,
-    vec_buffer::*,
-};
 use {
     glam::{
         vec2,
@@ -30,6 +8,7 @@ use {
         io,
         iter,
     },
+    sww::*,
     winit::{
         event::{
             Event,
@@ -190,7 +169,7 @@ fn init(window: Window, event_loop: EventLoop<()>) {
     let pieces_texture = read_texture(
         &app_info.device,
         &app_info.queue,
-        io::Cursor::new(include_bytes!("../assets/pieces.png")),
+        io::Cursor::new(include_bytes!("pieces.png")),
     );
     let pieces_texture_view = pieces_texture.create_view(&Default::default());
 
