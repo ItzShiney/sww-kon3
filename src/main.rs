@@ -1,5 +1,8 @@
+mod app_info;
+mod app_settings;
 mod bytes;
 mod color;
+mod images;
 mod mesh;
 mod mesh_drawer;
 mod readable_buffer;
@@ -7,8 +10,11 @@ pub mod shaders;
 mod vec_buffer;
 
 pub use {
+    app_info::*,
+    app_settings::*,
     bytes::*,
     color::*,
+    images::*,
     mesh::*,
     mesh_drawer::*,
     readable_buffer::*,
@@ -19,17 +25,11 @@ use {
         vec2,
         Mat2,
     },
-    image::EncodableLayout,
     shaders::mesh::Transform,
     std::{
-        io::{
-            self,
-            BufRead,
-            Seek,
-        },
+        io,
         iter,
     },
-    wgpu::util::DeviceExt,
     winit::{
         event::{
             Event,
@@ -40,116 +40,25 @@ use {
     },
 };
 
-pub fn read_image(reader: impl BufRead + Seek) -> image::RgbaImage {
-    image::io::Reader::new(reader)
-        .with_guessed_format()
-        .expect("failed to guess texture format")
-        .decode()
-        .expect("failed to decode texture")
-        .into_rgba8()
-}
-
-pub fn read_texture(
-    device: &wgpu::Device,
-    queue: &wgpu::Queue,
-    reader: impl BufRead + Seek,
-) -> wgpu::Texture {
-    make_texture(device, queue, &read_image(reader))
-}
-
-pub fn make_texture(
-    device: &wgpu::Device,
-    queue: &wgpu::Queue,
-    image: &image::RgbaImage,
-) -> wgpu::Texture {
-    device.create_texture_with_data(
-        queue,
-        &wgpu::TextureDescriptor {
-            label: None,
-            size: wgpu::Extent3d {
-                width: image.width(),
-                height: image.height(),
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        },
-        wgpu::util::TextureDataOrder::MipMajor,
-        image.as_bytes(),
-    )
-}
-
-pub fn make_default_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-    make_texture(
-        device,
-        queue,
-        &image::RgbaImage::from_pixel(1, 1, image::Rgba([255; 4])),
-    )
-}
-
 pub fn main() {
     let event_loop = EventLoop::new().unwrap();
 
     let window = winit::window::WindowBuilder::new()
-        .with_title("wgpu")
+        .with_title("sww")
         .with_inner_size(winit::dpi::PhysicalSize::new(400, 200))
         .build(&event_loop)
         .unwrap();
 
     env_logger::init();
-    pollster::block_on(run(event_loop, window));
+
+    init(window, event_loop);
 }
 
-async fn run(event_loop: EventLoop<()>, window: Window) {
-    let size = window.inner_size();
+fn init(window: Window, event_loop: EventLoop<()>) {
+    let mut app_info = AppInfo::new(&window, &DefaultAppSettings);
 
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
-
-    let surface = instance.create_surface(&window).unwrap();
-    let adapter = instance
-        .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            force_fallback_adapter: false,
-            compatible_surface: Some(&surface),
-        })
-        .await
-        .expect("failed to find an adapter");
-
-    let swapchain_capabilities = surface.get_capabilities(&adapter);
-    let swapchain_format = swapchain_capabilities.formats[0];
-
-    let mut config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: swapchain_format,
-        width: size.width,
-        height: size.height,
-        present_mode: wgpu::PresentMode::Immediate,
-        desired_maximum_frame_latency: 2,
-        alpha_mode: swapchain_capabilities.alpha_modes[0],
-        view_formats: Vec::default(),
-    };
-
-    let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                required_features: wgpu::Features::default(),
-                required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                    .using_resolution(adapter.limits()),
-            },
-            None,
-        )
-        .await
-        .expect("failed to create device");
-
-    surface.configure(&device, &config);
-
-    let mesh_drawer = MeshDrawer::new(&device, swapchain_format);
-    let square = Mesh::rect(&device, vec2(1., 1.));
+    let mesh_drawer = MeshDrawer::new(&app_info.device, app_info.swapchain_format);
+    let square = Mesh::rect(&app_info.device, vec2(1., 1.));
 
     let (white_transforms, black_transforms) = {
         let mut white = Vec::default();
@@ -173,8 +82,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         }
 
         (
-            VecBuffer::new(&device, white, wgpu::BufferUsages::VERTEX),
-            VecBuffer::new(&device, black, wgpu::BufferUsages::VERTEX),
+            VecBuffer::new(&app_info.device, white, wgpu::BufferUsages::VERTEX),
+            VecBuffer::new(&app_info.device, black, wgpu::BufferUsages::VERTEX),
         )
     };
 
@@ -220,14 +129,18 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             piece_transforms.push(make_piece_transform(0, y, 0, is_white));
         }
 
-        VecBuffer::new(&device, piece_transforms, wgpu::BufferUsages::VERTEX)
+        VecBuffer::new(
+            &app_info.device,
+            piece_transforms,
+            wgpu::BufferUsages::VERTEX,
+        )
     };
 
-    piece_transforms.push(&queue, make_piece_transform(0, 0, 8, true));
-    piece_transforms.push(&queue, make_piece_transform(-1, -1, 8, false));
+    piece_transforms.push(&app_info.queue, make_piece_transform(0, 0, 8, true));
+    piece_transforms.push(&app_info.queue, make_piece_transform(-1, -1, 8, false));
 
     let mut white_global_transform = ReadableBuffer::new(
-        &device,
+        &app_info.device,
         Transform {
             color: Color::splat(0.45).into(),
             ..Default::default()
@@ -235,7 +148,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     );
 
     let white_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
-        &device,
+        &app_info.device,
         shaders::mesh::bind_groups::BindGroupLayout0 {
             global_transform: wgpu::BufferBinding {
                 buffer: white_global_transform.buffer(),
@@ -246,7 +159,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     );
 
     let mut black_global_transform = ReadableBuffer::new(
-        &device,
+        &app_info.device,
         Transform {
             color: Color::splat(0.25).into(),
             ..Default::default()
@@ -254,7 +167,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     );
 
     let black_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
-        &device,
+        &app_info.device,
         shaders::mesh::bind_groups::BindGroupLayout0 {
             global_transform: wgpu::BufferBinding {
                 buffer: black_global_transform.buffer(),
@@ -264,27 +177,27 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         },
     );
 
-    let default_texture = make_default_texture(&device, &queue);
+    let default_texture = make_default_texture(&app_info.device, &app_info.queue);
     let default_texture_view = default_texture.create_view(&Default::default());
 
     let bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
-        &device,
+        &app_info.device,
         shaders::mesh::bind_groups::BindGroupLayout1 {
             texture: &default_texture_view,
         },
     );
 
     let pieces_texture = read_texture(
-        &device,
-        &queue,
+        &app_info.device,
+        &app_info.queue,
         io::Cursor::new(include_bytes!("../assets/pieces.png")),
     );
     let pieces_texture_view = pieces_texture.create_view(&Default::default());
 
-    let mut pieces_global_transform = ReadableBuffer::new(&device, Transform::default());
+    let mut pieces_global_transform = ReadableBuffer::new(&app_info.device, Transform::default());
 
     let pieces_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
-        &device,
+        &app_info.device,
         shaders::mesh::bind_groups::BindGroupLayout0 {
             global_transform: wgpu::BufferBinding {
                 buffer: pieces_global_transform.buffer(),
@@ -295,7 +208,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     );
 
     let pieces_bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
-        &device,
+        &app_info.device,
         shaders::mesh::bind_groups::BindGroupLayout1 {
             texture: &pieces_texture_view,
         },
@@ -309,9 +222,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 event,
             } => match event {
                 WindowEvent::Resized(new_size) => {
-                    config.width = new_size.width.max(1);
-                    config.height = new_size.height.max(1);
-                    surface.configure(&device, &config);
+                    app_info.surface_config.width = new_size.width.max(1);
+                    app_info.surface_config.height = new_size.height.max(1);
+                    app_info
+                        .surface
+                        .configure(&app_info.device, &app_info.surface_config);
 
                     window.request_redraw();
                 }
@@ -334,17 +249,19 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                             &mut black_global_transform,
                             &mut pieces_global_transform,
                         ] {
-                            let mut transform = transform_buffer.value_mut(&queue);
+                            let mut transform = transform_buffer.value_mut(&app_info.queue);
                             transform.matrix = matrix;
                         }
                     }
 
-                    let frame = surface
+                    let frame = app_info
+                        .surface
                         .get_current_texture()
                         .expect("failed to acquire next swapchain texture");
 
                     let view = frame.texture.create_view(&Default::default());
-                    let mut command_encoder = device.create_command_encoder(&Default::default());
+                    let mut command_encoder =
+                        app_info.device.create_command_encoder(&Default::default());
 
                     {
                         let mut render_pass =
@@ -389,7 +306,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         );
                     }
 
-                    queue.submit(iter::once(command_encoder.finish()));
+                    app_info.queue.submit(iter::once(command_encoder.finish()));
                     frame.present();
                 }
 
