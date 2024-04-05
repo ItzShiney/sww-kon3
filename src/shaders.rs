@@ -1,5 +1,7 @@
 #![allow(clippy::derivable_impls)]
-pub mod mesh;
+pub mod mesh {
+    include!(concat!(env!("OUT_DIR"), "/mesh.rs"));
+}
 
 use glam::vec2;
 
