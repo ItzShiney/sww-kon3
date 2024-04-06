@@ -9,14 +9,12 @@ mod readable_buffer;
 pub mod shaders;
 mod vec_buffer;
 
-pub use {
-    app_info::*,
-    app_settings::*,
-    bytes::*,
-    color::*,
-    images::*,
-    mesh::*,
-    mesh_drawer::*,
-    readable_buffer::*,
-    vec_buffer::*,
-};
+pub use app_info::*;
+pub use app_settings::*;
+pub use bytes::*;
+pub use color::*;
+pub use images::*;
+pub use mesh::*;
+pub use mesh_drawer::*;
+pub use readable_buffer::*;
+pub use vec_buffer::*;

@@ -1,14 +1,8 @@
-use {
-    crate::{
-        to_wgsl_bytes,
-        WgslBytesWriteable,
-    },
-    std::ops::{
-        Deref,
-        DerefMut,
-    },
-    wgpu::util::DeviceExt,
-};
+use crate::to_wgsl_bytes;
+use crate::WgslBytesWriteable;
+use std::ops::Deref;
+use std::ops::DerefMut;
+use wgpu::util::DeviceExt;
 
 pub struct ReadableBuffer<T: WgslBytesWriteable> {
     buffer: wgpu::Buffer,

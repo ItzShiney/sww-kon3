@@ -1,9 +1,7 @@
-use crate::{
-    shaders,
-    Mesh,
-    VecBufferSlice,
-    INDEX_FORMAT,
-};
+use crate::shaders;
+use crate::Mesh;
+use crate::VecBufferSlice;
+use crate::INDEX_FORMAT;
 
 type BufferType = shaders::mesh::Transform;
 

@@ -1,23 +1,13 @@
-use {
-    glam::{
-        vec2,
-        Mat2,
-    },
-    shaders::mesh::Transform,
-    std::{
-        io,
-        iter,
-    },
-    sww::*,
-    winit::{
-        event::{
-            Event,
-            WindowEvent,
-        },
-        event_loop::EventLoop,
-        window::Window,
-    },
-};
+use glam::vec2;
+use glam::Mat2;
+use shaders::mesh::Transform;
+use std::io;
+use std::iter;
+use sww::*;
+use winit::event::Event;
+use winit::event::WindowEvent;
+use winit::event_loop::EventLoop;
+use winit::window::Window;
 
 pub fn main() {
     let event_loop = EventLoop::new().unwrap();

@@ -1,11 +1,7 @@
-use {
-    image::EncodableLayout,
-    std::io::{
-        BufRead,
-        Seek,
-    },
-    wgpu::util::DeviceExt,
-};
+use image::EncodableLayout;
+use std::io::BufRead;
+use std::io::Seek;
+use wgpu::util::DeviceExt;
 
 pub fn read_image(reader: impl BufRead + Seek) -> image::RgbaImage {
     image::io::Reader::new(reader)

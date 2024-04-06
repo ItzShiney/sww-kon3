@@ -1,8 +1,6 @@
-use {
-    crate::AppSettings,
-    pollster::FutureExt,
-    winit::window::Window,
-};
+use crate::AppSettings;
+use pollster::FutureExt;
+use winit::window::Window;
 
 pub struct AppInfo<'window> {
     pub device: wgpu::Device,

@@ -1,19 +1,11 @@
-use {
-    crate::{
-        create_buffer_partially_init,
-        to_wgsl_bytes,
-        WgslBytesWriteable,
-        WgslBytesWriteableSized,
-    },
-    std::{
-        mem,
-        ops::{
-            Index,
-            IndexMut,
-        },
-        slice::SliceIndex,
-    },
-};
+use crate::create_buffer_partially_init;
+use crate::to_wgsl_bytes;
+use crate::WgslBytesWriteable;
+use crate::WgslBytesWriteableSized;
+use std::mem;
+use std::ops::Index;
+use std::ops::IndexMut;
+use std::slice::SliceIndex;
 
 pub struct VecBuffer<T: WgslBytesWriteable> {
     buffer: wgpu::Buffer,

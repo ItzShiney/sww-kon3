@@ -1,15 +1,9 @@
-use {
-    crate::{
-        shaders::mesh::InVertex,
-        to_wgsl_bytes,
-        Color,
-    },
-    glam::{
-        vec2,
-        Vec2,
-    },
-    wgpu::util::DeviceExt,
-};
+use crate::shaders::mesh::InVertex;
+use crate::to_wgsl_bytes;
+use crate::Color;
+use glam::vec2;
+use glam::Vec2;
+use wgpu::util::DeviceExt;
 
 pub type Index = u32;
 pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;

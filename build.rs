@@ -1,7 +1,5 @@
-use std::{
-    env,
-    fs,
-};
+use std::env;
+use std::fs;
 
 fn main() {
     let output_dir = env::var("OUT_DIR").unwrap();
