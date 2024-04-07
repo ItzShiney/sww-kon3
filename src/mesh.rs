@@ -1,5 +1,6 @@
 use crate::shaders::mesh::InVertex;
 use crate::to_wgsl_bytes;
+use crate::AppInfo;
 use crate::Color;
 use glam::vec2;
 use glam::Vec2;
@@ -42,9 +43,9 @@ impl Mesh {
         }
     }
 
-    pub fn rect(device: &wgpu::Device, size: Vec2) -> Self {
+    pub fn rect(app_info: &AppInfo, size: Vec2) -> Self {
         Self::new_indexed(
-            device,
+            &app_info.device,
             &[
                 InVertex {
                     position: vec2(0., 0.),
@@ -71,8 +72,8 @@ impl Mesh {
         )
     }
 
-    pub fn square(device: &wgpu::Device, size: f32, ratio: f32) -> Self {
-        Self::rect(device, vec2(size, size * ratio))
+    pub fn square(app_info: &AppInfo, size: f32, ratio: f32) -> Self {
+        Self::rect(app_info, vec2(size, size * ratio))
     }
 
     pub fn vertex_buffer(&self) -> &wgpu::Buffer {
@@ -89,5 +90,15 @@ impl Mesh {
         } else {
             None
         }
+    }
+}
+
+impl AppInfo<'_> {
+    pub fn mesh_rect(&self, size: Vec2) -> Mesh {
+        Mesh::rect(self, size)
+    }
+
+    pub fn mesh_square(&self, size: f32, ratio: f32) -> Mesh {
+        Mesh::square(self, size, ratio)
     }
 }

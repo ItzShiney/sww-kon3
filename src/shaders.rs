@@ -1,9 +1,24 @@
 #![allow(clippy::derivable_impls)]
 pub mod mesh {
     include!(concat!(env!("OUT_DIR"), "/mesh.rs"));
+
+    pub use bind_groups::*;
+
+    impl<'s> From<wgpu::BufferBinding<'s>> for BindGroupLayout0<'s> {
+        fn from(global_transform: wgpu::BufferBinding<'s>) -> Self {
+            Self { global_transform }
+        }
+    }
 }
 
+use crate::AppInfo;
 use glam::vec2;
+
+impl AppInfo<'_> {
+    pub fn mesh_bind_group0(&self) -> mesh::BindGroup0 {
+        todo!()
+    }
+}
 
 impl Default for mesh::Transform {
     fn default() -> Self {

@@ -1,5 +1,6 @@
 use crate::create_buffer_partially_init;
 use crate::to_wgsl_bytes;
+use crate::AppInfo;
 use crate::WgslBytesWriteable;
 use crate::WgslBytesWriteableSized;
 use std::mem;
@@ -13,11 +14,18 @@ pub struct VecBuffer<T: WgslBytesWriteable> {
 }
 
 impl<T: WgslBytesWriteableSized> VecBuffer<T> {
-    pub fn new(device: &wgpu::Device, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
-        let buffer =
-            create_buffer_partially_init(device, &values, usage | wgpu::BufferUsages::COPY_DST);
+    pub fn new(app_info: &AppInfo, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
+        let buffer = create_buffer_partially_init(
+            &app_info.device,
+            &values,
+            usage | wgpu::BufferUsages::COPY_DST,
+        );
 
         Self { buffer, values }
+    }
+
+    pub fn new_vertex(app_info: &AppInfo, values: Vec<T>) -> Self {
+        Self::new(app_info, values, wgpu::BufferUsages::VERTEX)
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
@@ -54,12 +62,16 @@ impl<T: WgslBytesWriteableSized> VecBuffer<T> {
     }
 
     pub fn push(&mut self, queue: &wgpu::Queue, value: T) {
-        if self.len() == self.capacity() {
+        if !self.can_push() {
             panic!("pushing to full VecBuffer");
         }
 
         self.values.push(value);
-        self.update(queue, self.len() - 2..);
+        self.update(queue, self.len() - 1..);
+    }
+
+    pub fn can_push(&self) -> bool {
+        self.len() != self.capacity()
     }
 
     fn update(&self, queue: &wgpu::Queue, range: impl SliceIndex<[T], Output = [T]>) {
@@ -89,6 +101,20 @@ impl<T: WgslBytesWriteableSized> VecBuffer<T> {
 
     pub fn size(&self) -> wgpu::BufferAddress {
         (self.len() * mem::size_of::<T>()) as u64
+    }
+}
+
+impl AppInfo<'_> {
+    pub fn vec_buffer<T: WgslBytesWriteableSized>(
+        &self,
+        values: Vec<T>,
+        usage: wgpu::BufferUsages,
+    ) -> VecBuffer<T> {
+        VecBuffer::new(self, values, usage)
+    }
+
+    pub fn vec_buffer_vertex<T: WgslBytesWriteableSized>(&self, values: Vec<T>) -> VecBuffer<T> {
+        VecBuffer::new_vertex(self, values)
     }
 }
 

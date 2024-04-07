@@ -2,20 +2,24 @@
 name = "sww"
 version = "0.1.0"
 edition = "2021"
-# default-run = "../../examples/che6"
+# default-run = "examples/che6"
 
 [dependencies]
-wgpu = "*"
-cfg-if = "*"
+sww_extensions = { path = "sww_extensions" }
 encase = { version = "*", features = ["glam"] }
-glam = "*"
-log = "*" # { version = "*", features = ["release_max_level_off"] }
-pollster = "*"
 winit = { version = "*", features = ["rwh_05"] }
 env_logger = "*"
 memoffset = "*"
+pollster = "*"
 image = "*"
+wgpu = "*"
+glam = "*"
+log = "*" # { version = "*", features = ["release_max_level_off"] }
 
 [build-dependencies]
 wgsl_to_wgpu = "0.6.0"
 cargo-emit = "*"
+
+[dev-dependencies]
+strum = "*"
+strum_macros = "*"

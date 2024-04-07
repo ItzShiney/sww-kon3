@@ -1,236 +1,380 @@
-use glam::vec2;
-use glam::Mat2;
-use shaders::mesh::Transform;
 use std::io;
 use std::iter;
+use strum::EnumCount;
+use sww::shaders::mesh::Transform;
 use sww::*;
 use winit::event::Event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
+use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
 
-pub fn main() {
-    let event_loop = EventLoop::new().unwrap();
-
-    let window = winit::window::WindowBuilder::new()
-        .with_title("sww")
-        .with_inner_size(winit::dpi::PhysicalSize::new(400, 200))
-        .build(&event_loop)
-        .unwrap();
-
-    env_logger::init();
-
-    init(window, event_loop);
+#[derive(Clone, Copy, strum_macros::EnumCount)]
+#[allow(unused)]
+enum PieceType {
+    King,
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    PawnShadow,
+    Chariot,
+    Boat,
+    Dragon,
+    Spy,
 }
 
-fn init(window: Window, event_loop: EventLoop<()>) {
-    let mut app_info = AppInfo::new(&window, &DefaultAppSettings);
+#[derive(Clone, Copy, strum_macros::EnumCount)]
+enum PieceColor {
+    White,
+    Black,
+}
 
-    let mesh_drawer = MeshDrawer::new(&app_info.device, app_info.swapchain_format);
-    let square = Mesh::rect(&app_info.device, vec2(1., 1.));
+fn translation(x: i32, y: i32) -> Vec2 {
+    vec2(x as _, y as _)
+}
 
-    let (white_transforms, black_transforms) = {
-        let mut white = Vec::default();
-        let mut black = Vec::default();
-
-        for y in -4..4_i32 {
-            for x in -4..4_i32 {
-                let translation = vec2(x as f32, y as f32);
-                let colored_transforms = if (x + y).rem_euclid(2) == 0 {
-                    &mut black
-                } else {
-                    &mut white
-                };
-
-                colored_transforms.push(Transform {
-                    translation,
-                    color: Color::WHITE.into(),
-                    ..Default::default()
-                });
-            }
-        }
-
-        (
-            VecBuffer::new(&app_info.device, white, wgpu::BufferUsages::VERTEX),
-            VecBuffer::new(&app_info.device, black, wgpu::BufferUsages::VERTEX),
-        )
+fn make_piece_transform(
+    x: i32,
+    y: i32,
+    piece_type: PieceType,
+    piece_color: PieceColor,
+) -> Transform {
+    let translation = translation(x, y);
+    let texture_rect = shaders::mesh::Rectangle {
+        top_left: vec2(
+            piece_type as usize as f32 / PieceType::COUNT as f32,
+            piece_color as u32 as f32 / PieceColor::COUNT as f32,
+        ),
+        size: vec2(1. / PieceType::COUNT as f32, 1. / PieceColor::COUNT as f32),
     };
 
-    fn make_piece_transform(
-        x: i32,
-        y: i32,
-        piece_type: u32,
-        is_white: bool,
-    ) -> shaders::mesh::Transform {
-        const PIECE_TYPES_COUNT: u32 = 11;
-        const COLORS_COUNT: u32 = 2;
+    Transform {
+        translation,
+        texture_rect,
+        ..Default::default()
+    }
+}
 
-        let texture_rect_y = !is_white as u32 as f32 / COLORS_COUNT as f32;
+fn make_white_black_tranforms(app_info: &AppInfo) -> (VecBuffer<Transform>, VecBuffer<Transform>) {
+    let mut white = Vec::default();
+    let mut black = Vec::default();
 
-        shaders::mesh::Transform {
-            translation: vec2(x as f32, y as f32),
-            texture_rect: shaders::mesh::Rectangle {
-                top_left: vec2(piece_type as f32 / PIECE_TYPES_COUNT as f32, texture_rect_y),
-                size: vec2(1. / PIECE_TYPES_COUNT as f32, 1. / COLORS_COUNT as f32),
-            },
-            ..Default::default()
+    for y in -4..4_i32 {
+        for x in -4..4_i32 {
+            let translation = translation(x, y);
+            let colored_transforms = if (x + y).rem_euclid(2) == 0 {
+                &mut black
+            } else {
+                &mut white
+            };
+
+            colored_transforms.push(Transform {
+                translation,
+                ..Default::default()
+            });
         }
     }
 
-    let mut piece_transforms = {
-        let mut piece_transforms = Vec::default();
-        piece_transforms.reserve(8 * 8);
+    (
+        app_info.vec_buffer_vertex(white),
+        app_info.vec_buffer_vertex(black),
+    )
+}
 
-        for (y, is_white) in [(-3, true), (3 - 1, false)] {
-            for x in -4..4 {
-                piece_transforms.push(make_piece_transform(x, y, 1, is_white));
+fn make_piece_transforms(app_info: &AppInfo) -> VecBuffer<Transform> {
+    let mut piece_transforms = Vec::default();
+    piece_transforms.reserve(8 * 8);
+
+    for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
+        for x in -4..4 {
+            piece_transforms.push(make_piece_transform(x, y, PieceType::Pawn, piece_color));
+        }
+    }
+
+    for (y, piece_color) in [(-4, PieceColor::White), (4 - 1, PieceColor::Black)] {
+        for (pos, piece_type) in [
+            (2, PieceType::Bishop),
+            (3, PieceType::Knight),
+            (4, PieceType::Rook),
+        ] {
+            for x in [-pos, pos - 1] {
+                piece_transforms.push(make_piece_transform(x, y, piece_type, piece_color));
             }
         }
 
-        for (y, is_white) in [(-4, true), (4 - 1, false)] {
-            for (pos, piece_type) in [(4, 4), (3, 2), (2, 3)] {
-                for x in [-pos, pos - 1] {
-                    piece_transforms.push(make_piece_transform(x, y, piece_type, is_white));
-                }
-            }
+        piece_transforms.push(make_piece_transform(-1, y, PieceType::Queen, piece_color));
+        piece_transforms.push(make_piece_transform(0, y, PieceType::King, piece_color));
+    }
 
-            piece_transforms.push(make_piece_transform(-1, y, 5, is_white));
-            piece_transforms.push(make_piece_transform(0, y, 0, is_white));
-        }
+    app_info.vec_buffer_vertex(piece_transforms)
+}
 
-        VecBuffer::new(
+struct SingleColorTiles {
+    transforms: VecBuffer<Transform>,
+    bind_group0: shaders::mesh::BindGroup0,
+}
+
+impl SingleColorTiles {
+    fn new(
+        app_info: &AppInfo,
+        scalers: &mut Scalers,
+        color: Color,
+        transforms: VecBuffer<Transform>,
+    ) -> Self {
+        let global_transform = scalers.push_last(ReadableBuffer::new(
             &app_info.device,
-            piece_transforms,
-            wgpu::BufferUsages::VERTEX,
-        )
-    };
-
-    piece_transforms.push(&app_info.queue, make_piece_transform(0, 0, 8, true));
-    piece_transforms.push(&app_info.queue, make_piece_transform(-1, -1, 8, false));
-
-    let mut white_global_transform = ReadableBuffer::new(
-        &app_info.device,
-        Transform {
-            color: Color::splat(0.45).into(),
-            ..Default::default()
-        },
-    );
-
-    let white_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
-        &app_info.device,
-        shaders::mesh::bind_groups::BindGroupLayout0 {
-            global_transform: wgpu::BufferBinding {
-                buffer: white_global_transform.buffer(),
-                offset: 0,
-                size: None,
+            Transform {
+                color: color.into(),
+                ..Default::default()
             },
-        },
-    );
+        ));
 
-    let mut black_global_transform = ReadableBuffer::new(
-        &app_info.device,
-        Transform {
-            color: Color::splat(0.25).into(),
-            ..Default::default()
-        },
-    );
+        let bind_group0 = {
+            let global_transform = global_transform.buffer().binding();
 
-    let black_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
-        &app_info.device,
-        shaders::mesh::bind_groups::BindGroupLayout0 {
-            global_transform: wgpu::BufferBinding {
-                buffer: black_global_transform.buffer(),
-                offset: 0,
-                size: None,
+            shaders::mesh::BindGroup0::from_bindings(&app_info.device, global_transform.into())
+        };
+
+        Self {
+            transforms,
+            bind_group0,
+        }
+    }
+
+    fn draw<'s>(
+        &'s self,
+        drawer: &'s Drawer,
+        render_pass: &mut wgpu::RenderPass<'s>,
+        bind_group1: &'s shaders::mesh::BindGroup1,
+    ) {
+        drawer.draw_squares(
+            render_pass,
+            self.transforms.slice(..),
+            &shaders::mesh::BindGroups {
+                bind_group0: &self.bind_group0,
+                bind_group1,
             },
-        },
-    );
+        );
+    }
+}
 
-    let default_texture = make_default_texture(&app_info.device, &app_info.queue);
-    let default_texture_view = default_texture.create_view(&Default::default());
+struct Tiles {
+    white: SingleColorTiles,
+    black: SingleColorTiles,
+    bind_group1: shaders::mesh::BindGroup1,
+}
 
-    let bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
-        &app_info.device,
-        shaders::mesh::bind_groups::BindGroupLayout1 {
-            texture: &default_texture_view,
-        },
-    );
+impl Tiles {
+    fn new(app_info: &AppInfo, scalers: &mut Scalers) -> Self {
+        let (white_transforms, black_transforms) = make_white_black_tranforms(&app_info);
+        let white = SingleColorTiles::new(app_info, scalers, Color::splat(0.45), white_transforms);
+        let black = SingleColorTiles::new(app_info, scalers, Color::splat(0.25), black_transforms);
 
-    let pieces_texture = read_texture(
-        &app_info.device,
-        &app_info.queue,
-        io::Cursor::new(include_bytes!("pieces.png")),
-    );
-    let pieces_texture_view = pieces_texture.create_view(&Default::default());
+        let bind_group1 = {
+            let default_texture = make_default_texture(&app_info.device, &app_info.queue);
+            let default_texture_view = default_texture.create_view(&Default::default());
 
-    let mut pieces_global_transform = ReadableBuffer::new(&app_info.device, Transform::default());
+            shaders::mesh::BindGroup1::from_bindings(
+                &app_info.device,
+                shaders::mesh::BindGroupLayout1 {
+                    texture: &default_texture_view,
+                },
+            )
+        };
 
-    let pieces_bind_group0 = shaders::mesh::bind_groups::BindGroup0::from_bindings(
-        &app_info.device,
-        shaders::mesh::bind_groups::BindGroupLayout0 {
-            global_transform: wgpu::BufferBinding {
-                buffer: pieces_global_transform.buffer(),
-                offset: 0,
-                size: None,
+        Self {
+            white,
+            black,
+            bind_group1,
+        }
+    }
+
+    fn draw<'s>(&'s self, drawer: &'s Drawer, render_pass: &mut wgpu::RenderPass<'s>) {
+        self.white.draw(drawer, render_pass, &self.bind_group1);
+        self.black.draw(drawer, render_pass, &self.bind_group1);
+    }
+}
+
+struct Pieces {
+    transforms: VecBuffer<Transform>,
+    bind_group0: shaders::mesh::BindGroup0,
+    bind_group1: shaders::mesh::BindGroup1,
+}
+
+impl Pieces {
+    fn new(app_info: &AppInfo, scalers: &mut Scalers, transforms: VecBuffer<Transform>) -> Self {
+        let global_transform =
+            scalers.push_last(ReadableBuffer::new(&app_info.device, Transform::default()));
+
+        let texture = read_texture(
+            &app_info.device,
+            &app_info.queue,
+            io::Cursor::new(include_bytes!("pieces.png")),
+        );
+        let texture_view = texture.default_view();
+
+        let bind_group0 = shaders::mesh::BindGroup0::from_bindings(
+            &app_info.device,
+            global_transform.buffer().binding().into(),
+        );
+
+        let bind_group1 = shaders::mesh::BindGroup1::from_bindings(
+            &app_info.device,
+            shaders::mesh::BindGroupLayout1 {
+                texture: &texture_view,
             },
-        },
-    );
+        );
 
-    let pieces_bind_group1 = shaders::mesh::bind_groups::BindGroup1::from_bindings(
-        &app_info.device,
-        shaders::mesh::bind_groups::BindGroupLayout1 {
-            texture: &pieces_texture_view,
-        },
-    );
+        Self {
+            transforms,
+            bind_group0,
+            bind_group1,
+        }
+    }
 
-    #[allow(clippy::single_match)]
-    event_loop
-        .run(|event, target| match event {
+    fn draw<'s>(&'s self, drawer: &'s Drawer, render_pass: &mut wgpu::RenderPass<'s>) {
+        drawer.draw_squares(
+            render_pass,
+            self.transforms.slice(..),
+            &shaders::mesh::BindGroups {
+                bind_group0: &self.bind_group0,
+                bind_group1: &self.bind_group1,
+            },
+        );
+    }
+}
+
+type Scaler = ReadableBuffer<Transform>;
+type Scalers = Vec<Scaler>;
+
+struct Objects<'info, 'window> {
+    app_info: &'info AppInfo<'window>,
+    scalers: Scalers,
+    tiles: Tiles,
+    pieces: Pieces,
+}
+
+impl<'info, 'window> Objects<'info, 'window> {
+    fn new(app_info: &'info AppInfo<'window>) -> Self {
+        let mut scalers = Scalers::default();
+
+        let tiles = Tiles::new(app_info, &mut scalers);
+        let pieces = Pieces::new(app_info, &mut scalers, make_piece_transforms(app_info));
+
+        Self {
+            app_info,
+            scalers,
+            tiles,
+            pieces,
+        }
+    }
+
+    fn scale(&mut self, ratio: f32) {
+        let scale = 1. / 4_f32;
+        let matrix = Mat2::from_diagonal(vec2(scale.min(scale / ratio), scale.min(scale * ratio)));
+
+        for transform_buffer in self.scalers.iter_mut() {
+            let mut transform = transform_buffer.value_mut(&self.app_info.queue);
+            transform.matrix = matrix;
+        }
+    }
+
+    fn draw<'s>(&'s self, drawer: &'s Drawer, render_pass: &mut wgpu::RenderPass<'s>) {
+        self.tiles.draw(drawer, render_pass);
+        self.pieces.draw(drawer, render_pass);
+    }
+}
+
+struct Drawer {
+    mesh_drawer: MeshDrawer,
+    square: Mesh,
+}
+
+impl Drawer {
+    fn new(info: &AppInfo) -> Self {
+        let mesh_drawer = info.mesh_drawer();
+        let square = info.mesh_rect(vec2(1., 1.));
+
+        Self {
+            mesh_drawer,
+            square,
+        }
+    }
+
+    fn draw_squares<'s>(
+        &'s self,
+        render_pass: &mut wgpu::RenderPass<'s>,
+        transforms: VecBufferSlice<'s, Transform>,
+        bind_groups: &shaders::mesh::BindGroups<'s>,
+    ) {
+        self.mesh_drawer
+            .draw(render_pass, &self.square, transforms, bind_groups)
+    }
+}
+
+struct App<'info, 'window> {
+    info: &'info AppInfo<'window>,
+    window: &'window Window,
+
+    objects: Objects<'info, 'window>,
+    drawer: Drawer,
+}
+
+impl<'info, 'window> App<'info, 'window> {
+    fn new(info: &'info AppInfo<'window>, window: &'window Window) -> Self {
+        let drawer = Drawer::new(info);
+        let mut objects = Objects::new(info);
+
+        objects.pieces.transforms.push(
+            &info.queue,
+            make_piece_transform(0, 0, PieceType::Boat, PieceColor::White),
+        );
+        objects.pieces.transforms.push(
+            &info.queue,
+            make_piece_transform(-1, -1, PieceType::Boat, PieceColor::Black),
+        );
+
+        Self {
+            info,
+            window,
+
+            drawer,
+            objects,
+        }
+    }
+
+    fn event_handler(&mut self, event: Event<()>, target: &EventLoopWindowTarget<()>) {
+        match event {
             Event::WindowEvent {
                 window_id: _,
                 event,
             } => match event {
                 WindowEvent::Resized(new_size) => {
-                    app_info.surface_config.width = new_size.width.max(1);
-                    app_info.surface_config.height = new_size.height.max(1);
-                    app_info
-                        .surface
-                        .configure(&app_info.device, &app_info.surface_config);
+                    let mut surface_config = self.info.surface_config.borrow_mut();
+                    surface_config.width = new_size.width.max(1);
+                    surface_config.height = new_size.height.max(1);
 
-                    window.request_redraw();
+                    self.info
+                        .surface
+                        .configure(&self.info.device, &surface_config);
+
+                    self.window.request_redraw();
                 }
 
                 WindowEvent::RedrawRequested => {
-                    {
-                        let ratio = {
-                            let size = window.inner_size();
-                            size.width as f32 / size.height as f32
-                        };
+                    self.objects.scale(self.window.ratio());
 
-                        let scale = 1. / 4_f32;
-                        let matrix = Mat2::from_diagonal(vec2(
-                            scale.min(scale / ratio),
-                            scale.min(scale * ratio),
-                        ));
-
-                        for transform_buffer in [
-                            &mut white_global_transform,
-                            &mut black_global_transform,
-                            &mut pieces_global_transform,
-                        ] {
-                            let mut transform = transform_buffer.value_mut(&app_info.queue);
-                            transform.matrix = matrix;
-                        }
-                    }
-
-                    let frame = app_info
+                    let frame = self
+                        .info
                         .surface
                         .get_current_texture()
                         .expect("failed to acquire next swapchain texture");
 
                     let view = frame.texture.create_view(&Default::default());
                     let mut command_encoder =
-                        app_info.device.create_command_encoder(&Default::default());
+                        self.info.device.create_command_encoder(&Default::default());
 
                     {
                         let mut render_pass =
@@ -246,36 +390,10 @@ fn init(window: Window, event_loop: EventLoop<()>) {
                                 ..Default::default()
                             });
 
-                        mesh_drawer.draw(
-                            &mut render_pass,
-                            &square,
-                            white_transforms.slice(..),
-                            &shaders::mesh::bind_groups::BindGroups {
-                                bind_group0: &white_bind_group0,
-                                bind_group1: &bind_group1,
-                            },
-                        );
-                        mesh_drawer.draw(
-                            &mut render_pass,
-                            &square,
-                            black_transforms.slice(..),
-                            &shaders::mesh::bind_groups::BindGroups {
-                                bind_group0: &black_bind_group0,
-                                bind_group1: &bind_group1,
-                            },
-                        );
-                        mesh_drawer.draw(
-                            &mut render_pass,
-                            &square,
-                            piece_transforms.slice(..),
-                            &shaders::mesh::bind_groups::BindGroups {
-                                bind_group0: &pieces_bind_group0,
-                                bind_group1: &pieces_bind_group1,
-                            },
-                        );
+                        self.objects.draw(&self.drawer, &mut render_pass);
                     }
 
-                    app_info.queue.submit(iter::once(command_encoder.finish()));
+                    self.info.queue.submit(iter::once(command_encoder.finish()));
                     frame.present();
                 }
 
@@ -285,6 +403,30 @@ fn init(window: Window, event_loop: EventLoop<()>) {
             },
 
             _ => {}
-        })
+        }
+    }
+}
+
+fn init(window: Window, event_loop: EventLoop<()>) {
+    let mut app_info = AppInfo::new(&window, &DefaultAppSettings);
+    let mut app = App::new(&mut app_info, &window);
+
+    #[allow(clippy::single_match)]
+    event_loop
+        .run(|event, target| app.event_handler(event, target))
         .unwrap();
+}
+
+pub fn main() {
+    let event_loop = EventLoop::new().unwrap();
+
+    let window = winit::window::WindowBuilder::new()
+        .with_title("sww")
+        .with_inner_size(winit::dpi::PhysicalSize::new(400, 200))
+        .build(&event_loop)
+        .unwrap();
+
+    env_logger::init();
+
+    init(window, event_loop);
 }

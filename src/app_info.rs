@@ -1,12 +1,13 @@
 use crate::AppSettings;
 use pollster::FutureExt;
+use std::cell::RefCell;
 use winit::window::Window;
 
 pub struct AppInfo<'window> {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub surface: wgpu::Surface<'window>,
-    pub surface_config: wgpu::SurfaceConfiguration,
+    pub surface_config: RefCell<wgpu::SurfaceConfiguration>,
     pub swapchain_format: wgpu::TextureFormat,
 }
 
@@ -33,8 +34,9 @@ impl<'window> AppInfo<'window> {
 
         let surface_config = settings.surface_config(size, swapchain_format, swapchain_alpha_mode);
         surface.configure(&device, &surface_config);
+        let surface_config = surface_config.into();
 
-        AppInfo {
+        Self {
             device,
             queue,
             surface,
