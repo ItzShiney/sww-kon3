@@ -1,6 +1,7 @@
 use std::io;
 use std::iter;
 use strum::EnumCount;
+use strum_macros::EnumCount;
 use sww::shaders::mesh::Transform;
 use sww::*;
 use winit::event::Event;
@@ -9,8 +10,10 @@ use winit::event_loop::EventLoop;
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
 
-#[derive(Clone, Copy, strum_macros::EnumCount)]
-#[allow(unused)]
+////////////////////////////////////////////////////////////
+// sheet/piece_type.rs
+////////////////////////////////////////////////////////////
+#[derive(Clone, Copy, EnumCount)]
 enum PieceType {
     King,
     Pawn,
@@ -18,69 +21,92 @@ enum PieceType {
     Bishop,
     Rook,
     Queen,
-    PawnShadow,
-    Chariot,
+    _PawnShadow,
+    _Chariot,
     Boat,
-    Dragon,
-    Spy,
+    _Dragon,
+    _Spy,
 }
 
-#[derive(Clone, Copy, strum_macros::EnumCount)]
+impl From<PieceType> for usize {
+    fn from(value: PieceType) -> Self {
+        value as _
+    }
+}
+
+impl Coord for PieceType {
+    type Output = f32;
+
+    fn coord(self) -> Self::Output {
+        self as usize as f32 * Self::size()
+    }
+
+    fn size() -> Self::Output {
+        1. / Self::COUNT as f32
+    }
+}
+
+////////////////////////////////////////////////////////////
+// sheet/piece_color.rs
+////////////////////////////////////////////////////////////
+#[derive(Clone, Copy, EnumCount)]
 enum PieceColor {
     White,
     Black,
 }
 
+impl From<PieceColor> for usize {
+    fn from(value: PieceColor) -> Self {
+        value as _
+    }
+}
+
+impl Coord for PieceColor {
+    type Output = f32;
+
+    fn coord(self) -> Self::Output {
+        self as usize as f32 * Self::size()
+    }
+
+    fn size() -> Self::Output {
+        1. / Self::COUNT as f32
+    }
+}
+
+////////////////////////////////////////////////////////////
+// sheet/coord.rs
+////////////////////////////////////////////////////////////
+trait Coord {
+    type Output;
+
+    fn coord(self) -> Self::Output;
+    fn size() -> Self::Output;
+}
+
+impl<A: Coord<Output = f32>, B: Coord<Output = f32>> Coord for (A, B) {
+    type Output = Vec2;
+
+    fn coord(self) -> Self::Output {
+        vec2(self.0.coord(), self.1.coord())
+    }
+
+    fn size() -> Self::Output {
+        vec2(A::size(), B::size())
+    }
+}
+
+////////////////////////////////////////////////////////////
+// sheet.rs
+////////////////////////////////////////////////////////////
 fn translation(x: i32, y: i32) -> Vec2 {
     vec2(x as _, y as _)
 }
 
-fn make_piece_transform(
-    x: i32,
-    y: i32,
-    piece_type: PieceType,
-    piece_color: PieceColor,
-) -> Transform {
-    let translation = translation(x, y);
-    let texture_rect = shaders::mesh::Rectangle {
-        top_left: vec2(
-            piece_type as usize as f32 / PieceType::COUNT as f32,
-            piece_color as u32 as f32 / PieceColor::COUNT as f32,
-        ),
-        size: vec2(1. / PieceType::COUNT as f32, 1. / PieceColor::COUNT as f32),
-    };
+fn texture_rect<T: Coord<Output = Vec2>>(coord: T) -> shaders::mesh::Rectangle {
+    let size = coord.coord();
+    let top_left = T::size();
 
-    Transform {
-        translation,
-        texture_rect,
-        ..Default::default()
-    }
-}
-
-fn make_white_black_tranforms(app_info: &AppInfo) -> (VecBuffer<Transform>, VecBuffer<Transform>) {
-    let mut white = Vec::default();
-    let mut black = Vec::default();
-
-    for y in -4..4_i32 {
-        for x in -4..4_i32 {
-            let translation = translation(x, y);
-            let colored_transforms = if (x + y).rem_euclid(2) == 0 {
-                &mut black
-            } else {
-                &mut white
-            };
-
-            colored_transforms.push(Transform {
-                translation,
-                ..Default::default()
-            });
-        }
-    }
-
-    (
-        app_info.vec_buffer_vertex(white),
-        app_info.vec_buffer_vertex(black),
-    )
+    shaders::mesh::Rectangle { top_left, size }
 }
 
 fn make_piece_transforms(app_info: &AppInfo) -> VecBuffer<Transform> {
@@ -111,6 +137,9 @@ fn make_piece_transforms(app_info: &AppInfo) -> VecBuffer<Transform> {
     app_info.vec_buffer_vertex(piece_transforms)
 }
 
+////////////////////////////////////////////////////////////
+// app/objects/tiles/single_color.rs
+////////////////////////////////////////////////////////////
 struct SingleColorTiles {
     transforms: VecBuffer<Transform>,
     bind_group0: shaders::mesh::BindGroup0,
@@ -133,7 +162,6 @@ impl SingleColorTiles {
 
         let bind_group0 = {
             let global_transform = global_transform.buffer().binding();
-
             shaders::mesh::BindGroup0::from_bindings(&app_info.device, global_transform.into())
         };
 
@@ -158,6 +186,35 @@ impl SingleColorTiles {
             },
         );
     }
+}
+
+////////////////////////////////////////////////////////////
+// app/objects/tiles.rs
+////////////////////////////////////////////////////////////
+fn make_white_black_tranforms(app_info: &AppInfo) -> (VecBuffer<Transform>, VecBuffer<Transform>) {
+    let mut white = Vec::default();
+    let mut black = Vec::default();
+
+    for y in -4..4_i32 {
+        for x in -4..4_i32 {
+            let translation = translation(x, y);
+            let colored_transforms = if (x + y).rem_euclid(2) == 0 {
+                &mut black
+            } else {
+                &mut white
+            };
+
+            colored_transforms.push(Transform {
+                translation,
+                ..Default::default()
+            });
+        }
+    }
+
+    (
+        app_info.vec_buffer_vertex(white),
+        app_info.vec_buffer_vertex(black),
+    )
 }
 
 struct Tiles {
@@ -194,6 +251,25 @@ impl Tiles {
     fn draw<'s>(&'s self, drawer: &'s Drawer, render_pass: &mut wgpu::RenderPass<'s>) {
         self.white.draw(drawer, render_pass, &self.bind_group1);
         self.black.draw(drawer, render_pass, &self.bind_group1);
+    }
+}
+
+////////////////////////////////////////////////////////////
+// app/objects/pieces.rs
+////////////////////////////////////////////////////////////
+fn make_piece_transform(
+    x: i32,
+    y: i32,
+    piece_type: PieceType,
+    piece_color: PieceColor,
+) -> Transform {
+    let translation = translation(x, y);
+    let texture_rect = texture_rect((piece_type, piece_color));
+
+    Transform {
+        translation,
+        texture_rect,
+        ..Default::default()
     }
 }
 
@@ -246,6 +322,9 @@ impl Pieces {
     }
 }
 
+////////////////////////////////////////////////////////////
+// app/objects.rs
+////////////////////////////////////////////////////////////
 type Scaler = ReadableBuffer<Transform>;
 type Scalers = Vec<Scaler>;
 
@@ -287,6 +366,9 @@ impl<'info, 'window> Objects<'info, 'window> {
     }
 }
 
+////////////////////////////////////////////////////////////
+// app/drawer.rs
+////////////////////////////////////////////////////////////
 struct Drawer {
     mesh_drawer: MeshDrawer,
     square: Mesh,
@@ -314,6 +396,9 @@ impl Drawer {
     }
 }
 
+////////////////////////////////////////////////////////////
+// app.rs
+////////////////////////////////////////////////////////////
 struct App<'info, 'window> {
     info: &'info AppInfo<'window>,
     window: &'window Window,
@@ -346,6 +431,7 @@ impl<'info, 'window> App<'info, 'window> {
     }
 
     fn event_handler(&mut self, event: Event<()>, target: &EventLoopWindowTarget<()>) {
+        #[allow(clippy::single_match)]
         match event {
             Event::WindowEvent {
                 window_id: _,
@@ -407,26 +493,24 @@ impl<'info, 'window> App<'info, 'window> {
     }
 }
 
-fn init(window: Window, event_loop: EventLoop<()>) {
-    let mut app_info = AppInfo::new(&window, &DefaultAppSettings);
-    let mut app = App::new(&mut app_info, &window);
-
-    #[allow(clippy::single_match)]
-    event_loop
-        .run(|event, target| app.event_handler(event, target))
-        .unwrap();
-}
-
+////////////////////////////////////////////////////////////
+// main.rs
+////////////////////////////////////////////////////////////
 pub fn main() {
     let event_loop = EventLoop::new().unwrap();
 
     let window = winit::window::WindowBuilder::new()
-        .with_title("sww")
+        .with_title("che6")
         .with_inner_size(winit::dpi::PhysicalSize::new(400, 200))
         .build(&event_loop)
         .unwrap();
 
     env_logger::init();
 
-    init(window, event_loop);
+    let mut app_info = AppInfo::new(&window, &DefaultAppSettings);
+    let mut app = App::new(&mut app_info, &window);
+
+    event_loop
+        .run(|event, target| app.event_handler(event, target))
+        .unwrap();
 }
