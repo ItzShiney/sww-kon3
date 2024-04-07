@@ -36,7 +36,7 @@ impl<T: WgslBytesWriteableSized> VecBuffer<T> {
         &self.values
     }
 
-    pub fn slice<'s>(&'s self, range: impl SliceIndex<[T], Output = [T]>) -> VecBufferSlice<'s, T> {
+    pub fn slice(&self, range: impl SliceIndex<[T], Output = [T]>) -> VecBufferSlice<T> {
         VecBufferSlice {
             buffer: &self.buffer,
             values: &self.values[range],
@@ -151,7 +151,7 @@ impl<T: WgslBytesWriteableSized> Drop for VecBufferSliceMut<'_, T> {
         let size = <T as encase::ShaderSize>::SHADER_SIZE.get();
 
         self.queue.write_buffer(
-            &self.buffer,
+            self.buffer,
             self.start as u64 * size,
             &to_wgsl_bytes(&self.values),
         );

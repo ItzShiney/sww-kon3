@@ -12,7 +12,7 @@ pub trait AppSettings {
         wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
-            compatible_surface: Some(&surface),
+            compatible_surface: Some(surface),
         }
     }
 

@@ -32,8 +32,7 @@ impl MeshDrawer {
                     module: &shader,
                     entry_point: shaders::mesh::ENTRY_FS_MAIN,
                     targets: &[Some(wgpu::ColorTargetState {
-                        format: app_info.swapchain_format.into(),
-
+                        format: app_info.swapchain_format,
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
                                 src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -42,7 +41,6 @@ impl MeshDrawer {
                             },
                             alpha: wgpu::BlendComponent::OVER,
                         }),
-
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
                 }),

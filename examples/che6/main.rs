@@ -110,8 +110,7 @@ fn texture_rect<T: Coord<Output = Vec2>>(coord: T) -> shaders::mesh::Rectangle {
 }
 
 fn make_piece_transforms(app_info: &AppInfo) -> VecBuffer<Transform> {
-    let mut piece_transforms = Vec::default();
-    piece_transforms.reserve(8 * 8);
+    let mut piece_transforms = Vec::with_capacity(8 * 8);
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
         for x in -4..4 {
@@ -225,7 +224,7 @@ struct Tiles {
 
 impl Tiles {
     fn new(app_info: &AppInfo, scalers: &mut Scalers) -> Self {
-        let (white_transforms, black_transforms) = make_white_black_tranforms(&app_info);
+        let (white_transforms, black_transforms) = make_white_black_tranforms(app_info);
         let white = SingleColorTiles::new(app_info, scalers, Color::splat(0.45), white_transforms);
         let black = SingleColorTiles::new(app_info, scalers, Color::splat(0.25), black_transforms);
 
@@ -507,8 +506,8 @@ pub fn main() {
 
     env_logger::init();
 
-    let mut app_info = AppInfo::new(&window, &DefaultAppSettings);
-    let mut app = App::new(&mut app_info, &window);
+    let app_info = AppInfo::new(&window, &DefaultAppSettings);
+    let mut app = App::new(&app_info, &window);
 
     event_loop
         .run(|event, target| app.event_handler(event, target))
