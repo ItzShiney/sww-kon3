@@ -11,6 +11,7 @@ pub use pieces::*;
 use std::iter;
 use sww::vec2;
 use sww::AppInfo;
+use sww::EventLoop;
 use sww::Ratio;
 use sww::Vec2;
 use winit::event::Event;
@@ -113,5 +114,9 @@ impl<'info, 'window> App<'info, 'window> {
 
             _ => {}
         }
+    }
+
+    pub fn run(&mut self, event_loop: EventLoop) -> Result<(), winit::error::EventLoopError> {
+        event_loop.run(|event, target| self.event_handler(event, target))
     }
 }

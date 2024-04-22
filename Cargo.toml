@@ -13,6 +13,7 @@ memoffset = "*"
 pollster = "*"
 image = "*"
 wgpu = "*"
+ctor = "*"
 glam = "*"
 log = "*" # { version = "*", features = ["release_max_level_off"] }
 
