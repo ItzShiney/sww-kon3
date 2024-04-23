@@ -10,20 +10,20 @@ pub use objects::*;
 pub use pieces::*;
 use std::iter;
 use sww::vec2;
+use sww::App;
 use sww::AppInfo;
-use sww::EventLoop;
+use sww::Event;
+use sww::EventLoopTarget;
 use sww::Ratio;
 use sww::Vec2;
-use winit::event::Event;
-use winit::event::WindowEvent;
-use winit::event_loop::EventLoopWindowTarget;
+use sww::WindowEvent;
 use winit::window::Window;
 
 pub fn translation(x: i32, y: i32) -> Vec2 {
     vec2(x as _, y as _)
 }
 
-pub struct App<'info, 'window> {
+pub struct MyApp<'info, 'window> {
     info: &'info AppInfo<'window>,
     window: &'window Window,
 
@@ -31,7 +31,7 @@ pub struct App<'info, 'window> {
     drawer: Drawer,
 }
 
-impl<'info, 'window> App<'info, 'window> {
+impl<'info, 'window> MyApp<'info, 'window> {
     pub fn new(info: &'info AppInfo<'window>, window: &'window Window) -> Self {
         let drawer = Drawer::new(info);
         let mut objects = Objects::new(info);
@@ -53,8 +53,10 @@ impl<'info, 'window> App<'info, 'window> {
             objects,
         }
     }
+}
 
-    pub fn event_handler(&mut self, event: Event<()>, target: &EventLoopWindowTarget<()>) {
+impl App for MyApp<'_, '_> {
+    fn handle_event(&mut self, event: Event, target: &EventLoopTarget) {
         #[allow(clippy::single_match)]
         match event {
             Event::WindowEvent {
@@ -114,9 +116,5 @@ impl<'info, 'window> App<'info, 'window> {
 
             _ => {}
         }
-    }
-
-    pub fn run(&mut self, event_loop: EventLoop) -> Result<(), winit::error::EventLoopError> {
-        event_loop.run(|event, target| self.event_handler(event, target))
     }
 }

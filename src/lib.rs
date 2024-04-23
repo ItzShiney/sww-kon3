@@ -2,8 +2,8 @@ pub use env_logger;
 pub use glam::*;
 pub use pollster;
 pub use wgpu;
-pub use winit;
 
+mod app;
 mod app_info;
 mod app_settings;
 mod bytes;
@@ -16,6 +16,7 @@ pub mod shaders;
 mod vec_buffer;
 mod window;
 
+pub use app::*;
 pub use app_info::*;
 pub use app_settings::*;
 pub use bytes::*;
