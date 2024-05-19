@@ -1,6 +1,10 @@
+alias Padding = vec2f;
+const PADDING: Padding = vec2f(0., 0.);
+
 struct Transform {
     matrix: mat2x2f,
     translation: vec2f,
+    _1: Padding,
     color: vec4f,
     texture_rect: Rectangle,
 }
@@ -20,6 +24,7 @@ fn transforms_then(a: Transform, b: Transform) -> Transform {
     return Transform(
         b.matrix * a.matrix,
         b.matrix * a.translation + b.translation,
+        PADDING,
         a.color * b.color,
         rectangle_then(a.texture_rect, b.texture_rect),
     );
@@ -37,16 +42,19 @@ fn apply_transform_color(transform: Transform, color: vec4f) -> vec4f {
 
 struct InVertex {
     @location(0) position: vec2f,
-    @location(1) color: vec4f,
-    @location(2) texture_coord: vec2f,
+    @location(1) _1: Padding,
+    @location(2) color: vec4f,
+    @location(3) texture_coord: vec2f,
+    @location(4) _2: Padding,
 }
 
 struct InTransform {
-    @location(3) matrix: vec4f,
-    @location(4) translation: vec2f,
-    @location(5) color: vec4f,
-    @location(6) texture_rect_start: vec2f,
-    @location(7) texture_rect_end: vec2f,
+    @location(5) matrix: vec4f,
+    @location(6) translation: vec2f,
+    @location(7) _1: Padding,
+    @location(8) color: vec4f,
+    @location(9) texture_rect_start: vec2f,
+    @location(10) texture_rect_end: vec2f,
 }
 
 fn vec_to_mat(v: vec4f) -> mat2x2f {
@@ -57,6 +65,7 @@ fn in_to_transform(transform: InTransform) -> Transform {
     return Transform(
         vec_to_mat(transform.matrix),
         transform.translation,
+        PADDING,
         transform.color,
         Rectangle(
             transform.texture_rect_start,
@@ -71,6 +80,7 @@ struct OutVertex {
     @location(1) texture_coord: vec2f,
     @location(2) texture_rect_top_left: vec2f,
     @location(3) texture_rect_size: vec2f,
+    @location(4) _1: Padding,
 }
 
 struct InFragment {
@@ -78,6 +88,7 @@ struct InFragment {
     @location(1) texture_coord: vec2f,
     @location(2) texture_rect_top_left: vec2f,
     @location(3) texture_rect_size: vec2f,
+    @location(4) _1: Padding,
 }
 
 ////////////////////////////////////////////////////////////
@@ -99,6 +110,7 @@ fn vs_main(
         in_vertex.texture_coord,
         transform.texture_rect.top_left,
         transform.texture_rect.size,
+        PADDING
     );
 }
 

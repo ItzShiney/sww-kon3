@@ -1,20 +1,17 @@
 use crate::create_buffer_partially_init;
-use crate::to_wgsl_bytes;
 use crate::AppInfo;
-use crate::WgslBytesWriteable;
-use crate::WgslBytesWriteableSized;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice::SliceIndex;
 
-pub struct VecBuffer<'q, T: WgslBytesWriteable> {
+pub struct VecBuffer<'q, T> {
     buffer: wgpu::Buffer,
     values: Vec<T>,
     queue: &'q wgpu::Queue,
 }
 
-impl<'q, T: WgslBytesWriteableSized> VecBuffer<'q, T> {
+impl<'q, T: bytemuck::NoUninit + Sized> VecBuffer<'q, T> {
     pub fn new(app_info: &'q AppInfo, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
         let buffer = create_buffer_partially_init(
             &app_info.device,
@@ -82,10 +79,10 @@ impl<'q, T: WgslBytesWriteableSized> VecBuffer<'q, T> {
         let slice = &self.values[range];
         let start = (slice.as_ptr() as usize - self.values.as_ptr() as usize) / mem::size_of::<T>();
 
-        let offset = start as wgpu::BufferAddress * T::SHADER_SIZE.get();
+        let offset = start as wgpu::BufferAddress * mem::size_of::<T>() as wgpu::BufferAddress;
 
         self.queue
-            .write_buffer(&self.buffer, offset, &to_wgsl_bytes(slice))
+            .write_buffer(&self.buffer, offset, bytemuck::cast_slice(slice))
     }
 
     pub fn pop(&mut self) -> Option<T> {
@@ -110,7 +107,7 @@ impl<'q, T: WgslBytesWriteableSized> VecBuffer<'q, T> {
 }
 
 impl AppInfo<'_> {
-    pub fn vec_buffer<T: WgslBytesWriteableSized>(
+    pub fn vec_buffer<T: bytemuck::NoUninit + Sized>(
         &self,
         values: Vec<T>,
         usage: wgpu::BufferUsages,
@@ -118,18 +115,18 @@ impl AppInfo<'_> {
         VecBuffer::new(self, values, usage)
     }
 
-    pub fn vec_buffer_vertex<T: WgslBytesWriteableSized>(&self, values: Vec<T>) -> VecBuffer<T> {
+    pub fn vec_buffer_vertex<T: bytemuck::NoUninit + Sized>(&self, values: Vec<T>) -> VecBuffer<T> {
         VecBuffer::new_vertex(self, values)
     }
 }
 
 #[derive(Clone, Copy)]
-pub struct VecBufferSlice<'s, T: WgslBytesWriteable> {
+pub struct VecBufferSlice<'s, T> {
     pub buffer: &'s wgpu::Buffer,
     pub values: &'s [T],
 }
 
-pub struct VecBufferSliceMut<'s, T: WgslBytesWriteableSized> {
+pub struct VecBufferSliceMut<'s, T: bytemuck::NoUninit> {
     buffer: &'s wgpu::Buffer,
     queue: &'s wgpu::Queue,
 
@@ -137,7 +134,7 @@ pub struct VecBufferSliceMut<'s, T: WgslBytesWriteableSized> {
     start: usize,
 }
 
-impl<'s, T: WgslBytesWriteableSized> Index<usize> for VecBufferSliceMut<'s, T> {
+impl<'s, T: bytemuck::NoUninit> Index<usize> for VecBufferSliceMut<'s, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -145,20 +142,18 @@ impl<'s, T: WgslBytesWriteableSized> Index<usize> for VecBufferSliceMut<'s, T> {
     }
 }
 
-impl<'s, T: WgslBytesWriteableSized> IndexMut<usize> for VecBufferSliceMut<'s, T> {
+impl<'s, T: bytemuck::NoUninit> IndexMut<usize> for VecBufferSliceMut<'s, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.values[index]
     }
 }
 
-impl<T: WgslBytesWriteableSized> Drop for VecBufferSliceMut<'_, T> {
+impl<T: bytemuck::NoUninit> Drop for VecBufferSliceMut<'_, T> {
     fn drop(&mut self) {
-        let size = <T as encase::ShaderSize>::SHADER_SIZE.get();
-
         self.queue.write_buffer(
             self.buffer,
-            self.start as u64 * size,
-            &to_wgsl_bytes(&self.values),
+            self.start as wgpu::BufferAddress * mem::size_of::<T>() as wgpu::BufferAddress,
+            bytemuck::cast_slice(&self.values),
         );
     }
 }

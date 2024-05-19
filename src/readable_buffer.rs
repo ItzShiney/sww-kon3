@@ -1,15 +1,14 @@
 use crate::to_wgsl_bytes;
-use crate::WgslBytesWriteable;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use wgpu::util::DeviceExt;
 
-pub struct ReadableBuffer<T: WgslBytesWriteable> {
+pub struct ReadableBuffer<T: bytemuck::NoUninit> {
     buffer: wgpu::Buffer,
     value: T,
 }
 
-impl<T: WgslBytesWriteable> ReadableBuffer<T> {
+impl<T: bytemuck::NoUninit> ReadableBuffer<T> {
     pub fn new(device: &wgpu::Device, value: T) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -30,7 +29,7 @@ impl<T: WgslBytesWriteable> ReadableBuffer<T> {
     }
 
     fn update(&mut self, queue: &wgpu::Queue) {
-        queue.write_buffer(&self.buffer, 0, &to_wgsl_bytes(&self.value));
+        queue.write_buffer(&self.buffer, 0, to_wgsl_bytes(&self.value));
     }
 
     pub fn value(&self) -> &T {
@@ -45,12 +44,12 @@ impl<T: WgslBytesWriteable> ReadableBuffer<T> {
     }
 }
 
-pub struct ReadableBufferMut<'s, T: WgslBytesWriteable> {
+pub struct ReadableBufferMut<'s, T: bytemuck::NoUninit> {
     buffer: &'s mut ReadableBuffer<T>,
     queue: &'s wgpu::Queue,
 }
 
-impl<T: WgslBytesWriteable> Deref for ReadableBufferMut<'_, T> {
+impl<T: bytemuck::NoUninit> Deref for ReadableBufferMut<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -58,13 +57,13 @@ impl<T: WgslBytesWriteable> Deref for ReadableBufferMut<'_, T> {
     }
 }
 
-impl<T: WgslBytesWriteable> DerefMut for ReadableBufferMut<'_, T> {
+impl<T: bytemuck::NoUninit> DerefMut for ReadableBufferMut<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.buffer.value
     }
 }
 
-impl<T: WgslBytesWriteable> Drop for ReadableBufferMut<'_, T> {
+impl<T: bytemuck::NoUninit> Drop for ReadableBufferMut<'_, T> {
     fn drop(&mut self) {
         self.buffer.update(self.queue);
     }

@@ -2,22 +2,21 @@
 name = "sww"
 version = "0.1.0"
 edition = "2021"
-# default-run = "examples/che6"
 
 [dependencies]
 sww_extensions = { path = "sww_extensions" }
-encase = { version = "*", features = ["glam"] }
-winit = { version = "*", features = ["rwh_05"] }
+bytemuck = { version = "*", features = ["derive"] }
+winit = "*"
 env_logger = "*"
 memoffset = "*"
 pollster = "*"
 image = "*"
 wgpu = "*"
-glam = "*"
+glam = { version = "*", features = ["bytemuck"] }
 log = "*" # { version = "*", features = ["release_max_level_off"] }
 
 [build-dependencies]
-wgsl_to_wgpu = { git = "https://github.com/ScanMountGoat/wgsl_to_wgpu", tag = "v0.6.0" }
+wgsl_to_wgpu = "*"
 cargo-emit = "*"
 
 [dev-dependencies]

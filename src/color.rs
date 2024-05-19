@@ -1,6 +1,6 @@
 use glam::Vec4;
 
-#[derive(Clone, Copy, encase::ShaderType)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Color {
     pub r: f32,

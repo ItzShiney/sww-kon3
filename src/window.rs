@@ -13,22 +13,21 @@ pub use winit::event_loop::AsyncRequestSerial;
 pub use winit::window::ActivationToken;
 pub use winit::window::Theme;
 pub use winit::window::Window;
-pub use winit::window::WindowBuilder;
+pub use winit::window::WindowAttributes;
 pub use winit::window::WindowId;
 
-pub type Event = winit::event::Event<()>;
 pub type EventLoop = winit::event_loop::EventLoop<()>;
 pub type EventLoopError = winit::error::EventLoopError;
 pub type EventLoopResult = Result<(), EventLoopError>;
-pub type EventLoopTarget = winit::event_loop::EventLoopWindowTarget<()>;
 pub type PhysicalSize = winit::dpi::PhysicalSize<u32>;
 pub type PhysicalPosition = winit::dpi::PhysicalPosition<i32>;
 pub type FilePath = std::path::PathBuf;
 pub type CursorPosition = winit::dpi::PhysicalPosition<f64>;
+pub type PanDelta = winit::dpi::PhysicalPosition<f32>;
 pub type KeyboardModifiers = winit::event::Modifiers;
 
-pub fn window_builder(title: &str, width: u32, height: u32) -> WindowBuilder {
-    WindowBuilder::default()
+pub fn window_builder(title: &str, width: u32, height: u32) -> WindowAttributes {
+    WindowAttributes::default()
         .with_title(title)
         .with_inner_size(PhysicalSize::new(width, height))
 }

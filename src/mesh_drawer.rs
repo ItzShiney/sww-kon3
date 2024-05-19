@@ -31,6 +31,7 @@ impl MeshDrawer {
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
                     entry_point: shaders::mesh::ENTRY_FS_MAIN,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: app_info.swapchain_format(),
                         blend: Some(wgpu::BlendState {

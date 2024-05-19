@@ -1,5 +1,5 @@
+use crate::shaders::mesh::in_vertex;
 use crate::shaders::mesh::InVertex;
-use crate::to_wgsl_bytes;
 use crate::AppInfo;
 use crate::Color;
 use glam::vec2;
@@ -19,7 +19,7 @@ impl Mesh {
     pub fn new(device: &wgpu::Device, vertices: &[InVertex]) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: &to_wgsl_bytes(&vertices),
+            contents: bytemuck::cast_slice(vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
@@ -33,7 +33,7 @@ impl Mesh {
     pub fn new_indexed(device: &wgpu::Device, vertices: &[InVertex], indices: &[Index]) -> Self {
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: &to_wgsl_bytes(&indices),
+            contents: bytemuck::cast_slice(indices),
             usage: wgpu::BufferUsages::INDEX,
         });
 
@@ -47,26 +47,10 @@ impl Mesh {
         Self::new_indexed(
             &app_info.device,
             &[
-                InVertex {
-                    position: vec2(0., 0.),
-                    color: Color::WHITE.into(),
-                    texture_coord: vec2(0., 0.),
-                },
-                InVertex {
-                    position: vec2(0., size.y),
-                    color: Color::WHITE.into(),
-                    texture_coord: vec2(0., 1.),
-                },
-                InVertex {
-                    position: vec2(size.x, size.y),
-                    color: Color::WHITE.into(),
-                    texture_coord: vec2(1., 1.),
-                },
-                InVertex {
-                    position: vec2(size.x, 0.),
-                    color: Color::WHITE.into(),
-                    texture_coord: vec2(1., 0.),
-                },
+                in_vertex(vec2(0., 0.), Color::WHITE.into(), vec2(0., 0.)),
+                in_vertex(vec2(0., size.y), Color::WHITE.into(), vec2(0., 1.)),
+                in_vertex(vec2(size.x, size.y), Color::WHITE.into(), vec2(1., 1.)),
+                in_vertex(vec2(size.x, 0.), Color::WHITE.into(), vec2(1., 0.)),
             ],
             &[0, 1, 2, 0, 2, 3],
         )

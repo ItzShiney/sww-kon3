@@ -18,7 +18,8 @@ fn main() {
         let input = fs::read_to_string(&input_path).unwrap();
 
         let options = wgsl_to_wgpu::WriteOptions {
-            derive_encase: true,
+            derive_bytemuck_vertex: true,
+            derive_bytemuck_host_shareable: true,
             matrix_vector_types: wgsl_to_wgpu::MatrixVectorTypes::Glam,
             ..Default::default()
         };
