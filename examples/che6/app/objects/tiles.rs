@@ -11,9 +11,9 @@ use sww::AppInfo;
 use sww::Color;
 use sww::VecBuffer;
 
-pub fn make_white_black_tranforms(
-    app_info: &AppInfo,
-) -> (VecBuffer<Transform>, VecBuffer<Transform>) {
+pub fn make_white_black_tranforms<'q>(
+    app_info: &'q AppInfo,
+) -> (VecBuffer<'q, Transform>, VecBuffer<'q, Transform>) {
     let mut white = Vec::default();
     let mut black = Vec::default();
 
@@ -39,14 +39,14 @@ pub fn make_white_black_tranforms(
     )
 }
 
-pub struct Tiles {
-    white: SingleColorTiles,
-    black: SingleColorTiles,
+pub struct Tiles<'q> {
+    white: SingleColorTiles<'q>,
+    black: SingleColorTiles<'q>,
     bind_group1: shaders::mesh::BindGroup1,
 }
 
-impl Tiles {
-    pub fn new(app_info: &AppInfo, scalers: &mut Scalers) -> Self {
+impl<'q> Tiles<'q> {
+    pub fn new(app_info: &'q AppInfo, scalers: &mut Scalers) -> Self {
         let (white_transforms, black_transforms) = make_white_black_tranforms(app_info);
         let white = SingleColorTiles::new(app_info, scalers, Color::splat(0.45), white_transforms);
         let black = SingleColorTiles::new(app_info, scalers, Color::splat(0.25), black_transforms);

@@ -9,17 +9,17 @@ use sww::ReadableBuffer;
 use sww::VecBuffer;
 use sww::VecExtensions;
 
-pub struct SingleColorTiles {
-    pub transforms: VecBuffer<Transform>,
+pub struct SingleColorTiles<'q> {
+    pub transforms: VecBuffer<'q, Transform>,
     bind_group0: shaders::mesh::BindGroup0,
 }
 
-impl SingleColorTiles {
+impl<'q> SingleColorTiles<'q> {
     pub fn new(
-        app_info: &AppInfo,
+        app_info: &'q AppInfo,
         scalers: &mut Scalers,
         color: Color,
-        transforms: VecBuffer<Transform>,
+        transforms: VecBuffer<'q, Transform>,
     ) -> Self {
         let global_transform = scalers.push_last(ReadableBuffer::new(
             &app_info.device,

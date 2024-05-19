@@ -16,7 +16,7 @@ pub use tiles::*;
 pub type Scaler = ReadableBuffer<Transform>;
 pub type Scalers = Vec<Scaler>;
 
-fn make_piece_transforms(app_info: &AppInfo) -> VecBuffer<Transform> {
+fn make_piece_transforms<'q>(app_info: &'q AppInfo) -> VecBuffer<'q, Transform> {
     let mut piece_transforms = Vec::with_capacity(8 * 8);
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
@@ -46,8 +46,8 @@ fn make_piece_transforms(app_info: &AppInfo) -> VecBuffer<Transform> {
 pub struct Objects<'i, 'w> {
     app_info: &'i AppInfo<'w>,
     pub scalers: Scalers,
-    pub tiles: Tiles,
-    pub pieces: Pieces,
+    pub tiles: Tiles<'i>,
+    pub pieces: Pieces<'i>,
 }
 
 impl<'i, 'w> Objects<'i, 'w> {

@@ -11,17 +11,17 @@ use sww::ReadableBuffer;
 use sww::VecBuffer;
 use sww::VecExtensions;
 
-pub struct Pieces {
-    pub transforms: VecBuffer<Transform>,
+pub struct Pieces<'q> {
+    pub transforms: VecBuffer<'q, Transform>,
     bind_group0: shaders::mesh::BindGroup0,
     bind_group1: shaders::mesh::BindGroup1,
 }
 
-impl Pieces {
+impl<'q> Pieces<'q> {
     pub fn new(
-        app_info: &AppInfo,
+        app_info: &'q AppInfo,
         scalers: &mut Scalers,
-        transforms: VecBuffer<Transform>,
+        transforms: VecBuffer<'q, Transform>,
     ) -> Self {
         let global_transform =
             scalers.push_last(ReadableBuffer::new(&app_info.device, Transform::default()));
