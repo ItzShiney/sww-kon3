@@ -43,15 +43,15 @@ fn make_piece_transforms(app_info: &AppInfo) -> VecBuffer<Transform> {
     app_info.vec_buffer_vertex(piece_transforms)
 }
 
-pub struct Objects<'info, 'window> {
-    app_info: &'info AppInfo<'window>,
+pub struct Objects<'i, 'w> {
+    app_info: &'i AppInfo<'w>,
     pub scalers: Scalers,
     pub tiles: Tiles,
     pub pieces: Pieces,
 }
 
-impl<'info, 'window> Objects<'info, 'window> {
-    pub fn new(app_info: &'info AppInfo<'window>) -> Self {
+impl<'i, 'w> Objects<'i, 'w> {
+    pub fn new(app_info: &'i AppInfo<'w>) -> Self {
         let mut scalers = Scalers::default();
 
         let tiles = Tiles::new(app_info, &mut scalers);

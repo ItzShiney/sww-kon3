@@ -1,4 +1,4 @@
-use winit::dpi::PhysicalSize;
+use crate::PhysicalSize;
 
 pub trait AppSettings {
     fn instance_descriptor(&self) -> wgpu::InstanceDescriptor {
@@ -27,7 +27,7 @@ pub trait AppSettings {
 
     fn surface_config(
         &self,
-        size: PhysicalSize<u32>,
+        size: PhysicalSize,
         swapchain_format: wgpu::TextureFormat,
         swapchain_alpha_mode: wgpu::CompositeAlphaMode,
     ) -> wgpu::SurfaceConfiguration {

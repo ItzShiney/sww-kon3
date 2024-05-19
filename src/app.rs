@@ -24,7 +24,7 @@ use crate::WindowEvent;
 use crate::WindowId;
 
 #[derive(Clone, Copy)]
-pub struct AppEventInfo<'target> {
+pub struct EventInfo<'target> {
     pub target: &'target EventLoopTarget,
     pub window_id: WindowId,
 }
@@ -33,9 +33,10 @@ pub struct AppEventInfo<'target> {
 #[allow(unused)]
 pub trait App {
     fn handle_event(&mut self, event: Event, target: &EventLoopTarget) {
+        #[allow(clippy::single_match)]
         match event {
             Event::WindowEvent { event, window_id } => {
-                let info = AppEventInfo {
+                let info = EventInfo {
                     target,
                     window_id,
                 };
@@ -74,35 +75,35 @@ pub trait App {
         }
     }
 
-    fn on_activation_token_done(&mut self, info: AppEventInfo, serial: AsyncRequestSerial, token: ActivationToken) {}
-    fn on_resized(&mut self, info: AppEventInfo, new_size: PhysicalSize) {}
-    fn on_moved(&mut self, info: AppEventInfo, new_position: PhysicalPosition) {}
-    fn on_close_requested(&mut self, info: AppEventInfo) {
+    fn on_activation_token_done(&mut self, info: EventInfo, serial: AsyncRequestSerial, token: ActivationToken) {}
+    fn on_resized(&mut self, info: EventInfo, new_size: PhysicalSize) {}
+    fn on_moved(&mut self, info: EventInfo, new_position: PhysicalPosition) {}
+    fn on_close_requested(&mut self, info: EventInfo) {
         info.target.exit()
     }
-    fn on_destroyed(&mut self, info: AppEventInfo) {}
-    fn on_dropped_file(&mut self, info: AppEventInfo, path: FilePath) {}
-    fn on_hovered_file(&mut self, info: AppEventInfo, path: FilePath) {}
-    fn on_hovered_file_cancelled(&mut self, info: AppEventInfo) {}
-    fn on_focused(&mut self, info: AppEventInfo, is_focused: bool) {}
-    fn on_keyboard_input(&mut self, info: AppEventInfo, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {}
-    fn on_modifiers_changed(&mut self, info: AppEventInfo, modifiers: KeyboardModifiers) {}
-    fn on_ime(&mut self, info: AppEventInfo, ime: Ime) {}
-    fn on_cursor_moved(&mut self, info: AppEventInfo, device_id: DeviceId, position: CursorPosition) {}
-    fn on_cursor_entered(&mut self, info: AppEventInfo, device_id: DeviceId) {}
-    fn on_cursor_left(&mut self, info: AppEventInfo, device_id: DeviceId) {}
-    fn on_mouse_wheel(&mut self, info: AppEventInfo, device_id: DeviceId, delta: MouseScrollDelta, phase: TouchPhase) {}
-    fn on_mouse_input(&mut self, info: AppEventInfo, device_id: DeviceId, state: ElementState, button: MouseButton) {}
-    fn on_touchpad_magnify(&mut self, info: AppEventInfo, device_id: DeviceId, delta: f64, phase: TouchPhase) {}
-    fn on_smart_magnify(&mut self, info: AppEventInfo, device_id: DeviceId) {}
-    fn on_touchpad_rotate(&mut self, info: AppEventInfo, device_id: DeviceId, delta: f32, phase: TouchPhase) {}
-    fn on_touchpad_pressure(&mut self, info: AppEventInfo, device_id: DeviceId, pressure: f32, stage: i64) {}
-    fn on_axis_motion(&mut self, info: AppEventInfo, device_id: DeviceId, axis: AxisId, value: f64) {}
-    fn on_touch(&mut self, info: AppEventInfo, touch: Touch) {}
-    fn on_scale_factor_changed(&mut self, info: AppEventInfo, scale_factor: f64, inner_size_writer: InnerSizeWriter) {}
-    fn on_theme_changed(&mut self, info: AppEventInfo, theme: Theme) {}
-    fn on_occluded(&mut self, info: AppEventInfo, is_occluded: bool) {}
-    fn on_redraw_requested(&mut self, info: AppEventInfo) {}
+    fn on_destroyed(&mut self, info: EventInfo) {}
+    fn on_dropped_file(&mut self, info: EventInfo, path: FilePath) {}
+    fn on_hovered_file(&mut self, info: EventInfo, path: FilePath) {}
+    fn on_hovered_file_cancelled(&mut self, info: EventInfo) {}
+    fn on_focused(&mut self, info: EventInfo, is_focused: bool) {}
+    fn on_keyboard_input(&mut self, info: EventInfo, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {}
+    fn on_modifiers_changed(&mut self, info: EventInfo, modifiers: KeyboardModifiers) {}
+    fn on_ime(&mut self, info: EventInfo, ime: Ime) {}
+    fn on_cursor_moved(&mut self, info: EventInfo, device_id: DeviceId, position: CursorPosition) {}
+    fn on_cursor_entered(&mut self, info: EventInfo, device_id: DeviceId) {}
+    fn on_cursor_left(&mut self, info: EventInfo, device_id: DeviceId) {}
+    fn on_mouse_wheel(&mut self, info: EventInfo, device_id: DeviceId, delta: MouseScrollDelta, phase: TouchPhase) {}
+    fn on_mouse_input(&mut self, info: EventInfo, device_id: DeviceId, state: ElementState, button: MouseButton) {}
+    fn on_touchpad_magnify(&mut self, info: EventInfo, device_id: DeviceId, delta: f64, phase: TouchPhase) {}
+    fn on_smart_magnify(&mut self, info: EventInfo, device_id: DeviceId) {}
+    fn on_touchpad_rotate(&mut self, info: EventInfo, device_id: DeviceId, delta: f32, phase: TouchPhase) {}
+    fn on_touchpad_pressure(&mut self, info: EventInfo, device_id: DeviceId, pressure: f32, stage: i64) {}
+    fn on_axis_motion(&mut self, info: EventInfo, device_id: DeviceId, axis: AxisId, value: f64) {}
+    fn on_touch(&mut self, info: EventInfo, touch: Touch) {}
+    fn on_scale_factor_changed(&mut self, info: EventInfo, scale_factor: f64, inner_size_writer: InnerSizeWriter) {}
+    fn on_theme_changed(&mut self, info: EventInfo, theme: Theme) {}
+    fn on_occluded(&mut self, info: EventInfo, is_occluded: bool) {}
+    fn on_redraw_requested(&mut self, info: EventInfo) {}
 
     fn run(&mut self, event_loop: EventLoop) -> EventLoopResult {
         event_loop.run(|event, target| self.handle_event(event, target))
