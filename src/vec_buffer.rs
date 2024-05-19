@@ -153,7 +153,7 @@ impl<T: bytemuck::NoUninit> Drop for VecBufferSliceMut<'_, T> {
         self.queue.write_buffer(
             self.buffer,
             self.start as wgpu::BufferAddress * mem::size_of::<T>() as wgpu::BufferAddress,
-            bytemuck::cast_slice(&self.values),
+            bytemuck::cast_slice(self.values),
         );
     }
 }

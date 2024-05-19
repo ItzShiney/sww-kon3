@@ -1,4 +1,3 @@
-use crate::to_wgsl_bytes;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use wgpu::util::DeviceExt;
@@ -12,7 +11,7 @@ impl<T: bytemuck::NoUninit> ReadableBuffer<T> {
     pub fn new(device: &wgpu::Device, value: T) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: &to_wgsl_bytes(&value),
+            contents: bytemuck::bytes_of(&value),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -29,7 +28,7 @@ impl<T: bytemuck::NoUninit> ReadableBuffer<T> {
     }
 
     fn update(&mut self, queue: &wgpu::Queue) {
-        queue.write_buffer(&self.buffer, 0, to_wgsl_bytes(&self.value));
+        queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&self.value));
     }
 
     pub fn value(&self) -> &T {

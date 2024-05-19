@@ -1,14 +1,6 @@
 use std::io::Write;
 use std::mem;
 
-pub fn to_wgsl_bytes<T: bytemuck::NoUninit + ?Sized>(value: &T) -> &[u8] {
-    bytemuck::bytes_of(value)
-}
-
-pub fn from_wgsl_bytes<T: bytemuck::AnyBitPattern>(bytes: &[u8]) -> &T {
-    bytemuck::from_bytes(&bytes)
-}
-
 pub fn create_buffer_partially_init<T: bytemuck::NoUninit>(
     device: &wgpu::Device,
     values: &Vec<T>,
