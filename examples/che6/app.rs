@@ -9,14 +9,7 @@ pub use drawer::*;
 pub use objects::*;
 pub use pieces::*;
 use std::iter;
-use sww::vec2;
-use sww::App;
-use sww::AppInfo;
-use sww::Event;
-use sww::EventLoopTarget;
-use sww::Ratio;
-use sww::Vec2;
-use sww::WindowEvent;
+use sww::*;
 use winit::window::Window;
 
 pub fn translation(x: i32, y: i32) -> Vec2 {
@@ -56,65 +49,51 @@ impl<'info, 'window> MyApp<'info, 'window> {
 }
 
 impl App for MyApp<'_, '_> {
-    fn handle_event(&mut self, event: Event, target: &EventLoopTarget) {
-        #[allow(clippy::single_match)]
-        match event {
-            Event::WindowEvent {
-                window_id: _,
-                event,
-            } => match event {
-                WindowEvent::Resized(new_size) => {
-                    let mut surface_config = self.info.surface_config.borrow_mut();
-                    surface_config.width = new_size.width.max(1);
-                    surface_config.height = new_size.height.max(1);
+    fn on_resized(&mut self, _info: AppEventInfo, new_size: PhysicalSize) {
+        let mut surface_config = self.info.surface_config.borrow_mut();
+        surface_config.width = new_size.width.max(1);
+        surface_config.height = new_size.height.max(1);
 
-                    self.info
-                        .surface
-                        .configure(&self.info.device, &surface_config);
+        self.info
+            .surface
+            .configure(&self.info.device, &surface_config);
 
-                    self.window.request_redraw();
-                }
+        self.window.request_redraw();
+    }
 
-                WindowEvent::RedrawRequested => {
-                    self.objects.scale(self.window.ratio());
+    fn on_redraw_requested(&mut self, _info: AppEventInfo) {
+        self.objects.scale(self.window.ratio());
 
-                    let frame = self
-                        .info
-                        .surface
-                        .get_current_texture()
-                        .expect("failed to acquire next swapchain texture");
+        let frame = self
+            .info
+            .surface
+            .get_current_texture()
+            .expect("failed to acquire next swapchain texture");
+        let mut command_encoder = self.info.device.create_command_encoder(&Default::default());
 
-                    let view = frame.texture.create_view(&Default::default());
-                    let mut command_encoder =
-                        self.info.device.create_command_encoder(&Default::default());
+        self.draw(&mut command_encoder, &frame);
 
-                    {
-                        let mut render_pass =
-                            command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view: &view,
-                                    resolve_target: None,
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                        store: wgpu::StoreOp::Store,
-                                    },
-                                })],
-                                ..Default::default()
-                            });
+        self.info.queue.submit(iter::once(command_encoder.finish()));
+        frame.present();
+    }
+}
 
-                        self.objects.draw(&self.drawer, &mut render_pass);
-                    }
+impl MyApp<'_, '_> {
+    fn draw(&mut self, command_encoder: &mut wgpu::CommandEncoder, frame: &wgpu::SurfaceTexture) {
+        let view = frame.texture.create_view(&Default::default());
 
-                    self.info.queue.submit(iter::once(command_encoder.finish()));
-                    frame.present();
-                }
+        let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            ..Default::default()
+        });
 
-                WindowEvent::CloseRequested => target.exit(),
-
-                _ => {}
-            },
-
-            _ => {}
-        }
+        self.objects.draw(&self.drawer, &mut render_pass);
     }
 }

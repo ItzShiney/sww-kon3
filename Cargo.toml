@@ -13,12 +13,11 @@ memoffset = "*"
 pollster = "*"
 image = "*"
 wgpu = "*"
-ctor = "*"
 glam = "*"
 log = "*" # { version = "*", features = ["release_max_level_off"] }
 
 [build-dependencies]
-wgsl_to_wgpu = "0.6.0"
+wgsl_to_wgpu = { git = "https://github.com/ScanMountGoat/wgsl_to_wgpu", tag = "v0.6.0" }
 cargo-emit = "*"
 
 [dev-dependencies]
