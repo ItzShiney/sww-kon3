@@ -28,7 +28,7 @@ impl Pieces {
 
         let texture = read_texture(
             &app_info.device,
-            &app_info.queue,
+            app_info.queue(),
             io::Cursor::new(include_bytes!("../pieces.png")),
         );
         let texture_view = texture.default_view();

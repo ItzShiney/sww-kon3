@@ -28,11 +28,11 @@ impl<'i, 'w> MyApp<'i, 'w> {
         let mut objects = Objects::new(info);
 
         objects.pieces.transforms.push(
-            &info.queue,
+            info.queue(),
             make_piece_transform(0, 0, PieceType::Boat, PieceColor::White),
         );
         objects.pieces.transforms.push(
-            &info.queue,
+            info.queue(),
             make_piece_transform(-1, -1, PieceType::Boat, PieceColor::Black),
         );
 

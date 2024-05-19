@@ -70,7 +70,7 @@ impl<'i, 'w> Objects<'i, 'w> {
         let matrix = Mat2::from_diagonal(vec2(scale.min(scale / ratio), scale.min(scale * ratio)));
 
         for transform_buffer in self.scalers.iter_mut() {
-            let mut transform = transform_buffer.value_mut(&self.app_info.queue);
+            let mut transform = transform_buffer.value_mut(self.app_info.queue());
             transform.matrix = matrix;
         }
     }

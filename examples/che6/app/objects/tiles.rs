@@ -52,7 +52,7 @@ impl Tiles {
         let black = SingleColorTiles::new(app_info, scalers, Color::splat(0.25), black_transforms);
 
         let bind_group1 = {
-            let default_texture = make_default_texture(&app_info.device, &app_info.queue);
+            let default_texture = make_default_texture(&app_info.device, app_info.queue());
             let default_texture_view = default_texture.create_view(&Default::default());
 
             shaders::mesh::BindGroup1::from_bindings(

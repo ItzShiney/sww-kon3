@@ -9,7 +9,7 @@ use std::cell::RefCell;
 
 pub struct AppInfo<'w> {
     pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
+    queue: wgpu::Queue,
     surface: wgpu::Surface<'w>,
     surface_config: RefCell<wgpu::SurfaceConfiguration>,
     swapchain_format: wgpu::TextureFormat,
@@ -47,6 +47,10 @@ impl<'w> AppInfo<'w> {
             surface_config,
             swapchain_format,
         }
+    }
+
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
     }
 
     pub fn start_drawing(&self) -> Frame {
