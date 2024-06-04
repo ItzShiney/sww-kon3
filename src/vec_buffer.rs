@@ -14,7 +14,7 @@ pub struct VecBuffer<'q, T> {
 impl<'q, T: bytemuck::NoUninit + Sized> VecBuffer<'q, T> {
     pub fn new(app_info: &'q AppInfo, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
         let buffer = create_buffer_partially_init(
-            &app_info.device,
+            app_info.device(),
             &values,
             usage | wgpu::BufferUsages::COPY_DST,
         );

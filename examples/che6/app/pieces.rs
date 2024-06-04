@@ -24,22 +24,22 @@ impl<'q> Pieces<'q> {
         transforms: VecBuffer<'q, Transform>,
     ) -> Self {
         let global_transform =
-            scalers.push_last(ReadableBuffer::new(&app_info.device, Transform::default()));
+            scalers.push_last(ReadableBuffer::new(app_info.device(), Transform::default()));
 
         let texture = read_texture(
-            &app_info.device,
+            app_info.device(),
             app_info.queue(),
             io::Cursor::new(include_bytes!("../pieces.png")),
         );
         let texture_view = texture.default_view();
 
         let bind_group0 = shaders::mesh::BindGroup0::from_bindings(
-            &app_info.device,
+            app_info.device(),
             global_transform.buffer().binding().into(),
         );
 
         let bind_group1 = shaders::mesh::BindGroup1::from_bindings(
-            &app_info.device,
+            app_info.device(),
             shaders::mesh::BindGroupLayout1 {
                 texture: &texture_view,
             },

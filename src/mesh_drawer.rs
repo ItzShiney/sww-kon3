@@ -12,12 +12,12 @@ pub struct MeshDrawer {
 
 impl MeshDrawer {
     pub fn new(app_info: &AppInfo) -> Self {
-        let pipeline_layout = shaders::mesh::create_pipeline_layout(&app_info.device);
+        let pipeline_layout = shaders::mesh::create_pipeline_layout(app_info.device());
 
-        let shader = shaders::mesh::create_shader_module(&app_info.device);
+        let shader = shaders::mesh::create_shader_module(app_info.device());
 
         let pipeline = app_info
-            .device
+            .device()
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: None,
                 layout: Some(&pipeline_layout),

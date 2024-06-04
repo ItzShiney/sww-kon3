@@ -2,13 +2,12 @@ mod drawer;
 mod objects;
 mod pieces;
 
-use crate::sheet::make_piece_transform;
-use crate::sheet::PieceColor;
-use crate::sheet::PieceType;
+use crate::sheet::*;
 pub use drawer::*;
 pub use objects::*;
 pub use pieces::*;
 use sww::*;
+use window::event::*;
 
 pub fn translation(x: i32, y: i32) -> Vec2 {
     vec2(x as _, y as _)
@@ -16,14 +15,12 @@ pub fn translation(x: i32, y: i32) -> Vec2 {
 
 pub struct MyApp<'i, 'w> {
     info: &'i AppInfo<'w>,
-    window: &'w Window,
-
     objects: Objects<'i, 'w>,
     drawer: Drawer,
 }
 
 impl<'i, 'w> MyApp<'i, 'w> {
-    pub fn new(info: &'i AppInfo<'w>, window: &'w Window) -> Self {
+    pub fn new(info: &'i AppInfo<'w>) -> Self {
         let drawer = Drawer::new(info);
         let mut objects = Objects::new(info);
 
@@ -42,8 +39,6 @@ impl<'i, 'w> MyApp<'i, 'w> {
 
         Self {
             info,
-            window,
-
             drawer,
             objects,
         }
@@ -53,11 +48,11 @@ impl<'i, 'w> MyApp<'i, 'w> {
 impl App for MyApp<'_, '_> {
     fn on_resized(&mut self, _info: EventInfo, new_size: PhysicalSize) {
         self.info.resize_surface(new_size);
-        self.window.request_redraw();
+        self.info.window().request_redraw();
     }
 
     fn on_redraw_requested(&mut self, _info: EventInfo) {
-        self.objects.scale(self.window.ratio());
+        self.objects.scale(self.info.window().ratio());
 
         let mut frame = self.info.start_drawing();
         self.draw(&mut frame);

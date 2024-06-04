@@ -3,18 +3,23 @@ mod sheet;
 
 use app::*;
 use sww::*;
+use window::event_loop;
+use window::window_attributes;
 
 pub fn main() {
     env_logger::init();
 
-    let event_loop = event_loop();
-    #[allow(deprecated)]
-    let window = event_loop
-        .create_window(window_builder("che6", 400, 200))
-        .unwrap();
+    let mut app = LazyWindowedApp::new(|event_loop| {
+        let window = event_loop
+            .create_window(window_attributes("che6", 400, 200))
+            .unwrap();
 
-    let app_info = AppInfo::new(&window, &DefaultAppSettings);
-    let mut app = MyApp::new(&app_info, &window);
+        WindowedApp::new(
+            window,
+            app_info_builder(&DefaultAppSettings),
+            app_builder!(MyApp::new),
+        )
+    });
 
-    app.run(event_loop).unwrap();
+    event_loop().run_app(&mut app).unwrap();
 }

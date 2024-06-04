@@ -1,44 +1,24 @@
-use crate::ActivationToken;
-use crate::AsyncRequestSerial;
-use crate::AxisId;
-use crate::CursorPosition;
-use crate::DeviceId;
-use crate::ElementState;
-use crate::EventLoop;
-use crate::EventLoopResult;
-use crate::FilePath;
-use crate::Ime;
-use crate::InnerSizeWriter;
-use crate::KeyEvent;
-use crate::KeyboardModifiers;
-use crate::MouseButton;
-use crate::MouseScrollDelta;
-use crate::PanDelta;
-use crate::PhysicalPosition;
-use crate::PhysicalSize;
-use crate::Theme;
-use crate::Touch;
-use crate::TouchPhase;
-use crate::WindowEvent;
-use crate::WindowId;
-use winit::event::Event;
-use winit::event_loop::ActiveEventLoop;
+mod lazy_windowed_app;
+mod windowed_app;
+
+use crate::window::*;
+use event::*;
+pub use lazy_windowed_app::*;
+pub use windowed_app::*;
 
 #[derive(Clone, Copy)]
-pub struct EventInfo<'e> {
-    pub event_loop: &'e ActiveEventLoop,
+pub struct EventInfo<'target> {
+    pub window: &'target Window,
+    pub event_loop: &'target ActiveEventLoop,
     pub window_id: WindowId,
 }
 
 #[rustfmt::skip]
 #[allow(unused)]
 pub trait App {
-    fn handle_event(&mut self, event_loop: &ActiveEventLoop, event: Event<()>) {
-        let Event::WindowEvent { window_id, event } = event else {
-            return;
-        };
-
+    fn handle_event(&mut self, window: &Window, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
         let info = EventInfo {
+            window,
             event_loop,
             window_id,
         };
@@ -108,9 +88,14 @@ pub trait App {
     fn on_theme_changed(&mut self, info: EventInfo, theme: Theme) {}
     fn on_occluded(&mut self, info: EventInfo, is_occluded: bool) {}
     fn on_redraw_requested(&mut self, info: EventInfo) {}
+}
 
-    fn run(&mut self, event_loop: EventLoop) -> EventLoopResult {
-        #[allow(deprecated)]
-        event_loop.run(|event, target| self.handle_event(target, event))
-    }
+// Can't be made into a function until either gets implemented:
+// * `T: for<'s> (App + 's)` in generics
+// * `-> impl ...` for `impl for<'s> FnOnce(...)`
+#[macro_export]
+macro_rules! app_builder {
+    ($f:expr) => {
+        |app_info| Box::new($f(app_info))
+    };
 }

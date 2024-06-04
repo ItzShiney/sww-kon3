@@ -1,4 +1,4 @@
-use crate::PhysicalSize;
+use crate::window::event::PhysicalSize;
 
 pub trait AppSettings {
     fn instance_descriptor(&self) -> wgpu::InstanceDescriptor {

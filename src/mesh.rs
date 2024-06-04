@@ -45,7 +45,7 @@ impl Mesh {
 
     pub fn rect(app_info: &AppInfo, size: Vec2) -> Self {
         Self::new_indexed(
-            &app_info.device,
+            app_info.device(),
             &[
                 in_vertex(vec2(0., 0.), Color::WHITE.into(), vec2(0., 0.)),
                 in_vertex(vec2(0., size.y), Color::WHITE.into(), vec2(0., 1.)),

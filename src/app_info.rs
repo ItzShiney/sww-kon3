@@ -1,18 +1,19 @@
 mod frame;
 
+use crate::window::*;
 use crate::AppSettings;
-use crate::PhysicalSize;
-use crate::Window;
+use event::*;
 pub use frame::*;
 use pollster::FutureExt;
 use std::cell::RefCell;
 
 pub struct AppInfo<'w> {
-    pub device: wgpu::Device,
-    queue: wgpu::Queue,
+    window: &'w Window,
     surface: wgpu::Surface<'w>,
     surface_config: RefCell<wgpu::SurfaceConfiguration>,
     swapchain_format: wgpu::TextureFormat,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
 }
 
 impl<'w> AppInfo<'w> {
@@ -41,12 +42,21 @@ impl<'w> AppInfo<'w> {
         let surface_config = surface_config.into();
 
         Self {
-            device,
-            queue,
+            window,
             surface,
             surface_config,
             swapchain_format,
+            device,
+            queue,
         }
+    }
+
+    pub fn window(&self) -> &Window {
+        self.window
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
     }
 
     pub fn queue(&self) -> &wgpu::Queue {
@@ -75,4 +85,10 @@ impl<'w> AppInfo<'w> {
     pub fn swapchain_format(&self) -> wgpu::TextureFormat {
         self.swapchain_format
     }
+}
+
+pub fn app_info_builder<'s>(
+    settings: &'s impl AppSettings,
+) -> impl FnOnce(&Window) -> AppInfo + 's {
+    move |window| AppInfo::new(window, settings)
 }

@@ -22,7 +22,7 @@ impl<'q> SingleColorTiles<'q> {
         transforms: VecBuffer<'q, Transform>,
     ) -> Self {
         let global_transform = scalers.push_last(ReadableBuffer::new(
-            &app_info.device,
+            app_info.device(),
             Transform {
                 color: color.into(),
                 ..Default::default()
@@ -31,7 +31,7 @@ impl<'q> SingleColorTiles<'q> {
 
         let bind_group0 = {
             let global_transform = global_transform.buffer().binding();
-            shaders::mesh::BindGroup0::from_bindings(&app_info.device, global_transform.into())
+            shaders::mesh::BindGroup0::from_bindings(app_info.device(), global_transform.into())
         };
 
         Self {
