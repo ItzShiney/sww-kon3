@@ -9,7 +9,7 @@ fn main() {
 
     #[allow(clippy::single_element_loop)]
     for file_name in ["mesh"] {
-        let input_path = format!("src/{file_name}.wgsl");
+        let input_path = format!("src/shaders/{file_name}/shader.wgsl");
         let output_path = format!("{output_dir}/{file_name}.rs");
         let input_absolute_path = format!("{root_dir}/{input_path}");
 

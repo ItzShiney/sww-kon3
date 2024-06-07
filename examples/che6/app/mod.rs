@@ -1,13 +1,20 @@
+use crate::sheet::*;
+use sww::app::App;
+use sww::app::AppInfo;
+use sww::app::EventInfo;
+use sww::app::Frame;
+use sww::vec2;
+use sww::window::event::*;
+use sww::Ratio;
+use sww::Vec2;
+
 mod drawer;
 mod objects;
 mod pieces;
 
-use crate::sheet::*;
 pub use drawer::*;
 pub use objects::*;
 pub use pieces::*;
-use sww::*;
-use window::event::*;
 
 pub fn translation(x: i32, y: i32) -> Vec2 {
     vec2(x as _, y as _)

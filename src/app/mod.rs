@@ -1,10 +1,13 @@
-mod lazy_windowed_app;
-mod windowed_app;
-
 use crate::window::*;
 use event::*;
-pub use lazy_windowed_app::*;
-pub use windowed_app::*;
+
+mod info;
+mod settings;
+mod windowed;
+
+pub use info::*;
+pub use settings::*;
+pub use windowed::*;
 
 #[derive(Clone, Copy)]
 pub struct EventInfo<'target> {
@@ -14,7 +17,7 @@ pub struct EventInfo<'target> {
 }
 
 #[rustfmt::skip]
-#[allow(unused)]
+#[allow(unused)]    
 pub trait App {
     fn handle_event(&mut self, window: &Window, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
         let info = EventInfo {

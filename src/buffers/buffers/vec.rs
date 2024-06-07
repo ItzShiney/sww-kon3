@@ -1,5 +1,5 @@
+use crate::app::AppInfo;
 use crate::create_buffer_partially_init;
-use crate::AppInfo;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;

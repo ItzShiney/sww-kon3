@@ -1,14 +1,15 @@
+use crate::translation;
+use sww::shaders;
+use sww::shaders::mesh::Transform;
+use sww::Vec2;
+
 mod coord;
 mod piece_color;
 mod piece_type;
 
-use crate::translation;
 pub use coord::*;
 pub use piece_color::*;
 pub use piece_type::*;
-use sww::shaders;
-use sww::shaders::mesh::Transform;
-use sww::Vec2;
 
 pub fn texture_rect<T: Coord<Output = Vec2>>(coord: T) -> shaders::mesh::Rectangle {
     let size = T::size();

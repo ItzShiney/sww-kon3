@@ -1,10 +1,9 @@
+use crate::app::AppInfo;
+use crate::drawing::Mesh;
+use crate::drawing::INDEX_FORMAT;
 use crate::shaders;
-use crate::AppInfo;
-use crate::Mesh;
+use crate::shaders::mesh::Transform;
 use crate::VecBufferSlice;
-use crate::INDEX_FORMAT;
-
-type BufferType = shaders::mesh::Transform;
 
 pub struct MeshDrawer {
     pipeline: wgpu::RenderPipeline,
@@ -58,7 +57,7 @@ impl MeshDrawer {
         &'s self,
         render_pass: &mut wgpu::RenderPass<'s>,
         mesh: &'s Mesh,
-        transforms: VecBufferSlice<'s, BufferType>,
+        transforms: VecBufferSlice<'s, Transform>,
         bind_groups: &shaders::mesh::BindGroups<'s>,
     ) {
         render_pass.set_pipeline(&self.pipeline);

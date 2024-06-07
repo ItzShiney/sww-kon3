@@ -1,10 +1,14 @@
+use crate::app::AppInfo;
 use crate::shaders::mesh::in_vertex;
 use crate::shaders::mesh::InVertex;
-use crate::AppInfo;
 use crate::Color;
 use glam::vec2;
 use glam::Vec2;
 use wgpu::util::DeviceExt;
+
+mod drawer;
+
+pub use drawer::*;
 
 pub type Index = u32;
 pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;

@@ -1,11 +1,12 @@
-mod frame;
-
+use crate::app::AppSettings;
 use crate::window::*;
-use crate::AppSettings;
 use event::*;
-pub use frame::*;
 use pollster::FutureExt;
 use std::cell::RefCell;
+
+mod frame;
+
+pub use frame::*;
 
 pub struct AppInfo<'w> {
     window: &'w Window,

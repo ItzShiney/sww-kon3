@@ -1,7 +1,11 @@
+use crate::app::App;
+use crate::app::AppInfo;
 use crate::window::*;
-use crate::App;
-use crate::AppInfo;
 use ouroboros::self_referencing;
+
+mod lazy_windowed;
+
+pub use lazy_windowed::*;
 
 #[self_referencing(pub_extras)]
 pub struct WindowedApp {

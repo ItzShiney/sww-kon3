@@ -3,28 +3,18 @@ pub use glam::*;
 pub use sww_extensions::*;
 pub use wgpu;
 
-mod app;
-mod app_info;
-mod app_settings;
-mod bytes;
-mod color;
-mod images;
-mod lazy;
-mod mesh;
-mod mesh_drawer;
-mod readable_buffer;
+pub mod app;
+pub mod drawing;
 pub mod shaders;
-mod vec_buffer;
 pub mod window;
 
-pub use app::*;
-pub use app_info::*;
-pub use app_settings::*;
-pub use bytes::*;
+pub use buffers::*;
 pub use color::*;
 pub use images::*;
-pub use lazy::*;
-pub use mesh::*;
-pub use mesh_drawer::*;
-pub use readable_buffer::*;
-pub use vec_buffer::*;
+
+mod buffers;
+mod color;
+mod images;
+mod utility;
+
+use utility::*;

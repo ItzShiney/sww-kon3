@@ -1,4 +1,4 @@
-use crate::AppInfo;
+use crate::app::AppInfo;
 use std::iter;
 use std::mem::ManuallyDrop;
 

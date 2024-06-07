@@ -1,7 +1,8 @@
+use crate::app::AppInfo;
+
 mod commands;
 mod surface;
 
-use crate::AppInfo;
 pub use commands::*;
 pub use surface::*;
 

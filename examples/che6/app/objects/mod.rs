@@ -1,16 +1,17 @@
-mod tiles;
-
 use crate::sheet::make_piece_transform;
 use crate::sheet::PieceColor;
 use crate::sheet::PieceType;
 use crate::Drawer;
 use crate::Pieces;
+use sww::app::AppInfo;
 use sww::shaders::mesh::Transform;
 use sww::vec2;
-use sww::AppInfo;
 use sww::Mat2;
 use sww::ReadableBuffer;
 use sww::VecBuffer;
+
+mod tiles;
+
 pub use tiles::*;
 
 pub type Scaler = ReadableBuffer<Transform>;

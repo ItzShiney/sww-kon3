@@ -1,9 +1,9 @@
+use sww::app::AppInfo;
+use sww::drawing::Mesh;
+use sww::drawing::MeshDrawer;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
 use sww::vec2;
-use sww::AppInfo;
-use sww::Mesh;
-use sww::MeshDrawer;
 use sww::VecBufferSlice;
 
 pub struct Drawer {

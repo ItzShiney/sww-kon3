@@ -1,15 +1,16 @@
-mod single_color;
-
 use crate::translation;
 use crate::Drawer;
 use crate::Scalers;
-pub use single_color::*;
+use sww::app::AppInfo;
 use sww::make_default_texture;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
-use sww::AppInfo;
 use sww::Color;
 use sww::VecBuffer;
+
+mod single_color;
+
+pub use single_color::*;
 
 pub fn make_white_black_tranforms<'q>(
     app_info: &'q AppInfo,

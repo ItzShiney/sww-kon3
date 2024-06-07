@@ -1,7 +1,7 @@
+use crate::app::WindowedApp;
 use crate::window::event::*;
 use crate::window::WindowId;
 use crate::Lazy;
-use crate::WindowedApp;
 use winit::application::ApplicationHandler;
 
 pub struct LazyWindowedApp<F>(Lazy<WindowedApp, F>);
