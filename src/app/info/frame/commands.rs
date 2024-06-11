@@ -1,5 +1,4 @@
 use crate::app::AppInfo;
-use std::iter;
 use std::mem::ManuallyDrop;
 
 pub struct FrameCommands<'i, 'w> {
@@ -23,6 +22,6 @@ impl<'i, 'w> FrameCommands<'i, 'w> {
 impl Drop for FrameCommands<'_, '_> {
     fn drop(&mut self) {
         let command_encoder = unsafe { ManuallyDrop::take(&mut self.encoder) };
-        self.info.queue.submit(iter::once(command_encoder.finish()));
+        self.info.queue.submit(Some(command_encoder.finish()));
     }
 }
