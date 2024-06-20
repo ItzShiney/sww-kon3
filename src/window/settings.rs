@@ -1,6 +1,6 @@
 use crate::window::event::PhysicalSize;
 
-pub trait AppSettings {
+pub trait RenderWindowSettings {
     fn instance_descriptor(&self) -> wgpu::InstanceDescriptor {
         Default::default()
     }
@@ -44,6 +44,6 @@ pub trait AppSettings {
     }
 }
 
-pub struct DefaultAppSettings;
+pub struct DefaultRenderWindowSettings;
 
-impl AppSettings for DefaultAppSettings {}
+impl RenderWindowSettings for DefaultRenderWindowSettings {}

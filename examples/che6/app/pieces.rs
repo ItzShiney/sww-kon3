@@ -1,10 +1,10 @@
 use crate::Drawer;
 use crate::Scalers;
 use std::io;
-use sww::app::RenderWindow;
 use sww::media;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
+use sww::window::RenderWindow;
 use sww::Binding;
 use sww::DefaultView;
 use sww::ReadableBuffer;

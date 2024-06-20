@@ -2,13 +2,11 @@ mod app;
 mod sheet;
 
 use app::*;
-use sww::app::app_info_builder;
 use sww::app::App;
 use sww::app::AppPack;
-use sww::app::DefaultAppSettings;
 use sww::app_builder;
-use sww::window::event_loop;
-use sww::window::window_attributes;
+use sww::window::DefaultRenderWindowSettings;
+use sww::window::*;
 
 pub fn main() {
     env_logger::init();
@@ -20,7 +18,7 @@ pub fn main() {
 
         AppPack::new(
             window,
-            app_info_builder(&DefaultAppSettings),
+            render_window_builder(&DefaultRenderWindowSettings),
             app_builder!(MyApp::new),
         )
     });

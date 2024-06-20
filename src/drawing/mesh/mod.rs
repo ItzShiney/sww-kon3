@@ -1,6 +1,6 @@
-use crate::app::RenderWindow;
 use crate::shaders::mesh::in_vertex;
 use crate::shaders::mesh::InVertex;
+use crate::window::RenderWindow;
 use crate::Color;
 use glam::vec2;
 use glam::Vec2;

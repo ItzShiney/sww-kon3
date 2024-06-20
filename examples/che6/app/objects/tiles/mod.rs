@@ -1,7 +1,7 @@
 use crate::translation;
 use crate::Drawer;
 use crate::Scalers;
-use sww::app::RenderWindow;
+use sww::window::RenderWindow;
 use sww::media;
 use sww::shaders;
 use sww::shaders::mesh::Transform;

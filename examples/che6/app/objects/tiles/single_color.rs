@@ -1,8 +1,8 @@
 use crate::Drawer;
 use crate::Scalers;
-use sww::app::RenderWindow;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
+use sww::window::RenderWindow;
 use sww::Binding;
 use sww::Color;
 use sww::ReadableBuffer;

@@ -1,13 +1,10 @@
-use crate::app::AppSettings;
 use crate::window::*;
 use event::*;
 use pollster::FutureExt;
 use std::cell::RefCell;
 
-mod error;
 mod frame;
 
-pub use error::*;
 pub use frame::*;
 
 pub struct RenderWindow<'w> {
@@ -20,7 +17,10 @@ pub struct RenderWindow<'w> {
 }
 
 impl<'w> RenderWindow<'w> {
-    pub fn new(window: &'w Window, settings: &impl AppSettings) -> Result<Self, AppInfoError> {
+    pub fn new(
+        window: &'w Window,
+        settings: &impl RenderWindowSettings,
+    ) -> Result<Self, AppInfoError> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(settings.instance_descriptor());
@@ -86,8 +86,8 @@ impl<'w> RenderWindow<'w> {
     }
 }
 
-pub fn app_info_builder<'s>(
-    settings: &'s impl AppSettings,
+pub fn render_window_builder<'s>(
+    settings: &'s impl RenderWindowSettings,
 ) -> impl FnOnce(&Window) -> RenderWindow + 's {
     move |window| RenderWindow::new(window, settings).unwrap()
 }

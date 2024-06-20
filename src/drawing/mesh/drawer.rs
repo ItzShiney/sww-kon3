@@ -1,8 +1,8 @@
-use crate::app::RenderWindow;
 use crate::drawing::Mesh;
 use crate::drawing::INDEX_FORMAT;
 use crate::shaders;
 use crate::shaders::mesh::Transform;
+use crate::window::RenderWindow;
 use crate::VecBufferSlice;
 
 pub struct MeshDrawer {

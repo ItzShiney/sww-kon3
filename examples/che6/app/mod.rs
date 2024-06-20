@@ -1,10 +1,9 @@
 use crate::sheet::*;
+use event::*;
 use sww::app::EventInfo;
-use sww::app::Frame;
 use sww::app::HandleEvent;
-use sww::app::RenderWindow;
 use sww::vec2;
-use sww::window::event::*;
+use sww::window::*;
 use sww::Ratio;
 use sww::Vec2;
 

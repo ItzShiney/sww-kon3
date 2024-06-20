@@ -1,4 +1,4 @@
-use crate::app::RenderWindow;
+use crate::window::RenderWindow;
 
 mod commands;
 mod surface;

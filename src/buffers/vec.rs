@@ -1,5 +1,5 @@
-use crate::app::RenderWindow;
 use crate::create_buffer_partially_init;
+use crate::window::RenderWindow;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;

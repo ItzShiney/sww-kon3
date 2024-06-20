@@ -1,4 +1,4 @@
-use crate::app::RenderWindow;
+use crate::window::RenderWindow;
 use std::mem::ManuallyDrop;
 
 pub struct FrameCommands<'i, 'w> {

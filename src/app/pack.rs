@@ -1,5 +1,4 @@
 use crate::app::EventHandler;
-use crate::app::RenderWindow;
 use crate::window::*;
 use ouroboros::self_referencing;
 

@@ -5,13 +5,9 @@ use winit::application::ApplicationHandler;
 
 mod handle_event;
 mod pack;
-mod render_window;
-mod settings;
 
 pub use handle_event::*;
 pub use pack::*;
-pub use render_window::*;
-pub use settings::*;
 
 pub struct App<F>(Lazy<AppPack, F>);
 
