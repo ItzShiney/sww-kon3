@@ -1,4 +1,4 @@
-use crate::app::AppInfo;
+use crate::app::RenderWindow;
 use crate::shaders::mesh::in_vertex;
 use crate::shaders::mesh::InVertex;
 use crate::Color;
@@ -47,9 +47,9 @@ impl Mesh {
         }
     }
 
-    pub fn rect(app_info: &AppInfo, size: Vec2) -> Self {
+    pub fn rect(rw: &RenderWindow, size: Vec2) -> Self {
         Self::new_indexed(
-            app_info.device(),
+            rw.device(),
             &[
                 in_vertex(vec2(0., 0.), Color::WHITE.into(), vec2(0., 0.)),
                 in_vertex(vec2(0., size.y), Color::WHITE.into(), vec2(0., 1.)),
@@ -60,8 +60,8 @@ impl Mesh {
         )
     }
 
-    pub fn square(app_info: &AppInfo, size: f32, ratio: f32) -> Self {
-        Self::rect(app_info, vec2(size, size * ratio))
+    pub fn square(rw: &RenderWindow, size: f32, ratio: f32) -> Self {
+        Self::rect(rw, vec2(size, size * ratio))
     }
 
     pub fn vertex_buffer(&self) -> &wgpu::Buffer {
@@ -81,7 +81,7 @@ impl Mesh {
     }
 }
 
-impl AppInfo<'_> {
+impl RenderWindow<'_> {
     pub fn mesh_rect(&self, size: Vec2) -> Mesh {
         Mesh::rect(self, size)
     }

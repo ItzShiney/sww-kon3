@@ -1,8 +1,8 @@
 use crate::sheet::*;
-use sww::app::App;
-use sww::app::AppInfo;
 use sww::app::EventInfo;
 use sww::app::Frame;
+use sww::app::HandleEvent;
+use sww::app::RenderWindow;
 use sww::vec2;
 use sww::window::event::*;
 use sww::Ratio;
@@ -21,15 +21,15 @@ pub fn translation(x: i32, y: i32) -> Vec2 {
 }
 
 pub struct MyApp<'i, 'w> {
-    info: &'i AppInfo<'w>,
+    rw: &'i RenderWindow<'w>,
     objects: Objects<'i, 'w>,
     drawer: Drawer,
 }
 
 impl<'i, 'w> MyApp<'i, 'w> {
-    pub fn new(info: &'i AppInfo<'w>) -> Self {
-        let drawer = Drawer::new(info);
-        let mut objects = Objects::new(info);
+    pub fn new(rw: &'i RenderWindow<'w>) -> Self {
+        let drawer = Drawer::new(rw);
+        let mut objects = Objects::new(rw);
 
         objects.pieces.transforms.push(make_piece_transform(
             0,
@@ -45,23 +45,25 @@ impl<'i, 'w> MyApp<'i, 'w> {
         ));
 
         Self {
-            info,
+            rw,
             drawer,
             objects,
         }
     }
 }
 
-impl App for MyApp<'_, '_> {
+impl HandleEvent for MyApp<'_, '_> {
     fn on_resized(&mut self, _info: EventInfo, new_size: PhysicalSize) {
-        self.info.resize_surface(new_size);
-        self.info.window().request_redraw();
+        self.rw.resize_surface(new_size);
+        self.rw.window().request_redraw();
     }
 
     fn on_redraw_requested(&mut self, _info: EventInfo) {
-        self.objects.scale(self.info.window().ratio());
+        let Ok(mut frame) = self.rw.start_drawing() else {
+            return;
+        };
 
-        let mut frame = self.info.start_drawing();
+        self.objects.scale(self.rw.window().ratio());
         self.draw(&mut frame);
     }
 }

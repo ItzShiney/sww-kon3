@@ -5,16 +5,15 @@ pub use wgpu;
 
 pub mod app;
 pub mod drawing;
+pub mod media;
 pub mod shaders;
 pub mod window;
 
 pub use buffers::*;
 pub use color::*;
-pub use images::*;
 
 mod buffers;
 mod color;
-mod images;
 mod utility;
 
 use utility::*;

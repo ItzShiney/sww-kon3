@@ -1,4 +1,4 @@
-use crate::app::AppInfo;
+use crate::app::RenderWindow;
 
 mod commands;
 mod surface;
@@ -13,7 +13,7 @@ pub struct Frame<'i, 'w> {
 
 impl<'i, 'w> Frame<'i, 'w> {
     pub fn new(
-        info: &'i AppInfo<'w>,
+        info: &'i RenderWindow<'w>,
         command_encoder: wgpu::CommandEncoder,
         surface_texture: wgpu::SurfaceTexture,
     ) -> Self {

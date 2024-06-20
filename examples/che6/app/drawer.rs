@@ -1,4 +1,4 @@
-use sww::app::AppInfo;
+use sww::app::RenderWindow;
 use sww::drawing::Mesh;
 use sww::drawing::MeshDrawer;
 use sww::shaders;
@@ -12,9 +12,9 @@ pub struct Drawer {
 }
 
 impl Drawer {
-    pub fn new(info: &AppInfo) -> Self {
-        let mesh_drawer = info.mesh_drawer();
-        let square = info.mesh_rect(vec2(1., 1.));
+    pub fn new(rw: &RenderWindow) -> Self {
+        let mesh_drawer = rw.mesh_drawer();
+        let square = rw.mesh_rect(vec2(1., 1.));
 
         Self {
             mesh_drawer,

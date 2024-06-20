@@ -1,4 +1,4 @@
-use crate::app::AppInfo;
+use crate::app::RenderWindow;
 use crate::drawing::Mesh;
 use crate::drawing::INDEX_FORMAT;
 use crate::shaders;
@@ -10,12 +10,12 @@ pub struct MeshDrawer {
 }
 
 impl MeshDrawer {
-    pub fn new(app_info: &AppInfo) -> Self {
-        let pipeline_layout = shaders::mesh::create_pipeline_layout(app_info.device());
+    pub fn new(rw: &RenderWindow) -> Self {
+        let pipeline_layout = shaders::mesh::create_pipeline_layout(rw.device());
 
-        let shader = shaders::mesh::create_shader_module(app_info.device());
+        let shader = shaders::mesh::create_shader_module(rw.device());
 
-        let pipeline = app_info
+        let pipeline = rw
             .device()
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: None,
@@ -32,7 +32,7 @@ impl MeshDrawer {
                     entry_point: shaders::mesh::ENTRY_FS_MAIN,
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
-                        format: app_info.swapchain_format(),
+                        format: rw.swapchain_format(),
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
                                 src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -76,7 +76,7 @@ impl MeshDrawer {
     }
 }
 
-impl AppInfo<'_> {
+impl RenderWindow<'_> {
     pub fn mesh_drawer(&self) -> MeshDrawer {
         MeshDrawer::new(self)
     }

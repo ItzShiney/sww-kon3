@@ -1,8 +1,8 @@
 use crate::Drawer;
 use crate::Scalers;
 use std::io;
-use sww::app::AppInfo;
-use sww::read_texture;
+use sww::app::RenderWindow;
+use sww::media;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
 use sww::Binding;
@@ -19,27 +19,28 @@ pub struct Pieces<'q> {
 
 impl<'q> Pieces<'q> {
     pub fn new(
-        app_info: &'q AppInfo,
+        rw: &'q RenderWindow,
         scalers: &mut Scalers,
         transforms: VecBuffer<'q, Transform>,
     ) -> Self {
         let global_transform =
-            scalers.push_last(ReadableBuffer::new(app_info.device(), Transform::default()));
+            scalers.push_last(ReadableBuffer::new(rw.device(), Transform::default()));
 
-        let texture = read_texture(
-            app_info.device(),
-            app_info.queue(),
+        let texture_view = media::read_texture(
+            rw.device(),
+            rw.queue(),
             io::Cursor::new(include_bytes!("../pieces.png")),
-        );
-        let texture_view = texture.default_view();
+        )
+        .unwrap()
+        .default_view();
 
         let bind_group0 = shaders::mesh::BindGroup0::from_bindings(
-            app_info.device(),
+            rw.device(),
             global_transform.buffer().binding().into(),
         );
 
         let bind_group1 = shaders::mesh::BindGroup1::from_bindings(
-            app_info.device(),
+            rw.device(),
             shaders::mesh::BindGroupLayout1 {
                 texture: &texture_view,
             },

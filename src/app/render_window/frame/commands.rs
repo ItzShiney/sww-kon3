@@ -1,13 +1,13 @@
-use crate::app::AppInfo;
+use crate::app::RenderWindow;
 use std::mem::ManuallyDrop;
 
 pub struct FrameCommands<'i, 'w> {
-    info: &'i AppInfo<'w>,
+    info: &'i RenderWindow<'w>,
     encoder: ManuallyDrop<wgpu::CommandEncoder>,
 }
 
 impl<'i, 'w> FrameCommands<'i, 'w> {
-    pub(super) fn new(info: &'i AppInfo<'w>, command_encoder: wgpu::CommandEncoder) -> Self {
+    pub(super) fn new(info: &'i RenderWindow<'w>, command_encoder: wgpu::CommandEncoder) -> Self {
         Self {
             info,
             encoder: ManuallyDrop::new(command_encoder),

@@ -1,23 +1,26 @@
 use image::EncodableLayout;
+use image::RgbaImage;
 use std::io::BufRead;
 use std::io::Seek;
 use wgpu::util::DeviceExt;
 
-pub fn read_image(reader: impl BufRead + Seek) -> image::RgbaImage {
-    image::io::Reader::new(reader)
-        .with_guessed_format()
-        .expect("failed to guess texture format")
-        .decode()
-        .expect("failed to decode texture")
-        .into_rgba8()
+mod error;
+
+pub use error::*;
+
+pub fn read_image(reader: impl BufRead + Seek) -> Result<RgbaImage> {
+    Ok(image::io::Reader::new(reader)
+        .with_guessed_format()?
+        .decode()?
+        .into_rgba8())
 }
 
 pub fn read_texture(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     reader: impl BufRead + Seek,
-) -> wgpu::Texture {
-    make_texture(device, queue, &read_image(reader))
+) -> Result<wgpu::Texture> {
+    Ok(make_texture(device, queue, &read_image(reader)?))
 }
 
 pub fn make_texture(

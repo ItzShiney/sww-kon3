@@ -1,4 +1,4 @@
-use crate::app::AppInfo;
+use crate::app::RenderWindow;
 use crate::create_buffer_partially_init;
 use std::mem;
 use std::ops::Index;
@@ -12,9 +12,9 @@ pub struct VecBuffer<'q, T> {
 }
 
 impl<'q, T: bytemuck::NoUninit + Sized> VecBuffer<'q, T> {
-    pub fn new(app_info: &'q AppInfo, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
+    pub fn new(rw: &'q RenderWindow, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
         let buffer = create_buffer_partially_init(
-            app_info.device(),
+            rw.device(),
             &values,
             usage | wgpu::BufferUsages::COPY_DST,
         );
@@ -22,12 +22,12 @@ impl<'q, T: bytemuck::NoUninit + Sized> VecBuffer<'q, T> {
         Self {
             buffer,
             values,
-            queue: app_info.queue(),
+            queue: rw.queue(),
         }
     }
 
-    pub fn new_vertex(app_info: &'q AppInfo, values: Vec<T>) -> Self {
-        Self::new(app_info, values, wgpu::BufferUsages::VERTEX)
+    pub fn new_vertex(rw: &'q RenderWindow, values: Vec<T>) -> Self {
+        Self::new(rw, values, wgpu::BufferUsages::VERTEX)
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
@@ -106,7 +106,7 @@ impl<'q, T: bytemuck::NoUninit + Sized> VecBuffer<'q, T> {
     }
 }
 
-impl AppInfo<'_> {
+impl RenderWindow<'_> {
     pub fn vec_buffer<T: bytemuck::NoUninit + Sized>(
         &self,
         values: Vec<T>,

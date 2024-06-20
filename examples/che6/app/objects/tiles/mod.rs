@@ -1,8 +1,8 @@
 use crate::translation;
 use crate::Drawer;
 use crate::Scalers;
-use sww::app::AppInfo;
-use sww::make_default_texture;
+use sww::app::RenderWindow;
+use sww::media;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
 use sww::Color;
@@ -13,7 +13,7 @@ mod single_color;
 pub use single_color::*;
 
 pub fn make_white_black_tranforms<'q>(
-    app_info: &'q AppInfo,
+    rw: &'q RenderWindow,
 ) -> (VecBuffer<'q, Transform>, VecBuffer<'q, Transform>) {
     let mut white = Vec::default();
     let mut black = Vec::default();
@@ -34,10 +34,7 @@ pub fn make_white_black_tranforms<'q>(
         }
     }
 
-    (
-        app_info.vec_buffer_vertex(white),
-        app_info.vec_buffer_vertex(black),
-    )
+    (rw.vec_buffer_vertex(white), rw.vec_buffer_vertex(black))
 }
 
 pub struct Tiles<'q> {
@@ -47,17 +44,17 @@ pub struct Tiles<'q> {
 }
 
 impl<'q> Tiles<'q> {
-    pub fn new(app_info: &'q AppInfo, scalers: &mut Scalers) -> Self {
-        let (white_transforms, black_transforms) = make_white_black_tranforms(app_info);
-        let white = SingleColorTiles::new(app_info, scalers, Color::splat(0.45), white_transforms);
-        let black = SingleColorTiles::new(app_info, scalers, Color::splat(0.25), black_transforms);
+    pub fn new(rw: &'q RenderWindow, scalers: &mut Scalers) -> Self {
+        let (white_transforms, black_transforms) = make_white_black_tranforms(rw);
+        let white = SingleColorTiles::new(rw, scalers, Color::splat(0.45), white_transforms);
+        let black = SingleColorTiles::new(rw, scalers, Color::splat(0.25), black_transforms);
 
         let bind_group1 = {
-            let default_texture = make_default_texture(app_info.device(), app_info.queue());
+            let default_texture = media::make_default_texture(rw.device(), rw.queue());
             let default_texture_view = default_texture.create_view(&Default::default());
 
             shaders::mesh::BindGroup1::from_bindings(
-                app_info.device(),
+                rw.device(),
                 shaders::mesh::BindGroupLayout1 {
                     texture: &default_texture_view,
                 },

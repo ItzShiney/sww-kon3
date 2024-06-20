@@ -4,11 +4,13 @@ use event::*;
 use pollster::FutureExt;
 use std::cell::RefCell;
 
+mod error;
 mod frame;
 
+pub use error::*;
 pub use frame::*;
 
-pub struct AppInfo<'w> {
+pub struct RenderWindow<'w> {
     window: &'w Window,
     surface: wgpu::Surface<'w>,
     surface_config: RefCell<wgpu::SurfaceConfiguration>,
@@ -17,8 +19,8 @@ pub struct AppInfo<'w> {
     queue: wgpu::Queue,
 }
 
-impl<'w> AppInfo<'w> {
-    pub fn new(window: &'w Window, settings: &impl AppSettings) -> Self {
+impl<'w> RenderWindow<'w> {
+    pub fn new(window: &'w Window, settings: &impl AppSettings) -> Result<Self, AppInfoError> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(settings.instance_descriptor());
@@ -27,7 +29,7 @@ impl<'w> AppInfo<'w> {
         let adapter = instance
             .request_adapter(&settings.request_adapter_options(&surface))
             .block_on()
-            .expect("failed to find an adapter");
+            .ok_or(AppInfoError::NoAdapter)?;
 
         let swapchain_capabilities = surface.get_capabilities(&adapter);
         let swapchain_format = swapchain_capabilities.formats[0];
@@ -35,21 +37,20 @@ impl<'w> AppInfo<'w> {
 
         let (device, queue) = adapter
             .request_device(&settings.device_descriptor(&adapter), None)
-            .block_on()
-            .expect("failed to create device");
+            .block_on()?;
 
         let surface_config = settings.surface_config(size, swapchain_format, swapchain_alpha_mode);
         surface.configure(&device, &surface_config);
         let surface_config = surface_config.into();
 
-        Self {
+        Ok(Self {
             window,
             surface,
             surface_config,
             swapchain_format,
             device,
             queue,
-        }
+        })
     }
 
     pub fn window(&self) -> &Window {
@@ -64,14 +65,11 @@ impl<'w> AppInfo<'w> {
         &self.queue
     }
 
-    pub fn start_drawing(&self) -> Frame {
+    pub fn start_drawing(&self) -> Result<Frame, wgpu::SurfaceError> {
         let command_encoder = self.device.create_command_encoder(&Default::default());
-        let surface_texture = self
-            .surface
-            .get_current_texture()
-            .expect("failed to acquire next swapchain texture");
+        let surface_texture = self.surface.get_current_texture()?;
 
-        Frame::new(self, command_encoder, surface_texture)
+        Ok(Frame::new(self, command_encoder, surface_texture))
     }
 
     pub fn resize_surface(&self, new_size: PhysicalSize) {
@@ -90,6 +88,6 @@ impl<'w> AppInfo<'w> {
 
 pub fn app_info_builder<'s>(
     settings: &'s impl AppSettings,
-) -> impl FnOnce(&Window) -> AppInfo + 's {
-    move |window| AppInfo::new(window, settings)
+) -> impl FnOnce(&Window) -> RenderWindow + 's {
+    move |window| RenderWindow::new(window, settings).unwrap()
 }

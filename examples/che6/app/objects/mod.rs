@@ -3,7 +3,7 @@ use crate::sheet::PieceColor;
 use crate::sheet::PieceType;
 use crate::Drawer;
 use crate::Pieces;
-use sww::app::AppInfo;
+use sww::app::RenderWindow;
 use sww::shaders::mesh::Transform;
 use sww::vec2;
 use sww::Mat2;
@@ -17,7 +17,7 @@ pub use tiles::*;
 pub type Scaler = ReadableBuffer<Transform>;
 pub type Scalers = Vec<Scaler>;
 
-fn make_piece_transforms<'q>(app_info: &'q AppInfo) -> VecBuffer<'q, Transform> {
+fn make_piece_transforms<'q>(rw: &'q RenderWindow) -> VecBuffer<'q, Transform> {
     let mut piece_transforms = Vec::with_capacity(8 * 8);
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
@@ -41,25 +41,25 @@ fn make_piece_transforms<'q>(app_info: &'q AppInfo) -> VecBuffer<'q, Transform> 
         piece_transforms.push(make_piece_transform(0, y, PieceType::King, piece_color));
     }
 
-    app_info.vec_buffer_vertex(piece_transforms)
+    rw.vec_buffer_vertex(piece_transforms)
 }
 
 pub struct Objects<'i, 'w> {
-    app_info: &'i AppInfo<'w>,
+    rw: &'i RenderWindow<'w>,
     pub scalers: Scalers,
     pub tiles: Tiles<'i>,
     pub pieces: Pieces<'i>,
 }
 
 impl<'i, 'w> Objects<'i, 'w> {
-    pub fn new(app_info: &'i AppInfo<'w>) -> Self {
+    pub fn new(rw: &'i RenderWindow<'w>) -> Self {
         let mut scalers = Scalers::default();
 
-        let tiles = Tiles::new(app_info, &mut scalers);
-        let pieces = Pieces::new(app_info, &mut scalers, make_piece_transforms(app_info));
+        let tiles = Tiles::new(rw, &mut scalers);
+        let pieces = Pieces::new(rw, &mut scalers, make_piece_transforms(rw));
 
         Self {
-            app_info,
+            rw,
             scalers,
             tiles,
             pieces,
@@ -71,7 +71,7 @@ impl<'i, 'w> Objects<'i, 'w> {
         let matrix = Mat2::from_diagonal(vec2(scale.min(scale / ratio), scale.min(scale * ratio)));
 
         for transform_buffer in self.scalers.iter_mut() {
-            let mut transform = transform_buffer.value_mut(self.app_info.queue());
+            let mut transform = transform_buffer.value_mut(self.rw.queue());
             transform.matrix = matrix;
         }
     }

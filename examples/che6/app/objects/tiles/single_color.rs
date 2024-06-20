@@ -1,6 +1,6 @@
 use crate::Drawer;
 use crate::Scalers;
-use sww::app::AppInfo;
+use sww::app::RenderWindow;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
 use sww::Binding;
@@ -16,13 +16,13 @@ pub struct SingleColorTiles<'q> {
 
 impl<'q> SingleColorTiles<'q> {
     pub fn new(
-        app_info: &'q AppInfo,
+        rw: &'q RenderWindow,
         scalers: &mut Scalers,
         color: Color,
         transforms: VecBuffer<'q, Transform>,
     ) -> Self {
         let global_transform = scalers.push_last(ReadableBuffer::new(
-            app_info.device(),
+            rw.device(),
             Transform {
                 color: color.into(),
                 ..Default::default()
@@ -31,7 +31,7 @@ impl<'q> SingleColorTiles<'q> {
 
         let bind_group0 = {
             let global_transform = global_transform.buffer().binding();
-            shaders::mesh::BindGroup0::from_bindings(app_info.device(), global_transform.into())
+            shaders::mesh::BindGroup0::from_bindings(rw.device(), global_transform.into())
         };
 
         Self {
