@@ -15,7 +15,8 @@ impl<'w, T: bytemuck::NoUninit + Sized> VecBuffer<'w, T> {
     pub fn new(rw: &'w RenderWindow, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
         let buffer = create_buffer_partially_init(
             rw.device(),
-            &values,
+            values.as_slice(),
+            values.capacity(),
             usage | wgpu::BufferUsages::COPY_DST,
         );
 
