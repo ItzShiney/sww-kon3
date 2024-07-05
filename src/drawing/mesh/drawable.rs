@@ -1,10 +1,10 @@
 use super::Mesh;
 use super::INDEX_FORMAT;
+use crate::buffers::VecBufferSlice;
 use crate::drawing::Draw;
 use crate::drawing::MeshPipeline;
 use crate::shaders;
 use crate::shaders::mesh::Transform;
-use crate::VecBufferSlice;
 
 pub struct DrawableMesh<'c> {
     pub mesh: &'c Mesh,

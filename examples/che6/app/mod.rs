@@ -4,7 +4,6 @@ use sww::app::EventInfo;
 use sww::app::HandleEvent;
 use sww::vec2;
 use sww::window::*;
-use sww::Ratio;
 use sww::Vec2;
 
 mod drawer;

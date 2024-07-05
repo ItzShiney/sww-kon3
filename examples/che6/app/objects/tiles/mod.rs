@@ -1,12 +1,12 @@
 use crate::translation;
 use crate::Drawer;
 use crate::Scalers;
+use sww::buffers::VecBuffer;
 use sww::media;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
 use sww::window::RenderWindow;
 use sww::Color;
-use sww::VecBuffer;
 
 mod single_color;
 

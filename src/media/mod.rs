@@ -5,8 +5,10 @@ use std::io::Seek;
 use wgpu::util::DeviceExt;
 
 mod error;
+mod extensions;
 
 pub use error::*;
+pub use extensions::*;
 
 pub fn read_image(reader: impl BufRead + Seek) -> Result<RgbaImage> {
     Ok(image::io::Reader::new(reader)

@@ -1,4 +1,4 @@
-use winit::window::Window;
+use super::Window;
 
 pub trait Ratio {
     fn ratio(&self) -> f32;

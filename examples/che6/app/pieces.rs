@@ -1,15 +1,15 @@
 use crate::Drawer;
 use crate::Scalers;
 use std::io;
+use sww::buffers::Binding;
+use sww::buffers::ReadableBuffer;
+use sww::buffers::VecBuffer;
 use sww::media;
+use sww::media::DefaultView;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
+use sww::utility::PushLast;
 use sww::window::RenderWindow;
-use sww::Binding;
-use sww::DefaultView;
-use sww::ReadableBuffer;
-use sww::VecBuffer;
-use sww::VecExtensions;
 
 pub struct Pieces<'w> {
     pub transforms: VecBuffer<'w, Transform>,

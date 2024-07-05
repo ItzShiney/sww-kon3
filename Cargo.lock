@@ -2106,17 +2106,8 @@ dependencies = [
  "pollster",
  "strum",
  "strum_macros",
- "sww_extensions",
  "wgpu",
  "wgsl_to_wgpu",
- "winit",
-]
-
-[[package]]
-name = "sww_extensions"
-version = "0.1.0"
-dependencies = [
- "wgpu",
  "winit",
 ]
 

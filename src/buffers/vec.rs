@@ -1,4 +1,4 @@
-use crate::create_buffer_partially_init;
+use crate::buffers::create_buffer_partially_init;
 use crate::window::RenderWindow;
 use std::mem;
 use std::ops::Index;

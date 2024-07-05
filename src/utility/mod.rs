@@ -1,3 +1,5 @@
+mod extensions;
 mod lazy;
 
-pub use lazy::*;
+pub use extensions::*;
+pub(crate) use lazy::*;

@@ -3,12 +3,12 @@ use crate::sheet::PieceColor;
 use crate::sheet::PieceType;
 use crate::Drawer;
 use crate::Pieces;
+use sww::buffers::ReadableBuffer;
+use sww::buffers::VecBuffer;
 use sww::shaders::mesh::Transform;
 use sww::vec2;
 use sww::window::RenderWindow;
 use sww::Mat2;
-use sww::ReadableBuffer;
-use sww::VecBuffer;
 
 mod tiles;
 

@@ -1,6 +1,6 @@
+use crate::utility::Lazy;
 use crate::window::event::*;
 use crate::window::WindowId;
-use crate::Lazy;
 use winit::application::ApplicationHandler;
 
 mod handle_event;

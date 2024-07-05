@@ -1,13 +1,13 @@
 use crate::Drawer;
 use crate::Scalers;
+use sww::buffers::Binding;
+use sww::buffers::ReadableBuffer;
+use sww::buffers::VecBuffer;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
+use sww::utility::PushLast;
 use sww::window::RenderWindow;
-use sww::Binding;
 use sww::Color;
-use sww::ReadableBuffer;
-use sww::VecBuffer;
-use sww::VecExtensions;
 
 pub struct SingleColorTiles<'w> {
     pub transforms: VecBuffer<'w, Transform>,
