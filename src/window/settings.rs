@@ -5,10 +5,10 @@ pub trait RenderWindowSettings {
         Default::default()
     }
 
-    fn request_adapter_options<'surface>(
+    fn request_adapter_options<'s, 'w>(
         &self,
-        surface: &'surface wgpu::Surface,
-    ) -> wgpu::RequestAdapterOptions<'_, 'surface> {
+        surface: &'s wgpu::Surface<'w>,
+    ) -> wgpu::RequestAdapterOptions<'s, 'w> {
         wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,

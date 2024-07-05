@@ -4,9 +4,9 @@ use event::*;
 pub type EventHandler<'s> = Box<dyn HandleEvent + 's>;
 
 #[derive(Clone, Copy)]
-pub struct EventInfo<'target> {
-    pub window: &'target Window,
-    pub event_loop: &'target ActiveEventLoop,
+pub struct EventInfo<'w> {
+    pub window: &'w Window,
+    pub event_loop: &'w ActiveEventLoop,
     pub window_id: WindowId,
 }
 
