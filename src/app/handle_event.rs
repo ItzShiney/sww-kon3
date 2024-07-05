@@ -91,7 +91,7 @@ pub trait HandleEvent {
 // * `T: for<'s> (App + 's)` in generics
 // * `-> impl ...` for `impl for<'s> FnOnce(...)`
 #[macro_export]
-macro_rules! app_builder {
+macro_rules! event_handler_builder {
     ($f:expr) => {
         |rw| Box::new($f(rw))
     };

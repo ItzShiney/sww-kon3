@@ -4,7 +4,7 @@ mod sheet;
 use app::*;
 use sww::app::App;
 use sww::app::AppPack;
-use sww::app_builder;
+use sww::event_handler_builder;
 use sww::window::DefaultRenderWindowSettings;
 use sww::window::*;
 
@@ -18,8 +18,8 @@ pub fn main() {
 
         AppPack::new(
             window,
-            render_window_builder(&DefaultRenderWindowSettings),
-            app_builder!(MyApp::new),
+            rw_builder(&DefaultRenderWindowSettings),
+            event_handler_builder!(MyApp::new),
         )
     });
 
