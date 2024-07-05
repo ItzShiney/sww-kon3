@@ -5,14 +5,14 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice::SliceIndex;
 
-pub struct VecBuffer<'q, T> {
+pub struct VecBuffer<'w, T> {
     buffer: wgpu::Buffer,
     values: Vec<T>,
-    queue: &'q wgpu::Queue,
+    queue: &'w wgpu::Queue,
 }
 
-impl<'q, T: bytemuck::NoUninit + Sized> VecBuffer<'q, T> {
-    pub fn new(rw: &'q RenderWindow, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
+impl<'w, T: bytemuck::NoUninit + Sized> VecBuffer<'w, T> {
+    pub fn new(rw: &'w RenderWindow, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
         let buffer = create_buffer_partially_init(
             rw.device(),
             &values,
@@ -26,7 +26,7 @@ impl<'q, T: bytemuck::NoUninit + Sized> VecBuffer<'q, T> {
         }
     }
 
-    pub fn new_vertex(rw: &'q RenderWindow, values: Vec<T>) -> Self {
+    pub fn new_vertex(rw: &'w RenderWindow, values: Vec<T>) -> Self {
         Self::new(rw, values, wgpu::BufferUsages::VERTEX)
     }
 
@@ -121,20 +121,20 @@ impl RenderWindow<'_> {
 }
 
 #[derive(Clone, Copy)]
-pub struct VecBufferSlice<'s, T> {
-    pub buffer: &'s wgpu::Buffer,
-    pub values: &'s [T],
+pub struct VecBufferSlice<'w, T> {
+    pub buffer: &'w wgpu::Buffer,
+    pub values: &'w [T],
 }
 
-pub struct VecBufferSliceMut<'s, T: bytemuck::NoUninit> {
-    buffer: &'s wgpu::Buffer,
-    queue: &'s wgpu::Queue,
+pub struct VecBufferSliceMut<'w, T: bytemuck::NoUninit> {
+    buffer: &'w wgpu::Buffer,
+    queue: &'w wgpu::Queue,
 
-    values: &'s mut [T],
+    values: &'w mut [T],
     start: usize,
 }
 
-impl<'s, T: bytemuck::NoUninit> Index<usize> for VecBufferSliceMut<'s, T> {
+impl<'w, T: bytemuck::NoUninit> Index<usize> for VecBufferSliceMut<'w, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -142,7 +142,7 @@ impl<'s, T: bytemuck::NoUninit> Index<usize> for VecBufferSliceMut<'s, T> {
     }
 }
 
-impl<'s, T: bytemuck::NoUninit> IndexMut<usize> for VecBufferSliceMut<'s, T> {
+impl<'w, T: bytemuck::NoUninit> IndexMut<usize> for VecBufferSliceMut<'w, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.values[index]
     }

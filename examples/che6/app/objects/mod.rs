@@ -17,7 +17,7 @@ pub use tiles::*;
 pub type Scaler = ReadableBuffer<Transform>;
 pub type Scalers = Vec<Scaler>;
 
-fn make_piece_transforms<'q>(rw: &'q RenderWindow) -> VecBuffer<'q, Transform> {
+fn make_piece_transforms<'w>(rw: &'w RenderWindow) -> VecBuffer<'w, Transform> {
     let mut piece_transforms = Vec::with_capacity(8 * 8);
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
@@ -44,15 +44,15 @@ fn make_piece_transforms<'q>(rw: &'q RenderWindow) -> VecBuffer<'q, Transform> {
     rw.vec_buffer_vertex(piece_transforms)
 }
 
-pub struct Objects<'i, 'w> {
-    rw: &'i RenderWindow<'w>,
+pub struct Objects<'w> {
+    rw: &'w RenderWindow<'w>,
     pub scalers: Scalers,
-    pub tiles: Tiles<'i>,
-    pub pieces: Pieces<'i>,
+    pub tiles: Tiles<'w>,
+    pub pieces: Pieces<'w>,
 }
 
-impl<'i, 'w> Objects<'i, 'w> {
-    pub fn new(rw: &'i RenderWindow<'w>) -> Self {
+impl<'w> Objects<'w> {
+    pub fn new(rw: &'w RenderWindow<'w>) -> Self {
         let mut scalers = Scalers::default();
 
         let tiles = Tiles::new(rw, &mut scalers);
@@ -75,8 +75,10 @@ impl<'i, 'w> Objects<'i, 'w> {
             transform.matrix = matrix;
         }
     }
+}
 
-    pub fn draw<'s>(&'s self, drawer: &'s Drawer, render_pass: &mut wgpu::RenderPass<'s>) {
+impl<'c> Objects<'_> {
+    pub fn draw(&'c self, drawer: &'c Drawer, render_pass: &mut wgpu::RenderPass<'c>) {
         self.tiles.draw(drawer, render_pass);
         self.pieces.draw(drawer, render_pass);
     }

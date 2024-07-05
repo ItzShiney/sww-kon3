@@ -11,17 +11,17 @@ use sww::ReadableBuffer;
 use sww::VecBuffer;
 use sww::VecExtensions;
 
-pub struct Pieces<'q> {
-    pub transforms: VecBuffer<'q, Transform>,
+pub struct Pieces<'w> {
+    pub transforms: VecBuffer<'w, Transform>,
     bind_group0: shaders::mesh::BindGroup0,
     bind_group1: shaders::mesh::BindGroup1,
 }
 
-impl<'q> Pieces<'q> {
+impl<'w> Pieces<'w> {
     pub fn new(
-        rw: &'q RenderWindow,
+        rw: &'w RenderWindow,
         scalers: &mut Scalers,
-        transforms: VecBuffer<'q, Transform>,
+        transforms: VecBuffer<'w, Transform>,
     ) -> Self {
         let global_transform =
             scalers.push_last(ReadableBuffer::new(rw.device(), Transform::default()));
@@ -52,12 +52,14 @@ impl<'q> Pieces<'q> {
             bind_group1,
         }
     }
+}
 
-    pub fn draw<'s>(&'s self, drawer: &'s Drawer, render_pass: &mut wgpu::RenderPass<'s>) {
+impl<'c> Pieces<'_> {
+    pub fn draw(&'c self, drawer: &'c Drawer, render_pass: &mut wgpu::RenderPass<'c>) {
         drawer.draw_squares(
             render_pass,
             self.transforms.slice(..),
-            &shaders::mesh::BindGroups {
+            shaders::mesh::BindGroups {
                 bind_group0: &self.bind_group0,
                 bind_group1: &self.bind_group1,
             },

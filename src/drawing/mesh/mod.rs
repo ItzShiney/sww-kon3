@@ -6,9 +6,11 @@ use glam::vec2;
 use glam::Vec2;
 use wgpu::util::DeviceExt;
 
-mod drawer;
+mod drawable;
+mod pipeline;
 
-pub use drawer::*;
+pub use drawable::*;
+pub use pipeline::*;
 
 pub type Index = u32;
 pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;

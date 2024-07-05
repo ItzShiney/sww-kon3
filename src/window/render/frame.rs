@@ -6,14 +6,14 @@ mod surface;
 pub use commands::*;
 pub use surface::*;
 
-pub struct Frame<'i, 'w> {
-    pub commands: FrameCommands<'i, 'w>,
+pub struct Frame<'w> {
+    pub commands: FrameCommands<'w>,
     pub surface: FrameSurface,
 }
 
-impl<'i, 'w> Frame<'i, 'w> {
+impl<'w> Frame<'w> {
     pub fn new(
-        info: &'i RenderWindow<'w>,
+        info: &'w RenderWindow<'w>,
         command_encoder: wgpu::CommandEncoder,
         surface_texture: wgpu::SurfaceTexture,
     ) -> Self {

@@ -19,14 +19,14 @@ pub fn translation(x: i32, y: i32) -> Vec2 {
     vec2(x as _, y as _)
 }
 
-pub struct MyApp<'i, 'w> {
-    rw: &'i RenderWindow<'w>,
-    objects: Objects<'i, 'w>,
+pub struct MyApp<'w> {
+    rw: &'w RenderWindow<'w>,
+    objects: Objects<'w>,
     drawer: Drawer,
 }
 
-impl<'i, 'w> MyApp<'i, 'w> {
-    pub fn new(rw: &'i RenderWindow<'w>) -> Self {
+impl<'w> MyApp<'w> {
+    pub fn new(rw: &'w RenderWindow<'w>) -> Self {
         let drawer = Drawer::new(rw);
         let mut objects = Objects::new(rw);
 
@@ -51,7 +51,7 @@ impl<'i, 'w> MyApp<'i, 'w> {
     }
 }
 
-impl HandleEvent for MyApp<'_, '_> {
+impl HandleEvent for MyApp<'_> {
     fn on_resized(&mut self, _info: EventInfo, new_size: PhysicalSize) {
         self.rw.resize_surface(new_size);
         self.rw.window().request_redraw();
@@ -67,8 +67,8 @@ impl HandleEvent for MyApp<'_, '_> {
     }
 }
 
-impl MyApp<'_, '_> {
-    fn draw(&mut self, frame: &mut Frame) {
+impl<'c> MyApp<'_> {
+    fn draw(&mut self, frame: &mut Frame<'c>) {
         let mut render_pass =
             frame
                 .commands

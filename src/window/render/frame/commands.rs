@@ -1,13 +1,13 @@
 use crate::window::RenderWindow;
 use std::mem::ManuallyDrop;
 
-pub struct FrameCommands<'i, 'w> {
-    info: &'i RenderWindow<'w>,
+pub struct FrameCommands<'w> {
+    info: &'w RenderWindow<'w>,
     encoder: ManuallyDrop<wgpu::CommandEncoder>,
 }
 
-impl<'i, 'w> FrameCommands<'i, 'w> {
-    pub(super) fn new(info: &'i RenderWindow<'w>, command_encoder: wgpu::CommandEncoder) -> Self {
+impl<'w> FrameCommands<'w> {
+    pub(super) fn new(info: &'w RenderWindow<'w>, command_encoder: wgpu::CommandEncoder) -> Self {
         Self {
             info,
             encoder: ManuallyDrop::new(command_encoder),
@@ -19,7 +19,7 @@ impl<'i, 'w> FrameCommands<'i, 'w> {
     }
 }
 
-impl Drop for FrameCommands<'_, '_> {
+impl Drop for FrameCommands<'_> {
     fn drop(&mut self) {
         let command_encoder = unsafe { ManuallyDrop::take(&mut self.encoder) };
         self.info.queue.submit(Some(command_encoder.finish()));

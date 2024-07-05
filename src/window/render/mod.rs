@@ -86,8 +86,8 @@ impl<'w> RenderWindow<'w> {
     }
 }
 
-pub fn render_window_builder<'s>(
-    settings: &'s impl RenderWindowSettings,
-) -> impl FnOnce(&Window) -> RenderWindow + 's {
+pub fn render_window_builder(
+    settings: &impl RenderWindowSettings,
+) -> impl FnOnce(&Window) -> RenderWindow + '_ {
     move |window| RenderWindow::new(window, settings).unwrap()
 }

@@ -35,7 +35,7 @@ impl<T: bytemuck::NoUninit> ReadableBuffer<T> {
         &self.value
     }
 
-    pub fn value_mut<'s>(&'s mut self, queue: &'s wgpu::Queue) -> ReadableBufferMut<'s, T> {
+    pub fn value_mut<'w>(&'w mut self, queue: &'w wgpu::Queue) -> ReadableBufferMut<'w, T> {
         ReadableBufferMut {
             buffer: self,
             queue,
@@ -43,9 +43,9 @@ impl<T: bytemuck::NoUninit> ReadableBuffer<T> {
     }
 }
 
-pub struct ReadableBufferMut<'s, T: bytemuck::NoUninit> {
-    buffer: &'s mut ReadableBuffer<T>,
-    queue: &'s wgpu::Queue,
+pub struct ReadableBufferMut<'w, T: bytemuck::NoUninit> {
+    buffer: &'w mut ReadableBuffer<T>,
+    queue: &'w wgpu::Queue,
 }
 
 impl<T: bytemuck::NoUninit> Deref for ReadableBufferMut<'_, T> {
