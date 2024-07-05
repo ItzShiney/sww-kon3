@@ -1,7 +1,7 @@
 use crate::translation;
 use crate::Drawer;
 use crate::Scalers;
-use sww::buffers::VecBuffer;
+use sww::buffers::MutVecBuffer;
 use sww::media;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
@@ -14,7 +14,7 @@ pub use single_color::*;
 
 pub fn make_white_black_tranforms<'w>(
     rw: &'w RenderWindow,
-) -> (VecBuffer<'w, Transform>, VecBuffer<'w, Transform>) {
+) -> (MutVecBuffer<'w, Transform>, MutVecBuffer<'w, Transform>) {
     let mut white = Vec::default();
     let mut black = Vec::default();
 

@@ -2,12 +2,12 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 use wgpu::util::DeviceExt;
 
-pub struct ReadableBuffer<T: bytemuck::NoUninit> {
+pub struct MutBuffer<T: bytemuck::NoUninit> {
     buffer: wgpu::Buffer,
     value: T,
 }
 
-impl<T: bytemuck::NoUninit> ReadableBuffer<T> {
+impl<T: bytemuck::NoUninit> MutBuffer<T> {
     pub fn new(device: &wgpu::Device, value: T) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -44,7 +44,7 @@ impl<T: bytemuck::NoUninit> ReadableBuffer<T> {
 }
 
 pub struct ReadableBufferMut<'w, T: bytemuck::NoUninit> {
-    buffer: &'w mut ReadableBuffer<T>,
+    buffer: &'w mut MutBuffer<T>,
     queue: &'w wgpu::Queue,
 }
 

@@ -1,8 +1,8 @@
 use crate::Drawer;
 use crate::Scalers;
 use sww::buffers::Binding;
-use sww::buffers::ReadableBuffer;
-use sww::buffers::VecBuffer;
+use sww::buffers::MutBuffer;
+use sww::buffers::MutVecBuffer;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
 use sww::utility::PushLast;
@@ -10,7 +10,7 @@ use sww::window::RenderWindow;
 use sww::Color;
 
 pub struct SingleColorTiles<'w> {
-    pub transforms: VecBuffer<'w, Transform>,
+    pub transforms: MutVecBuffer<'w, Transform>,
     bind_group0: shaders::mesh::BindGroup0,
 }
 
@@ -19,9 +19,9 @@ impl<'w> SingleColorTiles<'w> {
         rw: &'w RenderWindow,
         scalers: &mut Scalers,
         color: Color,
-        transforms: VecBuffer<'w, Transform>,
+        transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
-        let global_transform = scalers.push_last(ReadableBuffer::new(
+        let global_transform = scalers.push_last(MutBuffer::new(
             rw.device(),
             Transform {
                 color: color.into(),

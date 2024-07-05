@@ -1,4 +1,4 @@
-use crate::buffers::TypedBuffer;
+use crate::buffers::VecBuffer;
 use crate::shaders::mesh::in_vertex;
 use crate::shaders::mesh::InVertex;
 use crate::window::RenderWindow;
@@ -16,21 +16,21 @@ pub type Index = u32;
 pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;
 
 pub struct Mesh {
-    vertices: TypedBuffer<InVertex>,
-    indices: Option<TypedBuffer<Index>>,
+    vertices: VecBuffer<InVertex>,
+    indices: Option<VecBuffer<Index>>,
 }
 
 impl Mesh {
     pub fn new(device: &wgpu::Device, vertices: &[InVertex]) -> Self {
         Self {
-            vertices: TypedBuffer::new(device, vertices, wgpu::BufferUsages::VERTEX),
+            vertices: VecBuffer::new(device, vertices, wgpu::BufferUsages::VERTEX),
             indices: None,
         }
     }
 
     pub fn new_indexed(device: &wgpu::Device, vertices: &[InVertex], indices: &[Index]) -> Self {
         Self {
-            indices: Some(TypedBuffer::new(device, indices, wgpu::BufferUsages::INDEX)),
+            indices: Some(VecBuffer::new(device, indices, wgpu::BufferUsages::INDEX)),
             ..Self::new(device, vertices)
         }
     }
@@ -52,11 +52,11 @@ impl Mesh {
         Self::rect(rw, vec2(size, size * ratio))
     }
 
-    pub fn vertices(&self) -> &TypedBuffer<InVertex> {
+    pub fn vertices(&self) -> &VecBuffer<InVertex> {
         &self.vertices
     }
 
-    pub fn indices(&self) -> Option<&TypedBuffer<Index>> {
+    pub fn indices(&self) -> Option<&VecBuffer<Index>> {
         self.indices.as_ref()
     }
 }

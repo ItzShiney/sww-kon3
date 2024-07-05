@@ -3,8 +3,8 @@ use crate::sheet::PieceColor;
 use crate::sheet::PieceType;
 use crate::Drawer;
 use crate::Pieces;
-use sww::buffers::ReadableBuffer;
-use sww::buffers::VecBuffer;
+use sww::buffers::MutBuffer;
+use sww::buffers::MutVecBuffer;
 use sww::shaders::mesh::Transform;
 use sww::vec2;
 use sww::window::RenderWindow;
@@ -14,10 +14,10 @@ mod tiles;
 
 pub use tiles::*;
 
-pub type Scaler = ReadableBuffer<Transform>;
+pub type Scaler = MutBuffer<Transform>;
 pub type Scalers = Vec<Scaler>;
 
-fn make_piece_transforms<'w>(rw: &'w RenderWindow) -> VecBuffer<'w, Transform> {
+fn make_piece_transforms<'w>(rw: &'w RenderWindow) -> MutVecBuffer<'w, Transform> {
     let mut piece_transforms = Vec::with_capacity(8 * 8);
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {

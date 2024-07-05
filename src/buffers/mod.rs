@@ -1,11 +1,11 @@
 mod bytes;
 mod extensions;
-mod readable;
-mod typed;
+mod r#mut;
+mod mut_vec;
 mod vec;
 
 pub use bytes::*;
 pub use extensions::*;
-pub use readable::*;
-pub use typed::*;
+pub use mut_vec::*;
+pub use r#mut::*;
 pub use vec::*;

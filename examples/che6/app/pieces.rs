@@ -2,8 +2,8 @@ use crate::Drawer;
 use crate::Scalers;
 use std::io;
 use sww::buffers::Binding;
-use sww::buffers::ReadableBuffer;
-use sww::buffers::VecBuffer;
+use sww::buffers::MutBuffer;
+use sww::buffers::MutVecBuffer;
 use sww::media;
 use sww::media::DefaultView;
 use sww::shaders;
@@ -12,7 +12,7 @@ use sww::utility::PushLast;
 use sww::window::RenderWindow;
 
 pub struct Pieces<'w> {
-    pub transforms: VecBuffer<'w, Transform>,
+    pub transforms: MutVecBuffer<'w, Transform>,
     bind_group0: shaders::mesh::BindGroup0,
     bind_group1: shaders::mesh::BindGroup1,
 }
@@ -21,10 +21,9 @@ impl<'w> Pieces<'w> {
     pub fn new(
         rw: &'w RenderWindow,
         scalers: &mut Scalers,
-        transforms: VecBuffer<'w, Transform>,
+        transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
-        let global_transform =
-            scalers.push_last(ReadableBuffer::new(rw.device(), Transform::default()));
+        let global_transform = scalers.push_last(MutBuffer::new(rw.device(), Transform::default()));
 
         let texture_view = media::read_texture(
             rw.device(),
