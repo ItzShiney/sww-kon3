@@ -29,18 +29,24 @@ impl<'w> MyApp<'w> {
         let drawer = Drawer::new(rw);
         let mut objects = Objects::new(rw);
 
-        objects.pieces.transforms.push(make_piece_transform(
-            0,
-            0,
-            PieceType::Boat,
-            PieceColor::White,
-        ));
-        objects.pieces.transforms.push(make_piece_transform(
-            -1,
-            -1,
-            PieceType::Boat,
-            PieceColor::Black,
-        ));
+        objects
+            .pieces
+            .transforms
+            .push(objects.pieces.sheet().make_piece_transform(
+                0,
+                0,
+                PieceType::Boat,
+                PieceColor::White,
+            ));
+        objects
+            .pieces
+            .transforms
+            .push(objects.pieces.sheet().make_piece_transform(
+                -1,
+                -1,
+                PieceType::Boat,
+                PieceColor::Black,
+            ));
 
         Self {
             rw,

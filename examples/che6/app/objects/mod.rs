@@ -1,10 +1,11 @@
-use crate::sheet::make_piece_transform;
 use crate::sheet::PieceColor;
 use crate::sheet::PieceType;
 use crate::Drawer;
 use crate::Pieces;
+use std::io;
 use sww::buffers::MutBuffer;
 use sww::buffers::MutVecBuffer;
+use sww::media::read_image;
 use sww::shaders::mesh::Transform;
 use sww::vec2;
 use sww::window::RenderWindow;
@@ -12,17 +13,18 @@ use sww::Mat2;
 
 mod tiles;
 
+use super::Sheet;
 pub use tiles::*;
 
 pub type Scaler = MutBuffer<Transform>;
 pub type Scalers = Vec<Scaler>;
 
-fn make_piece_transforms<'w>(rw: &'w RenderWindow) -> MutVecBuffer<'w, Transform> {
+fn make_piece_transforms<'w>(rw: &'w RenderWindow, sheet: &Sheet) -> MutVecBuffer<'w, Transform> {
     let mut piece_transforms = Vec::with_capacity(8 * 8);
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
         for x in -4..4 {
-            piece_transforms.push(make_piece_transform(x, y, PieceType::Pawn, piece_color));
+            piece_transforms.push(sheet.make_piece_transform(x, y, PieceType::Pawn, piece_color));
         }
     }
 
@@ -33,12 +35,12 @@ fn make_piece_transforms<'w>(rw: &'w RenderWindow) -> MutVecBuffer<'w, Transform
             (4, PieceType::Rook),
         ] {
             for x in [-pos, pos - 1] {
-                piece_transforms.push(make_piece_transform(x, y, piece_type, piece_color));
+                piece_transforms.push(sheet.make_piece_transform(x, y, piece_type, piece_color));
             }
         }
 
-        piece_transforms.push(make_piece_transform(-1, y, PieceType::Queen, piece_color));
-        piece_transforms.push(make_piece_transform(0, y, PieceType::King, piece_color));
+        piece_transforms.push(sheet.make_piece_transform(-1, y, PieceType::Queen, piece_color));
+        piece_transforms.push(sheet.make_piece_transform(0, y, PieceType::King, piece_color));
     }
 
     rw.vec_buffer_vertex(piece_transforms)
@@ -56,7 +58,20 @@ impl<'w> Objects<'w> {
         let mut scalers = Scalers::default();
 
         let tiles = Tiles::new(rw, &mut scalers);
-        let pieces = Pieces::new(rw, &mut scalers, make_piece_transforms(rw));
+
+        let pieces = {
+            let sheet = Sheet::new(
+                rw,
+                read_image(io::Cursor::new(include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/res/pieces.png"
+                ))))
+                .unwrap(),
+            );
+            let transforms = make_piece_transforms(rw, &sheet);
+
+            Pieces::new(rw, &mut scalers, sheet, transforms)
+        };
 
         Self {
             rw,
