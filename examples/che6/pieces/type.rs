@@ -1,6 +1,6 @@
-use super::Coord;
 use strum::EnumCount;
 use strum_macros::EnumCount;
+use sww::media::SheetCoord;
 
 #[derive(Clone, Copy, EnumCount)]
 pub enum PieceType {
@@ -10,11 +10,11 @@ pub enum PieceType {
     Bishop,
     Rook,
     Queen,
-    _PawnShadow,
-    _Chariot,
+    PawnShadow,
+    Chariot,
     Boat,
-    _Dragon,
-    _Spy,
+    Dragon,
+    Spy,
 }
 
 impl From<PieceType> for usize {
@@ -23,7 +23,7 @@ impl From<PieceType> for usize {
     }
 }
 
-impl Coord for PieceType {
+impl SheetCoord for PieceType {
     type Output = f32;
 
     fn coord(self) -> Self::Output {

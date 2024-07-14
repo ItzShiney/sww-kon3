@@ -1,4 +1,5 @@
-use crate::sheet::*;
+use crate::pieces::PieceColor;
+use crate::pieces::PieceType;
 use event::*;
 use sww::app::EventInfo;
 use sww::app::HandleEvent;
@@ -8,11 +9,9 @@ use sww::Vec2;
 
 mod drawer;
 mod objects;
-mod pieces;
 
 pub use drawer::*;
 pub use objects::*;
-pub use pieces::*;
 
 pub fn translation(x: i32, y: i32) -> Vec2 {
     vec2(x as _, y as _)
@@ -29,24 +28,16 @@ impl<'w> MyApp<'w> {
         let drawer = Drawer::new(rw);
         let mut objects = Objects::new(rw);
 
-        objects
-            .pieces
-            .transforms
-            .push(objects.pieces.sheet().make_piece_transform(
-                0,
-                0,
-                PieceType::Boat,
-                PieceColor::White,
-            ));
-        objects
-            .pieces
-            .transforms
-            .push(objects.pieces.sheet().make_piece_transform(
-                -1,
-                -1,
-                PieceType::Boat,
-                PieceColor::Black,
-            ));
+        objects.pieces.transforms.push(make_piece_transform(
+            objects.pieces.sheet(),
+            translation(0, 0),
+            (PieceType::Boat, PieceColor::White),
+        ));
+        objects.pieces.transforms.push(make_piece_transform(
+            objects.pieces.sheet(),
+            translation(-1, -1),
+            (PieceType::Boat, PieceColor::Black),
+        ));
 
         Self {
             rw,

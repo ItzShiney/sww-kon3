@@ -6,9 +6,11 @@ use wgpu::util::DeviceExt;
 
 mod error;
 mod extensions;
+mod sheet;
 
 pub use error::*;
 pub use extensions::*;
+pub use sheet::*;
 
 pub fn read_image(reader: impl BufRead + Seek) -> Result<RgbaImage> {
     Ok(image::io::Reader::new(reader)

@@ -1,14 +1,14 @@
-use sww::vec2;
-use sww::Vec2;
+use crate::vec2;
+use crate::Vec2;
 
-pub trait Coord {
+pub trait SheetCoord {
     type Output;
 
     fn coord(self) -> Self::Output;
     fn size() -> Self::Output;
 }
 
-impl<A: Coord<Output = f32>, B: Coord<Output = f32>> Coord for (A, B) {
+impl<A: SheetCoord<Output = f32>, B: SheetCoord<Output = f32>> SheetCoord for (A, B) {
     type Output = Vec2;
 
     fn coord(self) -> Self::Output {

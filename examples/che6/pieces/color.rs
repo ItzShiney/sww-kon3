@@ -1,6 +1,6 @@
-use super::Coord;
 use strum::EnumCount;
 use strum_macros::EnumCount;
+use sww::media::SheetCoord;
 
 #[derive(Clone, Copy, EnumCount)]
 pub enum PieceColor {
@@ -14,7 +14,7 @@ impl From<PieceColor> for usize {
     }
 }
 
-impl Coord for PieceColor {
+impl SheetCoord for PieceColor {
     type Output = f32;
 
     fn coord(self) -> Self::Output {
