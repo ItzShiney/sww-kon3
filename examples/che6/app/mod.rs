@@ -1,6 +1,11 @@
 use crate::pieces::PieceColor;
 use crate::pieces::PieceType;
-use sww::prelude::*;
+use event::*;
+use sww::app::EventInfo;
+use sww::app::HandleEvent;
+use sww::vec2;
+use sww::window::*;
+use sww::Vec2;
 
 mod drawer;
 mod objects;

@@ -1,6 +1,13 @@
 use crate::Drawer;
 use crate::Scalers;
-use sww::prelude::*;
+use sww::buffers::Binding;
+use sww::buffers::MutBuffer;
+use sww::buffers::MutVecBuffer;
+use sww::shaders;
+use sww::shaders::mesh::Transform;
+use sww::utility::PushLast;
+use sww::window::RenderWindow;
+use sww::Color;
 
 pub struct SingleColorTiles<'w> {
     pub transforms: MutVecBuffer<'w, Transform>,

@@ -2,7 +2,14 @@ use crate::pieces::PiecesSheet;
 use crate::pieces::PiecesSheetCoord;
 use crate::Drawer;
 use crate::Scalers;
-use sww::prelude::*;
+use sww::buffers::Binding;
+use sww::buffers::MutBuffer;
+use sww::buffers::MutVecBuffer;
+use sww::shaders;
+use sww::shaders::mesh::Transform;
+use sww::utility::PushLast;
+use sww::window::RenderWindow;
+use sww::Vec2;
 
 pub fn make_piece_transform(
     sheet: &PiecesSheet,

@@ -6,7 +6,6 @@ pub mod app;
 pub mod buffers;
 pub mod drawing;
 pub mod media;
-pub mod prelude;
 pub mod shaders;
 pub mod utility;
 pub mod window;

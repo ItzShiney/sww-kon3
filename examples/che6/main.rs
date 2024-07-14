@@ -1,7 +1,11 @@
 pub mod pieces;
 
 use app::*;
-use sww::prelude::*;
+use sww::app::App;
+use sww::app::AppPack;
+use sww::event_handler_builder;
+use sww::window::DefaultRenderWindowSettings;
+use sww::window::*;
 
 mod app;
 

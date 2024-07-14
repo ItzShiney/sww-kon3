@@ -4,7 +4,13 @@ use crate::pieces::PiecesSheet;
 use crate::translation;
 use crate::Drawer;
 use std::io;
-use sww::prelude::*;
+use sww::buffers::MutBuffer;
+use sww::buffers::MutVecBuffer;
+use sww::media::read_image;
+use sww::shaders::mesh::Transform;
+use sww::vec2;
+use sww::window::RenderWindow;
+use sww::Mat2;
 
 mod pieces;
 mod tiles;
