@@ -1,12 +1,4 @@
-use sww::buffers::VecBufferSlice;
-use sww::drawing::Draw;
-use sww::drawing::DrawableMesh;
-use sww::drawing::Mesh;
-use sww::drawing::MeshPipeline;
-use sww::shaders;
-use sww::shaders::mesh::Transform;
-use sww::vec2;
-use sww::window::RenderWindow;
+use sww::prelude::*;
 
 pub struct Drawer {
     mesh_pipeline: MeshPipeline,
