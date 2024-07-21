@@ -1,32 +1,17 @@
 use std::hint::unreachable_unchecked;
 use std::mem::ManuallyDrop;
 
-pub struct Lazy<T, F>(Inner<T, F>);
-
-impl<T, F> Lazy<T, F> {
-    pub fn new(f: F) -> Self {
-        Self(Inner::new(f))
-    }
-
-    pub fn value<Arg>(&mut self, arg: Arg) -> &mut T
-    where
-        F: FnOnce(Arg) -> T,
-    {
-        self.0.value(arg)
-    }
-}
-
-enum Inner<T, F> {
+pub enum Inner<T, F> {
     Lazy(ManuallyDrop<F>),
     Value(T),
 }
 
 impl<T, F> Inner<T, F> {
-    fn new(f: F) -> Self {
+    pub fn new(f: F) -> Self {
         Self::Lazy(ManuallyDrop::new(f))
     }
 
-    fn value<Arg>(&mut self, arg: Arg) -> &mut T
+    pub fn value<Arg>(&mut self, arg: Arg) -> &mut T
     where
         F: FnOnce(Arg) -> T,
     {
