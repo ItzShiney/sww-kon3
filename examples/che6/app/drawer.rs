@@ -15,11 +15,11 @@ pub struct Drawer {
 
 impl Drawer {
     pub fn new(rw: &RenderWindow) -> Self {
-        let pipeline = rw.create_mesh_pipeline();
+        let mesh_pipeline = rw.create_mesh_pipeline();
         let square = rw.mesh_rect(vec2(1., 1.));
 
         Self {
-            mesh_pipeline: pipeline,
+            mesh_pipeline,
             square,
         }
     }
