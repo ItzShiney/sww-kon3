@@ -1,6 +1,7 @@
 use crate::pieces::PiecesSheet;
 use crate::pieces::PiecesSheetCoord;
 use crate::Drawer;
+use crate::Scalable;
 use crate::Scalables;
 use sww::buffers::Binding;
 use sww::buffers::MutBuffer;
@@ -19,7 +20,6 @@ pub fn make_piece_transform(
     let texture_rect = sheet.texture_rect(coord);
 
     Transform {
-        // matrix: Mat2::from_scale_angle(texture_rect.size / self.size, 0.),
         translation,
         texture_rect,
         ..Default::default()
@@ -40,12 +40,14 @@ impl<'w> Pieces<'w> {
         sheet: PiecesSheet,
         transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
-        let global_transform =
-            scalables.push_last(MutBuffer::new(rw.device(), Transform::default()));
+        let scalable = scalables.push_last(Scalable::new(
+            MutBuffer::new(rw.device(), Transform::default()),
+            Vec2::splat(2. / 8.),
+        ));
 
         let bind_group0 = shaders::mesh::BindGroup0::from_bindings(
             rw.device(),
-            global_transform.buffer().binding().into(),
+            scalable.transform_buffer.buffer().binding().into(),
         );
 
         let bind_group1 = shaders::mesh::BindGroup1::from_bindings(

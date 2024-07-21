@@ -4,7 +4,6 @@ use crate::pieces::PiecesSheet;
 use crate::translation;
 use crate::Drawer;
 use std::io;
-use sww::buffers::MutBuffer;
 use sww::buffers::MutVecBuffer;
 use sww::media::read_image;
 use sww::shaders::mesh::Transform;
@@ -13,13 +12,12 @@ use sww::window::RenderWindow;
 use sww::Mat2;
 
 mod pieces;
+mod scalables;
 mod tiles;
 
 pub use pieces::*;
+pub use scalables::*;
 pub use tiles::*;
-
-pub type Scalable = MutBuffer<Transform>;
-pub type Scalables = Vec<Scalable>;
 
 fn make_piece_transforms<'w>(
     rw: &'w RenderWindow,
@@ -103,12 +101,17 @@ impl<'w> Objects<'w> {
     }
 
     pub fn scale(&mut self, ratio: f32) {
-        let scale = 1. / 4_f32;
-        let matrix = Mat2::from_diagonal(vec2(scale.min(scale / ratio), scale.min(scale * ratio)));
+        let scale = 1_f32;
+        let matrix =
+            Mat2::from_diagonal(vec2((scale / ratio).min(scale), (scale * ratio).min(scale)));
 
-        for transform_buffer in self.scalables.iter_mut() {
+        for &mut Scalable {
+            ref mut transform_buffer,
+            base_scale,
+        } in &mut self.scalables
+        {
             let mut transform = transform_buffer.value_mut(self.rw.queue());
-            transform.matrix = matrix;
+            transform.matrix = matrix * Mat2::from_diagonal(base_scale);
         }
     }
 }
