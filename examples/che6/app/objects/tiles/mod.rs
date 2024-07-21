@@ -1,6 +1,6 @@
 use crate::translation;
 use crate::Drawer;
-use crate::Scalers;
+use crate::Scalables;
 use sww::buffers::MutVecBuffer;
 use sww::media;
 use sww::shaders;
@@ -44,10 +44,10 @@ pub struct Tiles<'w> {
 }
 
 impl<'w> Tiles<'w> {
-    pub fn new(rw: &'w RenderWindow, scalers: &mut Scalers) -> Self {
+    pub fn new(rw: &'w RenderWindow, scalables: &mut Scalables) -> Self {
         let (white_transforms, black_transforms) = make_white_black_tranforms(rw);
-        let white = SingleColorTiles::new(rw, scalers, Color::splat(0.45), white_transforms);
-        let black = SingleColorTiles::new(rw, scalers, Color::splat(0.25), black_transforms);
+        let white = SingleColorTiles::new(rw, scalables, Color::splat(0.45), white_transforms);
+        let black = SingleColorTiles::new(rw, scalables, Color::splat(0.25), black_transforms);
 
         let bind_group1 = {
             let default_texture = media::make_default_texture(rw.device(), rw.queue());

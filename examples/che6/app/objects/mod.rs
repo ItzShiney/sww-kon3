@@ -18,8 +18,8 @@ mod tiles;
 pub use pieces::*;
 pub use tiles::*;
 
-pub type Scaler = MutBuffer<Transform>;
-pub type Scalers = Vec<Scaler>;
+pub type Scalable = MutBuffer<Transform>;
+pub type Scalables = Vec<Scalable>;
 
 fn make_piece_transforms<'w>(
     rw: &'w RenderWindow,
@@ -69,16 +69,16 @@ fn make_piece_transforms<'w>(
 
 pub struct Objects<'w> {
     rw: &'w RenderWindow<'w>,
-    pub scalers: Scalers,
+    pub scalables: Scalables,
     pub tiles: Tiles<'w>,
     pub pieces: Pieces<'w>,
 }
 
 impl<'w> Objects<'w> {
     pub fn new(rw: &'w RenderWindow<'w>) -> Self {
-        let mut scalers = Scalers::default();
+        let mut scalables = Scalables::default();
 
-        let tiles = Tiles::new(rw, &mut scalers);
+        let tiles = Tiles::new(rw, &mut scalables);
 
         let pieces = {
             let sheet = PiecesSheet::new(
@@ -91,12 +91,12 @@ impl<'w> Objects<'w> {
             );
             let transforms = make_piece_transforms(rw, &sheet);
 
-            Pieces::new(rw, &mut scalers, sheet, transforms)
+            Pieces::new(rw, &mut scalables, sheet, transforms)
         };
 
         Self {
             rw,
-            scalers,
+            scalables,
             tiles,
             pieces,
         }
@@ -106,7 +106,7 @@ impl<'w> Objects<'w> {
         let scale = 1. / 4_f32;
         let matrix = Mat2::from_diagonal(vec2(scale.min(scale / ratio), scale.min(scale * ratio)));
 
-        for transform_buffer in self.scalers.iter_mut() {
+        for transform_buffer in self.scalables.iter_mut() {
             let mut transform = transform_buffer.value_mut(self.rw.queue());
             transform.matrix = matrix;
         }

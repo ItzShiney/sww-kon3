@@ -1,7 +1,7 @@
 use crate::pieces::PiecesSheet;
 use crate::pieces::PiecesSheetCoord;
 use crate::Drawer;
-use crate::Scalers;
+use crate::Scalables;
 use sww::buffers::Binding;
 use sww::buffers::MutBuffer;
 use sww::buffers::MutVecBuffer;
@@ -36,11 +36,12 @@ pub struct Pieces<'w> {
 impl<'w> Pieces<'w> {
     pub fn new(
         rw: &'w RenderWindow,
-        scalers: &mut Scalers,
+        scalables: &mut Scalables,
         sheet: PiecesSheet,
         transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
-        let global_transform = scalers.push_last(MutBuffer::new(rw.device(), Transform::default()));
+        let global_transform =
+            scalables.push_last(MutBuffer::new(rw.device(), Transform::default()));
 
         let bind_group0 = shaders::mesh::BindGroup0::from_bindings(
             rw.device(),

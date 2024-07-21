@@ -1,5 +1,5 @@
 use crate::Drawer;
-use crate::Scalers;
+use crate::Scalables;
 use sww::buffers::Binding;
 use sww::buffers::MutBuffer;
 use sww::buffers::MutVecBuffer;
@@ -17,11 +17,11 @@ pub struct SingleColorTiles<'w> {
 impl<'w> SingleColorTiles<'w> {
     pub fn new(
         rw: &'w RenderWindow,
-        scalers: &mut Scalers,
+        scalables: &mut Scalables,
         color: Color,
         transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
-        let global_transform = scalers.push_last(MutBuffer::new(
+        let global_transform = scalables.push_last(MutBuffer::new(
             rw.device(),
             Transform {
                 color: color.into(),
