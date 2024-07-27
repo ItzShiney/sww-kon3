@@ -1,4 +1,5 @@
 use image::EncodableLayout;
+use image::ImageReader;
 use image::RgbaImage;
 use std::io::BufRead;
 use std::io::Seek;
@@ -13,7 +14,7 @@ pub use extensions::*;
 pub use sheet::*;
 
 pub fn read_image(reader: impl BufRead + Seek) -> Result<RgbaImage> {
-    Ok(image::io::Reader::new(reader)
+    Ok(ImageReader::new(reader)
         .with_guessed_format()?
         .decode()?
         .into_rgba8())

@@ -47,6 +47,7 @@ impl RenderWindow<'_> {
                     depth_stencil: None,
                     multisample: Default::default(),
                     multiview: None,
+                    cache: None,
                 }),
         )
     }

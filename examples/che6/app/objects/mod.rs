@@ -19,52 +19,6 @@ pub use pieces::*;
 pub use scalables::*;
 pub use tiles::*;
 
-fn make_piece_transforms<'w>(
-    rw: &'w RenderWindow,
-    sheet: &PiecesSheet,
-) -> MutVecBuffer<'w, Transform> {
-    let mut piece_transforms = Vec::with_capacity(8 * 8);
-
-    for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
-        for x in -4..4 {
-            piece_transforms.push(make_piece_transform(
-                sheet,
-                translation(x, y),
-                (PieceType::Pawn, piece_color),
-            ));
-        }
-    }
-
-    for (y, piece_color) in [(-4, PieceColor::White), (4 - 1, PieceColor::Black)] {
-        for (pos, piece_type) in [
-            (2, PieceType::Bishop),
-            (3, PieceType::Knight),
-            (4, PieceType::Rook),
-        ] {
-            for x in [-pos, pos - 1] {
-                piece_transforms.push(make_piece_transform(
-                    sheet,
-                    translation(x, y),
-                    (piece_type, piece_color),
-                ));
-            }
-        }
-
-        piece_transforms.push(make_piece_transform(
-            sheet,
-            translation(-1, y),
-            (PieceType::Queen, piece_color),
-        ));
-        piece_transforms.push(make_piece_transform(
-            sheet,
-            translation(0, y),
-            (PieceType::King, piece_color),
-        ));
-    }
-
-    rw.vec_buffer_vertex(piece_transforms)
-}
-
 pub struct Objects<'w> {
     rw: &'w RenderWindow<'w>,
     pub scalables: Scalables,
@@ -121,4 +75,50 @@ impl<'c> Objects<'_> {
         self.tiles.draw(drawer, render_pass);
         self.pieces.draw(drawer, render_pass);
     }
+}
+
+fn make_piece_transforms<'w>(
+    rw: &'w RenderWindow,
+    sheet: &PiecesSheet,
+) -> MutVecBuffer<'w, Transform> {
+    let mut piece_transforms = Vec::with_capacity(8 * 8);
+
+    for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
+        for x in -4..4 {
+            piece_transforms.push(make_piece_transform(
+                sheet,
+                translation(x, y),
+                (PieceType::Pawn, piece_color),
+            ));
+        }
+    }
+
+    for (y, piece_color) in [(-4, PieceColor::White), (4 - 1, PieceColor::Black)] {
+        for (pos, piece_type) in [
+            (2, PieceType::Bishop),
+            (3, PieceType::Knight),
+            (4, PieceType::Rook),
+        ] {
+            for x in [-pos, pos - 1] {
+                piece_transforms.push(make_piece_transform(
+                    sheet,
+                    translation(x, y),
+                    (piece_type, piece_color),
+                ));
+            }
+        }
+
+        piece_transforms.push(make_piece_transform(
+            sheet,
+            translation(-1, y),
+            (PieceType::Queen, piece_color),
+        ));
+        piece_transforms.push(make_piece_transform(
+            sheet,
+            translation(0, y),
+            (PieceType::King, piece_color),
+        ));
+    }
+
+    rw.vec_buffer_vertex(piece_transforms)
 }

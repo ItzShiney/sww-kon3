@@ -16,12 +16,17 @@ pub trait RenderWindowSettings {
         }
     }
 
+    fn memory_hints(&self) -> wgpu::MemoryHints {
+        Default::default()
+    }
+
     fn device_descriptor(&self, adapter: &wgpu::Adapter) -> wgpu::DeviceDescriptor {
         wgpu::DeviceDescriptor {
             label: None,
             required_features: wgpu::Features::default(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults()
                 .using_resolution(adapter.limits()),
+            memory_hints: self.memory_hints(),
         }
     }
 
