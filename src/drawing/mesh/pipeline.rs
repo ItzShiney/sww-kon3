@@ -1,5 +1,11 @@
 use crate::shaders;
 use crate::window::RenderWindow;
+use wgpu::BlendComponent;
+use wgpu::BlendFactor;
+use wgpu::BlendState;
+use wgpu::ColorTargetState;
+use wgpu::ColorWrites;
+use wgpu::VertexStepMode;
 
 pub struct MeshPipeline(wgpu::RenderPipeline);
 
@@ -11,44 +17,43 @@ impl MeshPipeline {
 
 impl RenderWindow<'_> {
     pub fn create_mesh_pipeline(&self) -> MeshPipeline {
-        let layout = shaders::mesh::create_pipeline_layout(self.device());
-        let shader = shaders::mesh::create_shader_module(self.device());
+        use shaders::mesh::*;
+
+        let device = self.device();
+        let layout = create_pipeline_layout(device);
+        let shader = create_shader_module(device);
+
+        let targets = [Some(ColorTargetState {
+            format: self.swapchain_format(),
+            blend: Some(BlendState {
+                color: BlendComponent {
+                    src_factor: BlendFactor::SrcAlpha,
+                    dst_factor: BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha: BlendComponent::OVER,
+            }),
+            write_mask: ColorWrites::ALL,
+        })];
+
+        let vertex_entry = vs_main_entry(VertexStepMode::Vertex, VertexStepMode::Instance);
+        let vertex = vertex_state(&shader, &vertex_entry);
+
+        let fragment_entry = fs_main_entry(targets);
+        let fragment = Some(fragment_state(&shader, &fragment_entry));
 
         MeshPipeline(
-            self.device()
-                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: None,
-                    layout: Some(&layout),
-                    vertex: shaders::mesh::vertex_state(
-                        &shader,
-                        &shaders::mesh::vs_main_entry(
-                            wgpu::VertexStepMode::Vertex,
-                            wgpu::VertexStepMode::Instance,
-                        ),
-                    ),
-                    fragment: Some(wgpu::FragmentState {
-                        module: &shader,
-                        entry_point: shaders::mesh::ENTRY_FS_MAIN,
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: self.swapchain_format(),
-                            blend: Some(wgpu::BlendState {
-                                color: wgpu::BlendComponent {
-                                    src_factor: wgpu::BlendFactor::SrcAlpha,
-                                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                                    operation: wgpu::BlendOperation::Add,
-                                },
-                                alpha: wgpu::BlendComponent::OVER,
-                            }),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                    }),
-                    primitive: Default::default(),
-                    depth_stencil: None,
-                    multisample: Default::default(),
-                    multiview: None,
-                    cache: None,
-                }),
+            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("Mesh"),
+                layout: Some(&layout),
+                vertex,
+                fragment,
+                primitive: Default::default(),
+                depth_stencil: None,
+                multisample: Default::default(),
+                multiview: None,
+                cache: None,
+            }),
         )
     }
 }
