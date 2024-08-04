@@ -92,6 +92,8 @@ mod shared {
 
 use shared::*;
 
+trait Element {}
+
 trait Anchor: 'static {
     type Value;
 }
@@ -131,6 +133,51 @@ trait Build: ResolveAnchors {
 
     fn build(self) -> Self::Output;
 }
+
+macro_rules! tuple_impls {
+    ( $($Ts:ident)+ ) => {
+        impl<A: Build, $($Ts: Build),+> Build for (A, $($Ts),+)
+        where
+            Self: ResolveAnchors,
+        {
+            type Output = (A::Output, $($Ts::Output),+);
+
+            fn build(self) -> Self::Output {
+                #[allow(non_snake_case)]
+                let (A, $($Ts),+) = self;
+
+                (A.build(), $($Ts.build()),+)
+            }
+        }
+
+        impl<A: Build, $($Ts: Build),+> ResolveAnchors for (A, $($Ts),+) {
+            type AnchorsSet = (A::AnchorsSet, B::AnchorsSet);
+
+            fn get_anchor<_A: Anchor>(&self) -> Option<Shared<_A::Value>> {
+                #[allow(non_snake_case)]
+                let (A, $($Ts),+) = self;
+
+                (A.get_anchor::<_A>())
+                    $( .or_else(|| $Ts.get_anchor::<_A>()) )+
+            }
+
+            fn resolve_anchor<_A: Anchor>(&mut self, anchor: &Shared<_A::Value>) {
+                #[allow(non_snake_case)]
+                let (A, $($Ts),+) = self;
+
+                A.resolve_anchor::<_A>(anchor);
+                $( $Ts.resolve_anchor::<_A>(anchor); )+
+            }
+        }
+
+        impl<A: Element, $($Ts: Element),+> Element for (A, $($Ts),+) {}
+    };
+}
+
+tuple_impls!(B);
+tuple_impls!(B C);
+tuple_impls!(B C D);
+tuple_impls!(B C D E);
 
 trait GetValue<V: ?Sized> {
     type Output<'s>: Borrow<V> + 's
@@ -267,11 +314,17 @@ impl ResolveAnchors for LeafElement {
 #[derive(Debug, Build)]
 struct SomeElementWithAnchor<T, A>(T, A);
 
+impl<T: Element, A: GetValue<usize>> Element for SomeElementWithAnchor<T, A> {}
+
 #[derive(Debug, Build)]
 struct SomeElement<T>(T);
 
+impl<T: Element> Element for SomeElement<T> {}
+
 #[derive(Debug, Build)]
 struct SomeElement2<T, U>(T, U);
+
+impl<T: Element, U: Element> Element for SomeElement2<T, U> {}
 
 #[derive(Debug, Build)]
 struct Sum<A, B>(A, B);
