@@ -1,9 +1,95 @@
 use std::any::Any;
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
 use std::fmt::Debug;
-use std::sync::Arc;
-use std::sync::RwLock;
 
-type Gc<T> = Arc<RwLock<T>>;
+mod shared {
+    use std::borrow::Borrow;
+    use std::borrow::BorrowMut;
+    use std::fmt::Debug;
+    use std::ops::Deref;
+    use std::ops::DerefMut;
+    use std::sync::Arc;
+    use std::sync::RwLock;
+    use std::sync::RwLockReadGuard;
+    use std::sync::RwLockWriteGuard;
+
+    pub struct Shared<T: ?Sized>(Arc<RwLock<T>>);
+
+    impl<T: Debug> Debug for Shared<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_tuple("Gc").field(&*self.read()).finish()
+        }
+    }
+
+    impl<T: ?Sized> Clone for Shared<T> {
+        fn clone(&self) -> Self {
+            Shared(self.0.clone())
+        }
+    }
+
+    impl<T> Shared<T> {
+        pub fn new(value: T) -> Self {
+            Self(Arc::new(RwLock::new(value)))
+        }
+    }
+
+    impl<T: ?Sized> Shared<T> {
+        pub fn read(&self) -> SharedReadGuard<'_, T> {
+            SharedReadGuard(self.0.read().unwrap())
+        }
+
+        pub fn write(&self) -> SharedWriteGuard<'_, T> {
+            SharedWriteGuard(self.0.write().unwrap())
+        }
+    }
+
+    pub struct SharedReadGuard<'s, T: ?Sized>(RwLockReadGuard<'s, T>);
+
+    impl<T: ?Sized> Deref for SharedReadGuard<'_, T> {
+        type Target = T;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    impl<T: ?Sized> Borrow<T> for SharedReadGuard<'_, T> {
+        fn borrow(&self) -> &T {
+            &self.0
+        }
+    }
+
+    pub struct SharedWriteGuard<'s, T: ?Sized>(RwLockWriteGuard<'s, T>);
+
+    impl<T: ?Sized> Deref for SharedWriteGuard<'_, T> {
+        type Target = T;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    impl<T: ?Sized> DerefMut for SharedWriteGuard<'_, T> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
+        }
+    }
+
+    impl<T: ?Sized> Borrow<T> for SharedWriteGuard<'_, T> {
+        fn borrow(&self) -> &T {
+            &self.0
+        }
+    }
+
+    impl<T: ?Sized> BorrowMut<T> for SharedWriteGuard<'_, T> {
+        fn borrow_mut(&mut self) -> &mut T {
+            &mut self.0
+        }
+    }
+}
+
+use shared::*;
 
 trait Anchor: 'static {
     type Value;
@@ -46,56 +132,72 @@ trait Build: ResolveAnchors {
 }
 
 trait ValueSource<V: ?Sized> {
-    fn with_get(&self, f: impl FnOnce(&V));
+    type Output<'s>: Borrow<V> + 's
+    where
+        Self: 's;
+
+    fn get(&self) -> Self::Output<'_>;
 }
 
 trait ValueSourceMut<V: ?Sized> {
-    fn with_get_mut(&mut self, f: impl FnOnce(&mut V));
+    type Output<'s>: BorrowMut<V> + 's
+    where
+        Self: 's;
+
+    fn get_mut(&mut self) -> Self::Output<'_>;
 }
 
 impl<V: ?Sized> ValueSource<V> for V {
-    fn with_get(&self, f: impl FnOnce(&V)) {
-        f(self);
+    type Output<'s> = &'s V where V: 's;
+
+    fn get(&self) -> Self::Output<'_> {
+        self
     }
 }
 
 impl<V: ?Sized> ValueSourceMut<V> for V {
-    fn with_get_mut(&mut self, f: impl FnOnce(&mut V)) {
-        f(self);
+    type Output<'s> = &'s mut V where V: 's;
+
+    fn get_mut(&mut self) -> Self::Output<'_> {
+        self
     }
 }
 
-impl<V: ?Sized> ValueSource<V> for Gc<V> {
-    fn with_get(&self, f: impl FnOnce(&V)) {
-        f(&self.read().unwrap());
+impl<V: ?Sized> ValueSource<V> for Shared<V> {
+    type Output<'s> = SharedReadGuard<'s, V> where V: 's;
+
+    fn get(&self) -> Self::Output<'_> {
+        self.read()
     }
 }
 
-impl<V: ?Sized> ValueSourceMut<V> for Gc<V> {
-    fn with_get_mut(&mut self, f: impl FnOnce(&mut V)) {
-        f(&mut self.write().unwrap());
+impl<V: ?Sized> ValueSourceMut<V> for Shared<V> {
+    type Output<'s> = SharedWriteGuard<'s, V> where V: 's;
+
+    fn get_mut(&mut self) -> Self::Output<'_> {
+        self.write()
     }
 }
 
-struct SetAnchor<A: Anchor>(Gc<A::Value>);
+struct SetAnchor<A: Anchor>(Shared<A::Value>);
 
 impl<A: Anchor> Debug for SetAnchor<A>
 where
     A::Value: Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(&self.0.read().unwrap() as &A::Value, f)
+        Debug::fmt(&self.0.read() as &A::Value, f)
     }
 }
 
 impl<A: Anchor> SetAnchor<A> {
     fn new(value: A::Value) -> Self {
-        Self(Arc::new(RwLock::new(value)))
+        Self(Shared::new(value))
     }
 }
 
 impl<A: Anchor> Build for SetAnchor<A> {
-    type Output = Gc<A::Value>;
+    type Output = Shared<A::Value>;
 
     fn build(self) -> Self::Output {
         self.0
@@ -105,14 +207,14 @@ impl<A: Anchor> Build for SetAnchor<A> {
 impl<A: Anchor> ResolveAnchors for SetAnchor<A> {
     type AnchorsSet = A;
 
-    fn get_anchor<B: Anchor>(&self) -> Option<Gc<B::Value>> {
-        (&self.0 as &dyn Any).downcast_ref().map(Gc::clone)
+    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
+        (&self.0 as &dyn Any).downcast_ref().map(Shared::clone)
     }
 
-    fn resolve_anchor<B: Anchor>(&mut self, _anchor: &Gc<B::Value>) {}
+    fn resolve_anchor<B: Anchor>(&mut self, _anchor: &Shared<B::Value>) {}
 }
 
-struct GetAnchor<A: Anchor>(Option<Gc<A::Value>>);
+struct GetAnchor<A: Anchor>(Option<Shared<A::Value>>);
 
 impl<A: Anchor> Debug for GetAnchor<A>
 where
@@ -120,7 +222,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.0 {
-            Some(value) => Debug::fmt(&value.read().unwrap() as &A::Value, f),
+            Some(value) => Debug::fmt(&value.read() as &A::Value, f),
             None => Debug::fmt("None", f),
         }
     }
@@ -133,7 +235,7 @@ impl<A: Anchor> GetAnchor<A> {
 }
 
 impl<A: Anchor> Build for GetAnchor<A> {
-    type Output = Gc<A::Value>;
+    type Output = Shared<A::Value>;
 
     fn build(self) -> Self::Output {
         self.0.expect("anchor was not set")
@@ -143,12 +245,12 @@ impl<A: Anchor> Build for GetAnchor<A> {
 impl<A: Anchor> ResolveAnchors for GetAnchor<A> {
     type AnchorsSet = ();
 
-    fn get_anchor<B: Anchor>(&self) -> Option<Gc<B::Value>> {
+    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
         None
     }
 
-    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Gc<B::Value>) {
-        if let Some(anchor) = (anchor as &dyn Any).downcast_ref().map(Gc::clone) {
+    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
+        if let Some(anchor) = (anchor as &dyn Any).downcast_ref().map(Shared::clone) {
             self.0 = Some(anchor);
         }
     }
@@ -157,103 +259,103 @@ impl<A: Anchor> ResolveAnchors for GetAnchor<A> {
 trait ResolveAnchors {
     type AnchorsSet: AnchorsTree;
 
-    fn get_anchor<A: Anchor>(&self) -> Option<Gc<A::Value>>;
-    fn resolve_anchor<A: Anchor>(&mut self, anchor: &Gc<A::Value>);
+    fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>>;
+    fn resolve_anchor<A: Anchor>(&mut self, anchor: &Shared<A::Value>);
 }
 
 #[derive(Debug)]
-struct LeafBuilder;
+struct LeafElement;
 
-impl Build for LeafBuilder {
-    type Output = LeafBuilder;
+impl Build for LeafElement {
+    type Output = LeafElement;
 
     fn build(self) -> Self::Output {
-        LeafBuilder
+        LeafElement
     }
 }
 
-impl ResolveAnchors for LeafBuilder {
+impl ResolveAnchors for LeafElement {
     type AnchorsSet = ();
 
-    fn get_anchor<A: Anchor>(&self) -> Option<Gc<A::Value>> {
+    fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
         None
     }
 
-    fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Gc<A::Value>) {}
+    fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
 }
 
 #[derive(Debug)]
-struct SomeBuilderWithAnchor<T, A>(T, A);
+struct SomeElementWithAnchor<T, A>(T, A);
 
-impl<T: Build, A: Build> Build for SomeBuilderWithAnchor<T, A>
+impl<T: Build, A: Build> Build for SomeElementWithAnchor<T, A>
 where
     A::Output: ValueSource<usize>,
 {
-    type Output = SomeBuilderWithAnchor<T::Output, A::Output>;
+    type Output = SomeElementWithAnchor<T::Output, A::Output>;
 
     fn build(self) -> Self::Output {
-        SomeBuilderWithAnchor(self.0.build(), self.1.build())
+        SomeElementWithAnchor(self.0.build(), self.1.build())
     }
 }
 
-impl<T: ResolveAnchors, A: Build> ResolveAnchors for SomeBuilderWithAnchor<T, A>
+impl<T: ResolveAnchors, A: Build> ResolveAnchors for SomeElementWithAnchor<T, A>
 where
     A::Output: ValueSource<usize>,
 {
     type AnchorsSet = (T::AnchorsSet, A::AnchorsSet);
 
-    fn get_anchor<B: Anchor>(&self) -> Option<Gc<B::Value>> {
+    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
         (self.1.get_anchor::<B>()).or_else(|| self.0.get_anchor::<B>())
     }
 
-    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Gc<B::Value>) {
+    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
         self.0.resolve_anchor::<B>(anchor);
         self.1.resolve_anchor::<B>(anchor);
     }
 }
 
 #[derive(Debug)]
-struct SomeBuilder<T>(T);
+struct SomeElement<T>(T);
 
-impl<T: Build> Build for SomeBuilder<T> {
-    type Output = SomeBuilder<T::Output>;
+impl<T: Build> Build for SomeElement<T> {
+    type Output = SomeElement<T::Output>;
 
     fn build(self) -> Self::Output {
-        SomeBuilder(self.0.build())
+        SomeElement(self.0.build())
     }
 }
 
-impl<T: ResolveAnchors> ResolveAnchors for SomeBuilder<T> {
+impl<T: ResolveAnchors> ResolveAnchors for SomeElement<T> {
     type AnchorsSet = T::AnchorsSet;
 
-    fn get_anchor<B: Anchor>(&self) -> Option<Gc<B::Value>> {
+    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
         self.0.get_anchor::<B>()
     }
 
-    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Gc<B::Value>) {
+    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
         self.0.resolve_anchor::<B>(anchor)
     }
 }
 
 #[derive(Debug)]
-struct SomeBuilder2<T, U>(T, U);
+struct SomeElement2<T, U>(T, U);
 
-impl<T: Build, U: Build> Build for SomeBuilder2<T, U> {
-    type Output = SomeBuilder2<T::Output, U::Output>;
+impl<T: Build, U: Build> Build for SomeElement2<T, U> {
+    type Output = SomeElement2<T::Output, U::Output>;
 
     fn build(self) -> Self::Output {
-        SomeBuilder2(self.0.build(), self.1.build())
+        SomeElement2(self.0.build(), self.1.build())
     }
 }
 
-impl<T: ResolveAnchors, U: ResolveAnchors> ResolveAnchors for SomeBuilder2<T, U> {
+impl<T: ResolveAnchors, U: ResolveAnchors> ResolveAnchors for SomeElement2<T, U> {
     type AnchorsSet = (T::AnchorsSet, U::AnchorsSet);
 
-    fn get_anchor<B: Anchor>(&self) -> Option<Gc<B::Value>> {
+    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
         (self.0.get_anchor::<B>()).or_else(|| self.1.get_anchor::<B>())
     }
 
-    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Gc<B::Value>) {
+    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
         self.0.resolve_anchor::<B>(anchor);
         self.1.resolve_anchor::<B>(anchor);
     }
@@ -281,19 +383,21 @@ where
 {
     type AnchorsSet = (A::AnchorsSet, B::AnchorsSet);
 
-    fn get_anchor<C: Anchor>(&self) -> Option<Gc<C::Value>> {
+    fn get_anchor<C: Anchor>(&self) -> Option<Shared<C::Value>> {
         (self.0.get_anchor::<C>()).or_else(|| self.1.get_anchor::<C>())
     }
 
-    fn resolve_anchor<C: Anchor>(&mut self, anchor: &Gc<C::Value>) {
+    fn resolve_anchor<C: Anchor>(&mut self, anchor: &Shared<C::Value>) {
         self.0.resolve_anchor::<C>(anchor);
         self.1.resolve_anchor::<C>(anchor);
     }
 }
 
 impl<A: ValueSource<usize>, B: ValueSource<usize>> ValueSource<usize> for Sum<A, B> {
-    fn with_get(&self, f: impl FnOnce(&usize)) {
-        (self.0).with_get(move |&a| (self.1).with_get(move |&b| f(&(a + b))))
+    type Output<'s> = usize where A: 's, B: 's;
+
+    fn get(&self) -> Self::Output<'_> {
+        self.0.get().borrow() + self.1.get().borrow()
     }
 }
 
@@ -308,13 +412,13 @@ fn main() {
         type Value = usize;
     }
 
-    let builder = build(SomeBuilder2(
-        SomeBuilder(SomeBuilderWithAnchor(
-            LeafBuilder,
+    let builder = build(SomeElement2(
+        SomeElement(SomeElementWithAnchor(
+            LeafElement,
             SetAnchor::<MyAnchor>::new(1),
         )),
-        SomeBuilderWithAnchor(
-            LeafBuilder,
+        SomeElementWithAnchor(
+            LeafElement,
             Sum(GetAnchor::<MyAnchor>::new(), GetAnchor::<MyAnchor>::new()),
         ),
     ));
