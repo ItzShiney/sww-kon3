@@ -1,5 +1,5 @@
 [package]
-name = "tests"
+name = "kon_tests"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,10 +7,4 @@ edition = "2021"
 lto = true
 
 [dependencies]
-# itoa = "*"
-# ctor = "*"
-# colored = "*"
-# itertools = "*"
-# lazy_static = "*"
-# serde_json = "*"
-# as-any = "*"
+kon_macros = { path = "kon_macros" }

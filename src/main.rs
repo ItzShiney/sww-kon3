@@ -1,3 +1,4 @@
+use kon_macros::Build;
 use std::any::Any;
 use std::borrow::Borrow;
 use std::borrow::BorrowMut;
@@ -131,64 +132,55 @@ trait Build: ResolveAnchors {
     fn build(self) -> Self::Output;
 }
 
-trait ValueSource<V: ?Sized> {
+trait GetValue<V: ?Sized> {
     type Output<'s>: Borrow<V> + 's
     where
         Self: 's;
 
-    fn get(&self) -> Self::Output<'_>;
+    fn value(&self) -> Self::Output<'_>;
 }
 
-trait ValueSourceMut<V: ?Sized> {
+trait GetValueMut<V: ?Sized> {
     type Output<'s>: BorrowMut<V> + 's
     where
         Self: 's;
 
-    fn get_mut(&mut self) -> Self::Output<'_>;
+    fn value_mut(&mut self) -> Self::Output<'_>;
 }
 
-impl<V: ?Sized> ValueSource<V> for V {
+impl<V: ?Sized> GetValue<V> for V {
     type Output<'s> = &'s V where V: 's;
 
-    fn get(&self) -> Self::Output<'_> {
+    fn value(&self) -> Self::Output<'_> {
         self
     }
 }
 
-impl<V: ?Sized> ValueSourceMut<V> for V {
+impl<V: ?Sized> GetValueMut<V> for V {
     type Output<'s> = &'s mut V where V: 's;
 
-    fn get_mut(&mut self) -> Self::Output<'_> {
+    fn value_mut(&mut self) -> Self::Output<'_> {
         self
     }
 }
 
-impl<V: ?Sized> ValueSource<V> for Shared<V> {
+impl<V: ?Sized> GetValue<V> for Shared<V> {
     type Output<'s> = SharedReadGuard<'s, V> where V: 's;
 
-    fn get(&self) -> Self::Output<'_> {
+    fn value(&self) -> Self::Output<'_> {
         self.read()
     }
 }
 
-impl<V: ?Sized> ValueSourceMut<V> for Shared<V> {
+impl<V: ?Sized> GetValueMut<V> for Shared<V> {
     type Output<'s> = SharedWriteGuard<'s, V> where V: 's;
 
-    fn get_mut(&mut self) -> Self::Output<'_> {
+    fn value_mut(&mut self) -> Self::Output<'_> {
         self.write()
     }
 }
 
 struct SetAnchor<A: Anchor>(Shared<A::Value>);
-
-impl<A: Anchor> Debug for SetAnchor<A>
-where
-    A::Value: Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(&self.0.read() as &A::Value, f)
-    }
-}
 
 impl<A: Anchor> SetAnchor<A> {
     fn new(value: A::Value) -> Self {
@@ -215,18 +207,6 @@ impl<A: Anchor> ResolveAnchors for SetAnchor<A> {
 }
 
 struct GetAnchor<A: Anchor>(Option<Shared<A::Value>>);
-
-impl<A: Anchor> Debug for GetAnchor<A>
-where
-    A::Value: Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.0 {
-            Some(value) => Debug::fmt(&value.read() as &A::Value, f),
-            None => Debug::fmt("None", f),
-        }
-    }
-}
 
 impl<A: Anchor> GetAnchor<A> {
     fn new() -> Self {
@@ -284,120 +264,23 @@ impl ResolveAnchors for LeafElement {
     fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Build)]
 struct SomeElementWithAnchor<T, A>(T, A);
 
-impl<T: Build, A: Build> Build for SomeElementWithAnchor<T, A>
-where
-    A::Output: ValueSource<usize>,
-{
-    type Output = SomeElementWithAnchor<T::Output, A::Output>;
-
-    fn build(self) -> Self::Output {
-        SomeElementWithAnchor(self.0.build(), self.1.build())
-    }
-}
-
-impl<T: ResolveAnchors, A: Build> ResolveAnchors for SomeElementWithAnchor<T, A>
-where
-    A::Output: ValueSource<usize>,
-{
-    type AnchorsSet = (T::AnchorsSet, A::AnchorsSet);
-
-    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
-        (self.1.get_anchor::<B>()).or_else(|| self.0.get_anchor::<B>())
-    }
-
-    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
-        self.0.resolve_anchor::<B>(anchor);
-        self.1.resolve_anchor::<B>(anchor);
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Build)]
 struct SomeElement<T>(T);
 
-impl<T: Build> Build for SomeElement<T> {
-    type Output = SomeElement<T::Output>;
-
-    fn build(self) -> Self::Output {
-        SomeElement(self.0.build())
-    }
-}
-
-impl<T: ResolveAnchors> ResolveAnchors for SomeElement<T> {
-    type AnchorsSet = T::AnchorsSet;
-
-    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
-        self.0.get_anchor::<B>()
-    }
-
-    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
-        self.0.resolve_anchor::<B>(anchor)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Build)]
 struct SomeElement2<T, U>(T, U);
 
-impl<T: Build, U: Build> Build for SomeElement2<T, U> {
-    type Output = SomeElement2<T::Output, U::Output>;
-
-    fn build(self) -> Self::Output {
-        SomeElement2(self.0.build(), self.1.build())
-    }
-}
-
-impl<T: ResolveAnchors, U: ResolveAnchors> ResolveAnchors for SomeElement2<T, U> {
-    type AnchorsSet = (T::AnchorsSet, U::AnchorsSet);
-
-    fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
-        (self.0.get_anchor::<B>()).or_else(|| self.1.get_anchor::<B>())
-    }
-
-    fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
-        self.0.resolve_anchor::<B>(anchor);
-        self.1.resolve_anchor::<B>(anchor);
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Build)]
 struct Sum<A, B>(A, B);
 
-impl<A: Build, B: Build> Build for Sum<A, B>
-where
-    A::Output: ValueSource<usize>,
-    B::Output: ValueSource<usize>,
-{
-    type Output = Sum<A::Output, B::Output>;
-
-    fn build(self) -> Self::Output {
-        Sum(self.0.build(), self.1.build())
-    }
-}
-
-impl<A: Build, B: Build> ResolveAnchors for Sum<A, B>
-where
-    A::Output: ValueSource<usize>,
-    B::Output: ValueSource<usize>,
-{
-    type AnchorsSet = (A::AnchorsSet, B::AnchorsSet);
-
-    fn get_anchor<C: Anchor>(&self) -> Option<Shared<C::Value>> {
-        (self.0.get_anchor::<C>()).or_else(|| self.1.get_anchor::<C>())
-    }
-
-    fn resolve_anchor<C: Anchor>(&mut self, anchor: &Shared<C::Value>) {
-        self.0.resolve_anchor::<C>(anchor);
-        self.1.resolve_anchor::<C>(anchor);
-    }
-}
-
-impl<A: ValueSource<usize>, B: ValueSource<usize>> ValueSource<usize> for Sum<A, B> {
+impl<A: GetValue<usize>, B: GetValue<usize>> GetValue<usize> for Sum<A, B> {
     type Output<'s> = usize where A: 's, B: 's;
 
-    fn get(&self) -> Self::Output<'_> {
-        self.0.get().borrow() + self.1.get().borrow()
+    fn value(&self) -> Self::Output<'_> {
+        self.0.value().borrow() + self.1.value().borrow()
     }
 }
 
