@@ -3,11 +3,11 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::RwLock;
 
+type Gc<T> = Arc<RwLock<T>>;
+
 trait Anchor: 'static {
     type Value;
 }
-
-type Gc<T> = Arc<RwLock<T>>;
 
 trait AnchorsTree {
     fn resolve_anchors(builder: &mut impl ResolveAnchors);
@@ -39,10 +39,42 @@ impl<A: AnchorsTree, B: AnchorsTree, C: AnchorsTree> AnchorsTree for (A, B, C) {
     }
 }
 
-trait UseAnchor: ResolveAnchors {
-    type Anchor: Anchor;
+trait Build: ResolveAnchors {
+    type Output;
 
-    fn unwrap(self) -> Gc<<Self::Anchor as Anchor>::Value>;
+    fn build(self) -> Self::Output;
+}
+
+trait ValueSource<V: ?Sized> {
+    fn with_get(&self, f: impl FnOnce(&V));
+}
+
+trait ValueSourceMut<V: ?Sized> {
+    fn with_get_mut(&mut self, f: impl FnOnce(&mut V));
+}
+
+impl<V: ?Sized> ValueSource<V> for V {
+    fn with_get(&self, f: impl FnOnce(&V)) {
+        f(self);
+    }
+}
+
+impl<V: ?Sized> ValueSourceMut<V> for V {
+    fn with_get_mut(&mut self, f: impl FnOnce(&mut V)) {
+        f(self);
+    }
+}
+
+impl<V: ?Sized> ValueSource<V> for Gc<V> {
+    fn with_get(&self, f: impl FnOnce(&V)) {
+        f(&self.read().unwrap());
+    }
+}
+
+impl<V: ?Sized> ValueSourceMut<V> for Gc<V> {
+    fn with_get_mut(&mut self, f: impl FnOnce(&mut V)) {
+        f(&mut self.write().unwrap());
+    }
 }
 
 struct SetAnchor<A: Anchor>(Gc<A::Value>);
@@ -62,10 +94,10 @@ impl<A: Anchor> SetAnchor<A> {
     }
 }
 
-impl<A: Anchor> UseAnchor for SetAnchor<A> {
-    type Anchor = A;
+impl<A: Anchor> Build for SetAnchor<A> {
+    type Output = Gc<A::Value>;
 
-    fn unwrap(self) -> Gc<A::Value> {
+    fn build(self) -> Self::Output {
         self.0
     }
 }
@@ -100,11 +132,11 @@ impl<A: Anchor> GetAnchor<A> {
     }
 }
 
-impl<A: Anchor> UseAnchor for GetAnchor<A> {
-    type Anchor = A;
+impl<A: Anchor> Build for GetAnchor<A> {
+    type Output = Gc<A::Value>;
 
-    fn unwrap(self) -> Gc<A::Value> {
-        self.0.unwrap()
+    fn build(self) -> Self::Output {
+        self.0.expect("anchor was not set")
     }
 }
 
@@ -142,14 +174,18 @@ impl ResolveAnchors for LeafBuilder {
 }
 
 #[derive(Debug)]
-struct SomeBuilderWithAnchor<T: ResolveAnchors, A: UseAnchor>(T, A);
-impl<T: ResolveAnchors, A: UseAnchor> ResolveAnchors for SomeBuilderWithAnchor<T, A> {
-    type AnchorsSet = (T::AnchorsSet, A::Anchor);
+struct SomeBuilderWithAnchor<T: ResolveAnchors, A: Build>(T, A)
+where
+    A::Output: ValueSource<usize>;
+
+impl<T: ResolveAnchors, A: Build> ResolveAnchors for SomeBuilderWithAnchor<T, A>
+where
+    A::Output: ValueSource<usize>,
+{
+    type AnchorsSet = (T::AnchorsSet, A::AnchorsSet);
 
     fn get_anchor<B: Anchor>(&self) -> Option<Gc<B::Value>> {
-        self.1
-            .get_anchor::<B>()
-            .or_else(|| self.0.get_anchor::<B>())
+        (self.1.get_anchor::<B>()).or_else(|| self.0.get_anchor::<B>())
     }
 
     fn resolve_anchor<B: Anchor>(&mut self, anchor: &Gc<B::Value>) {
@@ -187,6 +223,49 @@ impl<T: ResolveAnchors, U: ResolveAnchors> ResolveAnchors for SomeBuilder2<T, U>
     }
 }
 
+#[derive(Debug)]
+struct Sum<A: Build, B: Build>(A, B)
+where
+    A::Output: ValueSource<usize>,
+    B::Output: ValueSource<usize>;
+
+impl<A: Build, B: Build> Build for Sum<A, B>
+where
+    A::Output: ValueSource<usize>,
+    B::Output: ValueSource<usize>,
+{
+    type Output = SumBuilt<A::Output, B::Output>;
+
+    fn build(self) -> Self::Output {
+        SumBuilt(self.0.build(), self.1.build())
+    }
+}
+
+impl<A: Build, B: Build> ResolveAnchors for Sum<A, B>
+where
+    A::Output: ValueSource<usize>,
+    B::Output: ValueSource<usize>,
+{
+    type AnchorsSet = (A::AnchorsSet, B::AnchorsSet);
+
+    fn get_anchor<C: Anchor>(&self) -> Option<Gc<C::Value>> {
+        (self.0.get_anchor::<C>()).or_else(|| self.1.get_anchor::<C>())
+    }
+
+    fn resolve_anchor<C: Anchor>(&mut self, anchor: &Gc<C::Value>) {
+        self.0.resolve_anchor::<C>(anchor);
+        self.1.resolve_anchor::<C>(anchor);
+    }
+}
+
+struct SumBuilt<A: ValueSource<usize>, B: ValueSource<usize>>(A, B);
+
+impl<A: ValueSource<usize>, B: ValueSource<usize>> ValueSource<usize> for SumBuilt<A, B> {
+    fn with_get(&self, f: impl FnOnce(&usize)) {
+        (self.0).with_get(move |&a| (self.1).with_get(move |&b| f(&(a + b))))
+    }
+}
+
 fn resolve_anchors<T: ResolveAnchors>(builder: &mut T) {
     T::AnchorsSet::resolve_anchors(builder);
 }
@@ -202,7 +281,10 @@ fn main() {
             LeafBuilder,
             SetAnchor::<MyAnchor>::new(1),
         )),
-        SomeBuilderWithAnchor(LeafBuilder, GetAnchor::<MyAnchor>::new()),
+        SomeBuilderWithAnchor(
+            LeafBuilder,
+            Sum(GetAnchor::<MyAnchor>::new(), GetAnchor::<MyAnchor>::new()),
+        ),
     );
     resolve_anchors(&mut builder);
 
