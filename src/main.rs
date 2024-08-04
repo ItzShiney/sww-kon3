@@ -163,6 +163,15 @@ trait ResolveAnchors {
 
 #[derive(Debug)]
 struct LeafBuilder;
+
+impl Build for LeafBuilder {
+    type Output = LeafBuilder;
+
+    fn build(self) -> Self::Output {
+        LeafBuilder
+    }
+}
+
 impl ResolveAnchors for LeafBuilder {
     type AnchorsSet = ();
 
@@ -174,9 +183,18 @@ impl ResolveAnchors for LeafBuilder {
 }
 
 #[derive(Debug)]
-struct SomeBuilderWithAnchor<T: ResolveAnchors, A: Build>(T, A)
+struct SomeBuilderWithAnchor<T, A>(T, A);
+
+impl<T: Build, A: Build> Build for SomeBuilderWithAnchor<T, A>
 where
-    A::Output: ValueSource<usize>;
+    A::Output: ValueSource<usize>,
+{
+    type Output = SomeBuilderWithAnchor<T::Output, A::Output>;
+
+    fn build(self) -> Self::Output {
+        SomeBuilderWithAnchor(self.0.build(), self.1.build())
+    }
+}
 
 impl<T: ResolveAnchors, A: Build> ResolveAnchors for SomeBuilderWithAnchor<T, A>
 where
@@ -195,7 +213,16 @@ where
 }
 
 #[derive(Debug)]
-struct SomeBuilder<T: ResolveAnchors>(T);
+struct SomeBuilder<T>(T);
+
+impl<T: Build> Build for SomeBuilder<T> {
+    type Output = SomeBuilder<T::Output>;
+
+    fn build(self) -> Self::Output {
+        SomeBuilder(self.0.build())
+    }
+}
+
 impl<T: ResolveAnchors> ResolveAnchors for SomeBuilder<T> {
     type AnchorsSet = T::AnchorsSet;
 
@@ -209,7 +236,16 @@ impl<T: ResolveAnchors> ResolveAnchors for SomeBuilder<T> {
 }
 
 #[derive(Debug)]
-struct SomeBuilder2<T: ResolveAnchors, U: ResolveAnchors>(T, U);
+struct SomeBuilder2<T, U>(T, U);
+
+impl<T: Build, U: Build> Build for SomeBuilder2<T, U> {
+    type Output = SomeBuilder2<T::Output, U::Output>;
+
+    fn build(self) -> Self::Output {
+        SomeBuilder2(self.0.build(), self.1.build())
+    }
+}
+
 impl<T: ResolveAnchors, U: ResolveAnchors> ResolveAnchors for SomeBuilder2<T, U> {
     type AnchorsSet = (T::AnchorsSet, U::AnchorsSet);
 
@@ -224,20 +260,17 @@ impl<T: ResolveAnchors, U: ResolveAnchors> ResolveAnchors for SomeBuilder2<T, U>
 }
 
 #[derive(Debug)]
-struct Sum<A: Build, B: Build>(A, B)
-where
-    A::Output: ValueSource<usize>,
-    B::Output: ValueSource<usize>;
+struct Sum<A, B>(A, B);
 
 impl<A: Build, B: Build> Build for Sum<A, B>
 where
     A::Output: ValueSource<usize>,
     B::Output: ValueSource<usize>,
 {
-    type Output = SumBuilt<A::Output, B::Output>;
+    type Output = Sum<A::Output, B::Output>;
 
     fn build(self) -> Self::Output {
-        SumBuilt(self.0.build(), self.1.build())
+        Sum(self.0.build(), self.1.build())
     }
 }
 
@@ -258,16 +291,15 @@ where
     }
 }
 
-struct SumBuilt<A: ValueSource<usize>, B: ValueSource<usize>>(A, B);
-
-impl<A: ValueSource<usize>, B: ValueSource<usize>> ValueSource<usize> for SumBuilt<A, B> {
+impl<A: ValueSource<usize>, B: ValueSource<usize>> ValueSource<usize> for Sum<A, B> {
     fn with_get(&self, f: impl FnOnce(&usize)) {
         (self.0).with_get(move |&a| (self.1).with_get(move |&b| f(&(a + b))))
     }
 }
 
-fn resolve_anchors<T: ResolveAnchors>(builder: &mut T) {
-    T::AnchorsSet::resolve_anchors(builder);
+fn build<T: Build>(mut builder: T) -> T::Output {
+    T::AnchorsSet::resolve_anchors(&mut builder);
+    builder.build()
 }
 
 fn main() {
@@ -276,7 +308,7 @@ fn main() {
         type Value = usize;
     }
 
-    let mut builder = SomeBuilder2(
+    let builder = build(SomeBuilder2(
         SomeBuilder(SomeBuilderWithAnchor(
             LeafBuilder,
             SetAnchor::<MyAnchor>::new(1),
@@ -285,8 +317,7 @@ fn main() {
             LeafBuilder,
             Sum(GetAnchor::<MyAnchor>::new(), GetAnchor::<MyAnchor>::new()),
         ),
-    );
-    resolve_anchors(&mut builder);
+    ));
 
     println!("{:#?}", builder);
 }
