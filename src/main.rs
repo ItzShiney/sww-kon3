@@ -92,7 +92,24 @@ mod shared {
 
 use shared::*;
 
-trait Element {}
+enum Event {
+    Update,
+}
+
+struct EventConsumed;
+
+trait HandleEvent {
+    fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed>;
+}
+
+trait Element: HandleEvent {
+    fn draw(&self)
+    where
+        Self: Debug,
+    {
+        println!("{:#?}", self);
+    }
+}
 
 trait Anchor: 'static {
     type Value;
@@ -109,24 +126,21 @@ impl<A: Anchor> AnchorsTree for A {
     }
 }
 
-impl AnchorsTree for () {
-    fn resolve_anchors(_builder: &mut impl ResolveAnchors) {}
+macro_rules! impl_anchors_tree {
+    ($($T:ident)*) => {
+        impl<$($T: AnchorsTree),*> AnchorsTree for ($($T),*) {
+            fn resolve_anchors(_builder: &mut impl ResolveAnchors) {
+                $( $T::resolve_anchors(_builder); )*
+            }
+        }
+    };
 }
 
-impl<A: AnchorsTree, B: AnchorsTree> AnchorsTree for (A, B) {
-    fn resolve_anchors(builder: &mut impl ResolveAnchors) {
-        A::resolve_anchors(builder);
-        B::resolve_anchors(builder);
-    }
-}
-
-impl<A: AnchorsTree, B: AnchorsTree, C: AnchorsTree> AnchorsTree for (A, B, C) {
-    fn resolve_anchors(builder: &mut impl ResolveAnchors) {
-        A::resolve_anchors(builder);
-        B::resolve_anchors(builder);
-        C::resolve_anchors(builder);
-    }
-}
+impl_anchors_tree!();
+impl_anchors_tree!(A B);
+impl_anchors_tree!(A B C);
+impl_anchors_tree!(A B C D);
+impl_anchors_tree!(A B C D E);
 
 trait Build: ResolveAnchors {
     type Output;
@@ -135,49 +149,55 @@ trait Build: ResolveAnchors {
 }
 
 macro_rules! tuple_impls {
-    ( $($Ts:ident)+ ) => {
-        impl<A: Build, $($Ts: Build),+> Build for (A, $($Ts),+)
+    ( $($T:ident)+ ) => {
+        impl<$($T: Build),+> Build for ($($T),+)
         where
             Self: ResolveAnchors,
         {
-            type Output = (A::Output, $($Ts::Output),+);
+            type Output = ($($T::Output),+);
 
             fn build(self) -> Self::Output {
                 #[allow(non_snake_case)]
-                let (A, $($Ts),+) = self;
+                let ($($T),+) = self;
 
-                (A.build(), $($Ts.build()),+)
+                ($($T.build()),+)
             }
         }
 
-        impl<A: Build, $($Ts: Build),+> ResolveAnchors for (A, $($Ts),+) {
-            type AnchorsSet = (A::AnchorsSet, B::AnchorsSet);
+        impl<$($T: Build),+> ResolveAnchors for ($($T),+) {
+            type AnchorsSet = ($($T::AnchorsSet),+);
 
             fn get_anchor<_A: Anchor>(&self) -> Option<Shared<_A::Value>> {
                 #[allow(non_snake_case)]
-                let (A, $($Ts),+) = self;
+                let ($($T),+) = self;
 
-                (A.get_anchor::<_A>())
-                    $( .or_else(|| $Ts.get_anchor::<_A>()) )+
+                None $( .or_else(|| $T.get_anchor::<_A>()) )+
             }
 
             fn resolve_anchor<_A: Anchor>(&mut self, anchor: &Shared<_A::Value>) {
                 #[allow(non_snake_case)]
-                let (A, $($Ts),+) = self;
+                let ($($T),+) = self;
 
-                A.resolve_anchor::<_A>(anchor);
-                $( $Ts.resolve_anchor::<_A>(anchor); )+
+                $( $T.resolve_anchor::<_A>(anchor); )+
             }
         }
 
-        impl<A: Element, $($Ts: Element),+> Element for (A, $($Ts),+) {}
+        impl<$($T: HandleEvent),+> HandleEvent for ($($T),+) {
+            fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
+                #[allow(non_snake_case)]
+                let ($($T),+) = self;
+
+                $( $T.handle_event(event)?; )+
+                Ok(())
+            }
+        }
     };
 }
 
-tuple_impls!(B);
-tuple_impls!(B C);
-tuple_impls!(B C D);
-tuple_impls!(B C D E);
+tuple_impls!(A B);
+tuple_impls!(A B C);
+tuple_impls!(A B C D);
+tuple_impls!(A B C D E);
 
 trait GetValue<V: ?Sized> {
     type Output<'s>: Borrow<V> + 's
@@ -311,20 +331,47 @@ impl ResolveAnchors for LeafElement {
     fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
 }
 
+impl Element for LeafElement {}
+
+impl HandleEvent for LeafElement {
+    fn handle_event(&mut self, _event: &Event) -> Result<(), EventConsumed> {
+        Ok(())
+    }
+}
+
 #[derive(Debug, Build)]
 struct SomeElementWithAnchor<T, A>(T, A);
 
 impl<T: Element, A: GetValue<usize>> Element for SomeElementWithAnchor<T, A> {}
+
+impl<T: Element, A: GetValue<usize>> HandleEvent for SomeElementWithAnchor<T, A> {
+    fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
+        self.0.handle_event(event)
+    }
+}
 
 #[derive(Debug, Build)]
 struct SomeElement<T>(T);
 
 impl<T: Element> Element for SomeElement<T> {}
 
+impl<T: Element> HandleEvent for SomeElement<T> {
+    fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
+        self.0.handle_event(event)
+    }
+}
+
 #[derive(Debug, Build)]
 struct SomeElement2<T, U>(T, U);
 
 impl<T: Element, U: Element> Element for SomeElement2<T, U> {}
+
+impl<T: Element, U: Element> HandleEvent for SomeElement2<T, U> {
+    fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
+        self.0.handle_event(event)?;
+        self.1.handle_event(event)
+    }
+}
 
 #[derive(Debug, Build)]
 struct Sum<A, B>(A, B);
@@ -348,7 +395,7 @@ fn main() {
         type Value = usize;
     }
 
-    let ui = build(SomeElement2(
+    let mut ui = build(SomeElement2(
         SomeElement(SomeElementWithAnchor(
             LeafElement,
             SetAnchor::<MyAnchor>::new(1),
@@ -359,5 +406,7 @@ fn main() {
         ),
     ));
 
-    println!("{:#?}", ui);
+    ui.draw();
+    _ = ui.handle_event(&Event::Update);
+    ui.draw();
 }
