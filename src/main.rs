@@ -295,7 +295,7 @@ fn main() {
         type Value = usize;
     }
 
-    let builder = build(SomeElement2(
+    let ui = build(SomeElement2(
         SomeElement(SomeElementWithAnchor(
             LeafElement,
             SetAnchor::<MyAnchor>::new(1),
@@ -306,5 +306,5 @@ fn main() {
         ),
     ));
 
-    println!("{:#?}", builder);
+    println!("{:#?}", ui);
 }

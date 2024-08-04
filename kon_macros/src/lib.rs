@@ -1,11 +1,14 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use quote::ToTokens;
+use std::iter;
 use syn::parse_macro_input;
 use syn::punctuated::Punctuated;
 use syn::Field;
 use syn::Fields;
+use syn::FieldsUnnamed;
 use syn::GenericParam;
+use syn::Index;
 use syn::ItemStruct;
 use syn::LifetimeParam;
 use syn::Token;
@@ -42,9 +45,8 @@ fn impl_build(input: &ItemStruct, ident_generics: &IdentGenerics) -> impl ToToke
     let output = match fields {
         Fields::Named(_) => todo!(),
 
-        Fields::Unnamed(fields) => {
-            let items = fields
-                .unnamed
+        Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+            let items = unnamed
                 .iter()
                 .map(|Field { ty, .. }| quote! { #ty::Output })
                 .collect::<Punctuated<_, Token![,]>>();
@@ -55,7 +57,20 @@ fn impl_build(input: &ItemStruct, ident_generics: &IdentGenerics) -> impl ToToke
         Fields::Unit => unimplemented!(),
     };
 
-    let build = quote! { todo!() };
+    let build = match fields {
+        Fields::Named(_) => todo!(),
+
+        Fields::Unnamed(fields) => {
+            let fields = (0..fields.unnamed.len())
+                .map(Index::from)
+                .map(|i| quote! { self.#i.build() })
+                .collect::<Punctuated<_, Token![,]>>();
+
+            quote! { #ident(#fields) }
+        }
+
+        Fields::Unit => unimplemented!(),
+    };
 
     quote! {
         impl<#impl_generics> Build for #ident<#ident_generics> {
@@ -110,8 +125,33 @@ fn impl_resolve_anchors(input: &ItemStruct, ident_generics: &IdentGenerics) -> i
         Fields::Unit => unimplemented!(),
     };
 
-    let get_anchor = quote! { todo!() };
-    let resolve_anchor = quote! { todo!() };
+    let get_anchor = match fields {
+        Fields::Named(_) => todo!(),
+        Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+            if unnamed.len() > 0 {
+                iter::once(quote! { self.0.get_anchor::<_A>() })
+                    .chain((1..unnamed.len()).map(|i| {
+                        let i = Index::from(i);
+                        quote! { .or_else(|| self.#i.get_anchor::<_A>()) }
+                    }))
+                    .collect::<TokenStream>()
+            } else {
+                quote! { None }
+            }
+        }
+        Fields::Unit => todo!(),
+    };
+
+    let resolve_anchor = match fields {
+        Fields::Named(_) => todo!(),
+
+        Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => (0..unnamed.len())
+            .map(Index::from)
+            .map(|i| quote! { self.#i.resolve_anchor::<_A>(anchor); })
+            .collect::<TokenStream>(),
+
+        Fields::Unit => todo!(),
+    };
 
     quote! {
         impl<#impl_generics> ResolveAnchors for #ident<#ident_generics> {
