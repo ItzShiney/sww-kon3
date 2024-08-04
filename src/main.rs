@@ -19,7 +19,7 @@ mod shared {
 
     impl<T: Debug> Debug for Shared<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_tuple("Gc").field(&*self.read()).finish()
+            f.debug_tuple("Shared").field(&*self.read()).finish()
         }
     }
 
