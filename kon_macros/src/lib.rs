@@ -101,7 +101,7 @@ fn impl_resolve_anchors(input: &ItemStruct, ident_generics: &IdentGenerics) -> i
                 let ident = &generic.ident;
                 let bounds = &generic.bounds;
                 quote! {
-                    #ident: Build + #bounds
+                    #ident: ResolveAnchors + #bounds
                 }
             }
 
@@ -157,11 +157,11 @@ fn impl_resolve_anchors(input: &ItemStruct, ident_generics: &IdentGenerics) -> i
         impl<#impl_generics> ResolveAnchors for #ident<#ident_generics> {
             type AnchorsSet = #anchors_set;
 
-            fn get_anchor<_A: Anchor>(&self) -> Option<Shared<_A::Value>> {
+            fn get_anchor<_A: Anchor>(&self) -> Option<kon::shared::Shared<_A::Value>> {
                 #get_anchor
             }
 
-            fn resolve_anchor<_A: Anchor>(&mut self, anchor: &Shared<_A::Value>) {
+            fn resolve_anchor<_A: Anchor>(&mut self, anchor: &kon::shared::Shared<_A::Value>) {
                 #resolve_anchor
             }
         }
