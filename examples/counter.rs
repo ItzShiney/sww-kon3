@@ -1,43 +1,37 @@
-use kon::prelude::*;
+use kon3::prelude::*;
 
 struct Counter;
-pub type CounterValue = usize;
 impl Anchor for Counter {
-    type Value = CounterValue;
+    type Value = usize;
 }
 
 #[rustfmt::skip]
-fn make_button() -> impl BuildElement {
-    fn increase_counter(counter: &mut CounterValue) {
-        *counter += 1;
-    }
-
-    on_click_consume(
-        layers((
-            label(id("click me!")),
-            fill(Color::GREEN),
-        )),
-        get::<Counter>(),
-        increase_counter,
-    )
-}
-
-#[rustfmt::skip]
-fn make_ui() -> impl BuildElement {
-    column((
+fn ui_builder() -> impl BuildElement {
+    let counter = {
         label(concat((
-            id("clicked "),
-            strfy::<CounterValue, _>(set::<Counter>(0)),
-            id(" times"),
-        ))),
-        make_button(),
+            "clicked ",
+            strfy(set::<Counter>(0)),
+            " times",
+        )))
+    };
+
+    let button = {
+        on_click_consume(
+            layers((
+                label("click me!"),
+                fill(Color::GREEN),
+            )),
+            write(get::<Counter>()),
+            |counter| *counter += 1,
+        )
+    };
+
+    column((
+        counter,
+        button,
     ))
 }
 
 fn main() {
-    let mut ui = build(make_ui());
-
-    println!("{:#?}", ui);
-    _ = ui.handle_event(&Event::Click);
-    println!("{:#?}", ui);
+    app::build(ui_builder()).run();
 }

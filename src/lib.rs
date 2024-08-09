@@ -1,13 +1,13 @@
-use kon_macros::Build;
+pub use kon3_macros::*;
 use shared::Shared;
-use std::any::Any;
+use std::cell::RefCell;
 use std::fmt::Debug;
-use values::ValueSource;
-use values::ValueSourceMut;
+use std::marker::PhantomData;
 
 pub mod shared {
     use std::borrow::Borrow;
     use std::borrow::BorrowMut;
+    use std::fmt;
     use std::fmt::Debug;
     use std::ops::Deref;
     use std::ops::DerefMut;
@@ -19,14 +19,14 @@ pub mod shared {
     pub struct Shared<T: ?Sized>(Arc<RwLock<T>>);
 
     impl<T: Debug> Debug for Shared<T> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.debug_tuple("Shared").field(&*self.read()).finish()
         }
     }
 
     impl<T: ?Sized> Clone for Shared<T> {
         fn clone(&self) -> Self {
-            Shared(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
 
@@ -38,11 +38,11 @@ pub mod shared {
 
     impl<T: ?Sized> Shared<T> {
         pub fn read(&self) -> SharedReadGuard<'_, T> {
-            SharedReadGuard(self.0.read().unwrap())
+            SharedReadGuard(self.0.read().expect("shared value was already locked"))
         }
 
         pub fn write(&self) -> SharedWriteGuard<'_, T> {
-            SharedWriteGuard(self.0.write().unwrap())
+            SharedWriteGuard(self.0.write().expect("shared value was already locked"))
         }
     }
 
@@ -93,7 +93,8 @@ pub mod shared {
 
 pub enum Event {
     Click,
-    Hover,
+    _1,
+    _2,
 }
 
 pub struct EventConsumed;
@@ -152,7 +153,7 @@ pub trait Build {
 #[derive(Debug)]
 pub struct Ident<T>(T);
 
-pub fn id<T>(ra_fixture_value: T) -> Ident<T> {
+pub const fn id<T>(ra_fixture_value: T) -> Ident<T> {
     Ident(ra_fixture_value)
 }
 
@@ -174,15 +175,25 @@ impl<T> ResolveAnchors for Ident<T> {
     fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
 }
 
+pub struct Cache<T>(PhantomData<T>);
+
+pub type Cached<T> = RefCell<Option<T>>;
+
+impl<T> Build for Cache<T> {
+    type Output = Cached<T>;
+
+    fn build(self) -> Self::Output {
+        RefCell::new(None)
+    }
+}
+
+pub const fn cache<T>() -> Cache<T> {
+    Cache(PhantomData)
+}
+
 // TODO: remove `+ Debug`
 pub trait BuildElement: Build<Output: Element + Debug> + ResolveAnchors {}
 impl<T: Build<Output: Element + Debug> + ResolveAnchors> BuildElement for T {}
-
-pub trait BuildValue<V: ?Sized>: Build<Output: ValueSource<V>> {}
-impl<V: ?Sized, T: Build<Output: ValueSource<V>>> BuildValue<V> for T {}
-
-pub trait BuildValueMut<V: ?Sized>: Build<Output: ValueSourceMut<V>> {}
-impl<V: ?Sized, T: Build<Output: ValueSourceMut<V>>> BuildValueMut<V> for T {}
 
 macro_rules! tuple_impls {
     ( $($T:ident)+ ) => {
@@ -240,10 +251,23 @@ pub trait ResolveAnchors {
 }
 
 pub mod elements {
-    use super::*;
-    use shared::Shared;
-    use std::borrow::BorrowMut;
-    use std::marker::PhantomData;
+    use crate as kon3;
+    use crate::consume;
+    use crate::id;
+    use crate::shared::Shared;
+    use crate::values::ArgsSource;
+    use crate::values::ValueSource;
+    use crate::Anchor;
+    use crate::Build;
+    use crate::BuildElement;
+    use crate::Element;
+    use crate::Event;
+    use crate::EventConsumed;
+    use crate::HandleEvent;
+    use crate::Ident;
+    use crate::ResolveAnchors;
+    use std::fmt;
+    use std::fmt::Debug;
     use sww::Color;
 
     #[derive(Debug)]
@@ -275,7 +299,7 @@ pub mod elements {
         }
     }
 
-    pub fn fill(ra_fixture_color: Color) -> Fill {
+    pub const fn fill(ra_fixture_color: Color) -> Fill {
         Fill(ra_fixture_color)
     }
 
@@ -324,14 +348,14 @@ pub mod elements {
         }
     }
 
-    pub fn split<Es: Build>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
+    pub const fn split<Es: Build>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
         Split {
             type_: SplitType::Adaptive,
             elements: ra_fixture_elements,
         }
     }
 
-    pub fn line<Es: Build>(ra_fixture_elements: Es) -> Split<Ident<SplitType>, Es> {
+    pub const fn line<Es: Build>(ra_fixture_elements: Es) -> Split<Ident<SplitType>, Es> {
         Split {
             type_: id(SplitType::Horizontal),
             elements: ra_fixture_elements,
@@ -357,7 +381,7 @@ pub mod elements {
         }
     }
 
-    pub fn layers<Es>(ra_fixture_elements: Es) -> Layers<Es> {
+    pub const fn layers<Es>(ra_fixture_elements: Es) -> Layers<Es> {
         Layers(ra_fixture_elements)
     }
 
@@ -370,21 +394,22 @@ pub mod elements {
         }
     }
 
-    impl<Src: ValueSource<str>> Element for Label<Src> {}
+    impl<Src: ValueSource<Value = str>> Element for Label<Src> {}
 
-    pub fn label<Src: BuildValue<str>>(ra_fixture_source: Src) -> Label<Src> {
+    pub const fn label<Src: Build<Output: ValueSource<Value = str>>>(
+        ra_fixture_source: Src,
+    ) -> Label<Src> {
         Label(ra_fixture_source)
     }
 
-    pub struct OnClickConsume<E, Src, F, V: ?Sized> {
+    pub struct OnClickConsume<E, Src, F> {
         element: E,
         source: Src,
         f: F,
-        type_: PhantomData<V>,
     }
 
-    impl<E: Debug, Src: Debug, F, V> Debug for OnClickConsume<E, Src, F, V> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl<E: Debug, Src: Debug, F> Debug for OnClickConsume<E, Src, F> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.debug_struct("OnClickConsume")
                 .field("element", &self.element)
                 .field("source", &self.source)
@@ -392,22 +417,19 @@ pub mod elements {
         }
     }
 
-    impl<E: Build, Src: BuildValueMut<V>, F, V: ?Sized> Build for OnClickConsume<E, Src, F, V> {
-        type Output = OnClickConsume<E::Output, Src::Output, F, V>;
+    impl<E: Build, Src: Build, F> Build for OnClickConsume<E, Src, F> {
+        type Output = OnClickConsume<E::Output, Src::Output, F>;
 
         fn build(self) -> Self::Output {
             OnClickConsume {
                 element: self.element.build(),
                 source: self.source.build(),
                 f: self.f,
-                type_: PhantomData,
             }
         }
     }
 
-    impl<E: ResolveAnchors, Src: ResolveAnchors, F, V: ?Sized> ResolveAnchors
-        for OnClickConsume<E, Src, F, V>
-    {
+    impl<E: ResolveAnchors, Src: ResolveAnchors, F> ResolveAnchors for OnClickConsume<E, Src, F> {
         type AnchorsSet = (E::AnchorsSet, Src::AnchorsSet);
 
         fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
@@ -420,18 +442,14 @@ pub mod elements {
         }
     }
 
-    impl<E: Element, Src: ValueSourceMut<V>, F: FnMut(&mut V), V: ?Sized> Element
-        for OnClickConsume<E, Src, F, V>
-    {
-    }
+    // impl<E: Element, Src, F> Element for OnClickConsume<E, Src, F> where Self: HandleEvent {}
+    impl<E: Element, Src: ArgsSource> Element for OnClickConsume<E, Src, Src::Fn> {}
 
-    impl<E: HandleEvent, Src: ValueSourceMut<V>, F: FnMut(&mut V), V: ?Sized> HandleEvent
-        for OnClickConsume<E, Src, F, V>
-    {
+    impl<E: HandleEvent, Src: ArgsSource> HandleEvent for OnClickConsume<E, Src, Src::Fn> {
         fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
             match event {
                 Event::Click => {
-                    (self.f)(self.source.value_mut().borrow_mut());
+                    self.source.apply_to(&self.f);
                     consume()
                 }
 
@@ -440,105 +458,205 @@ pub mod elements {
         }
     }
 
-    pub fn on_click_consume<
+    pub const fn on_click_consume<
         E: BuildElement,
-        Src: BuildValueMut<V>,
-        F: FnOnce(&mut V),
-        V: ?Sized,
+        Src: Build<Output = ArgSrc>,
+        ArgSrc: ArgsSource,
     >(
         ra_fixture_element: E,
         ra_fixture_source: Src,
-        ra_fixture_f: F,
-    ) -> OnClickConsume<E, Src, F, V> {
+        ra_fixture_f: ArgSrc::Fn,
+    ) -> OnClickConsume<E, Src, ArgSrc::Fn> {
         OnClickConsume {
             element: ra_fixture_element,
             source: ra_fixture_source,
             f: ra_fixture_f,
-            type_: PhantomData,
         }
     }
 }
 
 mod values {
-    use super::*;
-    use std::borrow::Borrow;
-    use std::marker::PhantomData;
+    use crate as kon3;
+    use crate::cache;
+    use crate::shared::Shared;
+    use crate::Anchor;
+    use crate::Build;
+    use crate::Cache;
+    use crate::Cached;
+    use crate::ResolveAnchors;
+    use std::ops;
 
     mod traits {
-        use crate::shared::Shared;
         use crate::shared::SharedReadGuard;
         use crate::shared::SharedWriteGuard;
+        use crate::Anchor;
+        use crate::Build;
+        use crate::ResolveAnchors;
+        use crate::Shared;
         use std::borrow::Borrow;
-        use std::borrow::BorrowMut;
+        use std::cell;
+        use std::ops::Deref;
+        use std::ops::DerefMut;
 
-        pub trait ValueSource<V: ?Sized> {
-            type Output<'s>: Borrow<V>
-            where
-                Self: 's;
-
-            fn value(&self) -> Self::Output<'_>;
+        pub enum SourcedValue<'s, T: ToOwned + ?Sized> {
+            Ref(&'s T),
+            Guard(SharedReadGuard<'s, T>),
+            Cached(cell::Ref<'s, Option<T::Owned>>),
         }
 
-        pub trait ValueSourceMut<V: ?Sized> {
-            type Output<'s>: BorrowMut<V>
-            where
-                Self: 's;
+        impl<'s, T: ToOwned + ?Sized> Deref for SourcedValue<'s, T> {
+            type Target = T;
 
-            fn value_mut(&mut self) -> Self::Output<'_>;
+            fn deref(&self) -> &Self::Target {
+                match self {
+                    Self::Ref(value) => value,
+                    Self::Cached(value) => value.as_ref().expect("value was not cached").borrow(),
+                    Self::Guard(value) => value,
+                }
+            }
         }
 
-        impl<V: ?Sized> ValueSource<V> for V {
-            type Output<'s> = &'s V where Self: 's;
+        pub enum SourcedValueMut<'s, T: ?Sized> {
+            Ref(&'s mut T),
+            Guard(SharedWriteGuard<'s, T>),
+        }
 
-            fn value(&self) -> Self::Output<'_> {
+        impl<T: ?Sized> Deref for SourcedValueMut<'_, T> {
+            type Target = T;
+
+            fn deref(&self) -> &Self::Target {
+                match self {
+                    Self::Ref(value) => value,
+                    Self::Guard(value) => value,
+                }
+            }
+        }
+
+        impl<T: ?Sized> DerefMut for SourcedValueMut<'_, T> {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                match self {
+                    Self::Ref(value) => value,
+                    Self::Guard(value) => value,
+                }
+            }
+        }
+
+        impl<'s, T: ToOwned + ?Sized> From<cell::Ref<'s, Option<T::Owned>>> for SourcedValue<'s, T> {
+            fn from(value: cell::Ref<'s, Option<T::Owned>>) -> Self {
+                Self::Cached(value)
+            }
+        }
+
+        impl<'s, T: ToOwned + ?Sized> From<SharedReadGuard<'s, T>> for SourcedValue<'s, T> {
+            fn from(value: SharedReadGuard<'s, T>) -> Self {
+                Self::Guard(value)
+            }
+        }
+
+        impl<'s, T: ?Sized> From<SharedWriteGuard<'s, T>> for SourcedValueMut<'s, T> {
+            fn from(value: SharedWriteGuard<'s, T>) -> Self {
+                Self::Guard(value)
+            }
+        }
+
+        pub trait ValueSource {
+            type Value: ToOwned + ?Sized;
+
+            fn value(&self) -> SourcedValue<'_, Self::Value>;
+        }
+
+        pub trait ValueSourceMut: ValueSource {
+            fn value_mut(&mut self) -> SourcedValueMut<'_, Self::Value>;
+        }
+
+        pub trait AutoValueSource: ToOwned {}
+
+        impl AutoValueSource for u8 {}
+        impl AutoValueSource for u16 {}
+        impl AutoValueSource for u32 {}
+        impl AutoValueSource for u64 {}
+        impl AutoValueSource for u128 {}
+        impl AutoValueSource for usize {}
+        impl AutoValueSource for i8 {}
+        impl AutoValueSource for i16 {}
+        impl AutoValueSource for i32 {}
+        impl AutoValueSource for i64 {}
+        impl AutoValueSource for i128 {}
+        impl AutoValueSource for isize {}
+
+        impl<T: AutoValueSource> ValueSource for T {
+            type Value = T;
+
+            fn value(&self) -> SourcedValue<'_, T> {
+                SourcedValue::Ref(self)
+            }
+        }
+
+        impl<T: AutoValueSource> ValueSourceMut for T {
+            fn value_mut(&mut self) -> SourcedValueMut<'_, T> {
+                SourcedValueMut::Ref(self)
+            }
+        }
+
+        impl<T: AutoValueSource> Build for T {
+            type Output = Self;
+
+            fn build(self) -> Self::Output {
                 self
             }
         }
 
-        impl<V: ?Sized> ValueSource<V> for &V {
-            type Output<'s> = &'s V where Self: 's;
+        impl ValueSource for &str {
+            type Value = str;
 
-            fn value(&self) -> Self::Output<'_> {
+            fn value(&self) -> SourcedValue<'_, Self::Value> {
+                SourcedValue::Ref(self)
+            }
+        }
+
+        impl Build for &str {
+            type Output = Self;
+
+            fn build(self) -> Self::Output {
                 self
             }
         }
 
-        impl<V: ?Sized> ValueSourceMut<V> for V {
-            type Output<'s> = &'s mut V where Self: 's;
+        impl ResolveAnchors for &str {
+            type AnchorsSet = ();
 
-            fn value_mut(&mut self) -> Self::Output<'_> {
-                self
+            fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
+                None
+            }
+
+            fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
+        }
+
+        impl<T: ToOwned + ?Sized> ValueSource for Shared<T> {
+            type Value = T;
+
+            fn value(&self) -> SourcedValue<'_, Self::Value> {
+                SourcedValue::Guard(self.read())
             }
         }
 
-        impl<V: ?Sized> ValueSourceMut<V> for &mut V {
-            type Output<'s> = &'s mut V where Self: 's;
-
-            fn value_mut(&mut self) -> Self::Output<'_> {
-                self
-            }
-        }
-
-        impl<V: ?Sized> ValueSource<V> for Shared<V> {
-            type Output<'s> = SharedReadGuard<'s, V> where Self: 's;
-
-            fn value(&self) -> Self::Output<'_> {
-                self.read()
-            }
-        }
-
-        impl<V: ?Sized> ValueSourceMut<V> for Shared<V> {
-            type Output<'s> = SharedWriteGuard<'s, V> where Self: 's;
-
-            fn value_mut(&mut self) -> Self::Output<'_> {
-                self.write()
+        impl<T: ?Sized> ValueSourceMut for Shared<T>
+        where
+            Self: ValueSource<Value = T>,
+        {
+            fn value_mut(&mut self) -> SourcedValueMut<'_, Self::Value> {
+                SourcedValueMut::Guard(self.write())
             }
         }
     }
     pub use traits::*;
 
     mod anchors {
-        use super::*;
+        use crate::shared::Shared;
+        use crate::Anchor;
+        use crate::Build;
+        use crate::ResolveAnchors;
+        use std::any::Any;
 
         pub struct SetAnchor<A: Anchor>(Shared<A::Value>);
 
@@ -554,7 +672,7 @@ mod values {
             type AnchorsSet = A;
 
             fn get_anchor<B: Anchor>(&self) -> Option<Shared<B::Value>> {
-                (&self.0 as &dyn Any).downcast_ref().map(Shared::clone)
+                <dyn Any>::downcast_ref(&self.0).cloned()
             }
 
             fn resolve_anchor<B: Anchor>(&mut self, _anchor: &Shared<B::Value>) {}
@@ -582,36 +700,65 @@ mod values {
             }
 
             fn resolve_anchor<B: Anchor>(&mut self, anchor: &Shared<B::Value>) {
-                if let Some(anchor) = (anchor as &dyn Any).downcast_ref().map(Shared::clone) {
+                if let Some(anchor) = <dyn Any>::downcast_ref(anchor).cloned() {
                     self.0 = Some(anchor);
                 }
             }
         }
 
-        pub fn get<A: Anchor>() -> GetAnchor<A> {
+        pub const fn get<A: Anchor>() -> GetAnchor<A> {
             GetAnchor(None)
         }
     }
     pub use anchors::*;
 
-    #[derive(Debug)]
-    pub struct Strfy<V, Src> {
-        type_: PhantomData<V>,
-        source: Src,
+    #[derive(Debug, Build)]
+    pub struct Write<T>(T);
+
+    pub const fn write<T>(ra_fixture_source: T) -> Write<T> {
+        Write(ra_fixture_source)
     }
 
-    impl<V: ToString, Src: BuildValue<V>> Build for Strfy<V, Src> {
-        type Output = Strfy<V, Src::Output>;
+    pub trait ArgsSource {
+        type Fn;
+
+        fn apply_to(&self, f: &Self::Fn);
+    }
+
+    impl<T: ?Sized> ArgsSource for Shared<T> {
+        type Fn = fn(&T);
+
+        fn apply_to(&self, f: &Self::Fn) {
+            f(&self.read());
+        }
+    }
+
+    impl<T: ?Sized> ArgsSource for Write<Shared<T>> {
+        type Fn = fn(&mut T);
+
+        fn apply_to(&self, f: &Self::Fn) {
+            f(&mut self.0.write());
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct Strfy<Src, Cch> {
+        source: Src,
+        cache: Cch,
+    }
+
+    impl<Src: Build, Cch: Build> Build for Strfy<Src, Cch> {
+        type Output = Strfy<Src::Output, Cch::Output>;
 
         fn build(self) -> Self::Output {
             Strfy {
-                type_: PhantomData,
                 source: self.source.build(),
+                cache: self.cache.build(),
             }
         }
     }
 
-    impl<V: ToString, Src: ResolveAnchors> ResolveAnchors for Strfy<V, Src> {
+    impl<Src: ResolveAnchors, Cch> ResolveAnchors for Strfy<Src, Cch> {
         type AnchorsSet = Src::AnchorsSet;
 
         fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
@@ -619,71 +766,155 @@ mod values {
         }
 
         fn resolve_anchor<A: Anchor>(&mut self, anchor: &Shared<A::Value>) {
-            self.source.resolve_anchor::<A>(anchor)
+            self.source.resolve_anchor::<A>(anchor);
         }
     }
 
-    impl<V: ToString, Src: ValueSource<V>> ValueSource<str> for Strfy<V, Src> {
-        type Output<'s> = String where Self: 's;
+    impl<Src: ValueSource<Value: ToString>> ValueSource for Strfy<Src, Cached<String>> {
+        type Value = str;
 
-        fn value(&self) -> Self::Output<'_> {
-            self.source.value().borrow().to_string()
+        fn value(&self) -> SourcedValue<'_, Self::Value> {
+            {
+                let mut value = self.cache.borrow_mut();
+                if value.is_none() {
+                    *value = Some(self.source.value().to_string());
+                }
+            }
+            self.cache.borrow().into()
         }
     }
 
-    pub fn strfy<V: ToString, Src: BuildValue<V>>(ra_fixture_source: Src) -> Strfy<V, Src> {
+    pub fn strfy<V: ToString, Src: Build<Output: ValueSource<Value = V>>>(
+        ra_fixture_source: Src,
+    ) -> Strfy<Src, Cache<String>> {
         Strfy {
-            type_: PhantomData,
             source: ra_fixture_source,
+            cache: cache(),
         }
     }
 
     #[derive(Debug, Build)]
     pub struct Sum<A, B>(A, B);
 
-    impl<A: ValueSource<usize>, B: ValueSource<usize>> ValueSource<usize> for Sum<A, B> {
-        type Output<'s> = usize where Self: 's;
-
-        fn value(&self) -> Self::Output<'_> {
-            self.0.value().borrow() + self.1.value().borrow()
-        }
-    }
-
-    #[derive(Debug, Build)]
-    pub struct Concat<Srcs>(Srcs);
-
-    impl<A: ValueSource<str>, B: ValueSource<str>, C: ValueSource<str>> ValueSource<str>
-        for Concat<(A, B, C)>
+    impl<A: ValueSource, B: ValueSource, R: ToOwned> ValueSource for Sum<A, B>
+    where
+        for<'s> &'s A::Value: ops::Add<&'s B::Value, Output = R>,
+        for<'s> SourcedValue<'s, R>: From<R>,
     {
-        type Output<'s> = String where Self: 's;
+        type Value = R;
 
-        fn value(&self) -> Self::Output<'_> {
-            let (a, b, c) = &self.0;
-            format!(
-                "{}{}{}",
-                a.value().borrow(),
-                b.value().borrow(),
-                c.value().borrow(),
-            )
+        fn value(&self) -> SourcedValue<'_, Self::Value> {
+            (&*self.0.value() + &*self.1.value()).into()
         }
     }
 
-    pub fn concat<Srcs>(ra_fixture_sources: Srcs) -> Concat<Srcs> {
-        Concat(ra_fixture_sources)
+    #[derive(Debug)]
+    pub struct Concat<Src, Cch> {
+        sources: Src,
+        cache: Cch,
+    }
+
+    impl<Src: Build, Cch: Build> Build for Concat<Src, Cch> {
+        type Output = Concat<Src::Output, Cch::Output>;
+
+        fn build(self) -> Self::Output {
+            Concat {
+                sources: self.sources.build(),
+                cache: self.cache.build(),
+            }
+        }
+    }
+
+    impl<Src: ResolveAnchors, Cch> ResolveAnchors for Concat<Src, Cch> {
+        type AnchorsSet = Src::AnchorsSet;
+
+        fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
+            self.sources.get_anchor::<A>()
+        }
+
+        fn resolve_anchor<A: Anchor>(&mut self, anchor: &Shared<A::Value>) {
+            self.sources.resolve_anchor::<A>(anchor);
+        }
+    }
+
+    impl<A: ValueSource<Value = str>, B: ValueSource<Value = str>, C: ValueSource<Value = str>>
+        ValueSource for Concat<(A, B, C), Cached<String>>
+    {
+        type Value = str;
+
+        fn value(&self) -> SourcedValue<'_, Self::Value> {
+            todo!()
+        }
+    }
+
+    pub const fn concat<Srcs>(ra_fixture_sources: Srcs) -> Concat<Srcs, Cache<String>> {
+        Concat {
+            sources: ra_fixture_sources,
+            cache: cache(),
+        }
     }
 }
-
-use crate as kon;
 
 pub mod prelude {
     pub use crate::elements::*;
     pub use crate::shared::*;
     pub use crate::values::*;
     pub use crate::*;
+    pub use sww::window::DefaultRenderWindowSettings;
+    pub use sww::window::RenderWindowSettings;
     pub use sww::Color;
 }
 
-pub fn build<T: BuildElement>(mut builder: T) -> T::Output {
-    T::AnchorsSet::resolve_anchors(&mut builder);
-    builder.build()
+pub mod app {
+    use crate::AnchorsTree;
+    use crate::BuildElement;
+    use crate::Element;
+    use sww::app::AppPack;
+    use sww::app::HandleEvent;
+    use sww::window::event::ActiveEventLoop;
+    use sww::window::event_loop;
+    use sww::window::rw_builder;
+    use sww::window::window_attributes;
+    use sww::window::DefaultRenderWindowSettings;
+    use sww::window::RenderWindow;
+    use sww::window::RenderWindowSettings;
+
+    pub struct App<F: FnOnce(&ActiveEventLoop) -> AppPack>(sww::app::App<F>);
+
+    pub fn build_settings<B: BuildElement<Output: 'static>>(
+        mut ui_builder: B,
+        settings: &impl RenderWindowSettings,
+    ) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack + '_> {
+        B::AnchorsSet::resolve_anchors(&mut ui_builder);
+        let ui = ui_builder.build();
+
+        App(sww::app::App::new(move |event_loop| {
+            let window = event_loop
+                .create_window(window_attributes("che6", 400, 200))
+                .unwrap();
+
+            AppPack::new(window, rw_builder(settings), move |rw| {
+                Box::new(EventHandler { rw, ui })
+            })
+        }))
+    }
+
+    pub fn build<B: BuildElement<Output: 'static>>(
+        ui_builder: B,
+    ) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack> {
+        build_settings(ui_builder, &DefaultRenderWindowSettings)
+    }
+
+    impl<F: FnOnce(&ActiveEventLoop) -> AppPack> App<F> {
+        pub fn run(&mut self) {
+            event_loop().run_app(&mut self.0).unwrap()
+        }
+    }
+
+    struct EventHandler<'w, E: Element> {
+        rw: &'w RenderWindow<'w>,
+        ui: E,
+    }
+
+    impl<E: Element> HandleEvent for EventHandler<'_, E> {}
 }
