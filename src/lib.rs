@@ -3,6 +3,7 @@ use shared::Shared;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use sww::wgpu;
 
 pub mod shared {
     use std::borrow::Borrow;
@@ -91,6 +92,53 @@ pub mod shared {
     }
 }
 
+mod location {
+    use sww::shaders::mesh::Rectangle;
+    use sww::vec2;
+    use sww::window::event::PhysicalSize;
+
+    pub struct Location {
+        rect: Rectangle,
+        window_size: PhysicalSize,
+    }
+
+    impl Location {
+        pub const fn new(window_size: PhysicalSize) -> Self {
+            Self {
+                rect: Rectangle {
+                    top_left: vec2(-1., -1.),
+                    size: vec2(2., 2.),
+                },
+                window_size,
+            }
+        }
+
+        pub const fn rect(&self) -> Rectangle {
+            self.rect
+        }
+
+        pub const fn window_size(&self) -> PhysicalSize {
+            self.window_size
+        }
+
+        pub fn window_rect_size(&self) -> PhysicalSize {
+            let rect_size = self.rect.size * 0.5;
+            PhysicalSize::new(
+                (rect_size.x * self.window_size.width as f32).round() as _,
+                (rect_size.y * self.window_size.height as f32).round() as _,
+            )
+        }
+
+        pub fn subrect(self, rect: Rectangle) -> Self {
+            Self {
+                rect: self.rect.subrect(rect),
+                window_size: self.window_size,
+            }
+        }
+    }
+}
+pub use location::*;
+
 pub enum Event {
     Click,
     _1,
@@ -108,8 +156,10 @@ pub trait HandleEvent {
 }
 
 pub trait Element: HandleEvent {
-    fn draw(&self) {
-        todo!();
+    fn draw<'c>(&'c self, render_pass: &mut wgpu::RenderPass<'c>, location: Location) {
+        _ = render_pass;
+        _ = location;
+        todo!()
     }
 }
 
@@ -271,9 +321,9 @@ pub mod elements {
     use sww::Color;
 
     #[derive(Debug)]
-    pub struct Fill(pub Color);
+    pub struct Rect(pub Color);
 
-    impl Build for Fill {
+    impl Build for Rect {
         type Output = Self;
 
         fn build(self) -> Self::Output {
@@ -281,7 +331,7 @@ pub mod elements {
         }
     }
 
-    impl ResolveAnchors for Fill {
+    impl ResolveAnchors for Rect {
         type AnchorsSet = ();
 
         fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
@@ -291,16 +341,16 @@ pub mod elements {
         fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
     }
 
-    impl Element for Fill {}
+    impl Element for Rect {}
 
-    impl HandleEvent for Fill {
+    impl HandleEvent for Rect {
         fn handle_event(&mut self, _event: &Event) -> Result<(), EventConsumed> {
             Ok(())
         }
     }
 
-    pub const fn fill(ra_fixture_color: Color) -> Fill {
-        Fill(ra_fixture_color)
+    pub const fn rect(ra_fixture_color: Color) -> Rect {
+        Rect(ra_fixture_color)
     }
 
     #[derive(Debug)]
@@ -869,9 +919,14 @@ pub mod app {
     use crate::AnchorsTree;
     use crate::BuildElement;
     use crate::Element;
+    use crate::Location;
+    use sww::app::App as AppRaw;
     use sww::app::AppPack;
+    use sww::app::EventInfo;
     use sww::app::HandleEvent;
+    use sww::wgpu;
     use sww::window::event::ActiveEventLoop;
+    use sww::window::event::EventLoopError;
     use sww::window::event_loop;
     use sww::window::rw_builder;
     use sww::window::window_attributes;
@@ -879,7 +934,7 @@ pub mod app {
     use sww::window::RenderWindow;
     use sww::window::RenderWindowSettings;
 
-    pub struct App<F: FnOnce(&ActiveEventLoop) -> AppPack>(sww::app::App<F>);
+    pub struct App<F: FnOnce(&ActiveEventLoop) -> AppPack>(AppRaw<F>);
 
     pub fn build_settings<B: BuildElement<Output: 'static>>(
         mut ui_builder: B,
@@ -888,10 +943,10 @@ pub mod app {
         B::AnchorsSet::resolve_anchors(&mut ui_builder);
         let ui = ui_builder.build();
 
-        App(sww::app::App::new(move |event_loop| {
+        App(AppRaw::new(move |event_loop| {
             let window = event_loop
                 .create_window(window_attributes("che6", 400, 200))
-                .unwrap();
+                .expect("failed to create window");
 
             AppPack::new(window, rw_builder(settings), move |rw| {
                 Box::new(EventHandler { rw, ui })
@@ -906,8 +961,8 @@ pub mod app {
     }
 
     impl<F: FnOnce(&ActiveEventLoop) -> AppPack> App<F> {
-        pub fn run(&mut self) {
-            event_loop().run_app(&mut self.0).unwrap()
+        pub fn run(&mut self) -> Result<(), EventLoopError> {
+            event_loop().run_app(&mut self.0)
         }
     }
 
@@ -916,5 +971,28 @@ pub mod app {
         ui: E,
     }
 
-    impl<E: Element> HandleEvent for EventHandler<'_, E> {}
+    impl<E: Element> HandleEvent for EventHandler<'_, E> {
+        fn on_redraw_requested(&mut self, info: EventInfo) {
+            let mut frame = self.rw.start_drawing();
+            let mut render_pass =
+                frame
+                    .commands
+                    .encoder()
+                    .begin_render_pass(&wgpu::RenderPassDescriptor {
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: frame.surface.view(),
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        ..Default::default()
+                    });
+
+            let window_size = info.window.inner_size();
+            let location = Location::new(window_size);
+            self.ui.draw(&mut render_pass, location);
+        }
+    }
 }

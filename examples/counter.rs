@@ -19,7 +19,7 @@ fn ui_builder() -> impl BuildElement {
         on_click_consume(
             layers((
                 label("click me!"),
-                fill(Color::GREEN),
+                rect(Color::GREEN),
             )),
             write(get::<Counter>()),
             |counter| *counter += 1,
@@ -33,5 +33,5 @@ fn ui_builder() -> impl BuildElement {
 }
 
 fn main() {
-    app::build(ui_builder()).run();
+    app::build(ui_builder()).run().unwrap();
 }
