@@ -42,13 +42,13 @@ fn impl_build(input: &ItemStruct, ident_generics: &IdentGenerics) -> impl ToToke
         })
         .collect::<Punctuated<_, Token![,]>>();
 
-    let output = match fields {
+    let built = match fields {
         Fields::Named(_) => todo!(),
 
         Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
             let items = unnamed
                 .iter()
-                .map(|Field { ty, .. }| quote! { #ty::Output })
+                .map(|Field { ty, .. }| quote! { #ty::Built })
                 .collect::<Punctuated<_, Token![,]>>();
 
             quote! { #ident<#items> }
@@ -74,9 +74,9 @@ fn impl_build(input: &ItemStruct, ident_generics: &IdentGenerics) -> impl ToToke
 
     quote! {
         impl<#impl_generics> Build for #ident<#ident_generics> {
-            type Output = #output;
+            type Built = #built;
 
-            fn build(self) -> Self::Output {
+            fn build(self) -> Self::Built {
                 #build
             }
         }

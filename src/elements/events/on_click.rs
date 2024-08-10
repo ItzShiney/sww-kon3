@@ -28,9 +28,9 @@ impl<E: Debug, Src: Debug, F> Debug for OnClickConsume<E, Src, F> {
 }
 
 impl<E: Build, Src: Build, F> Build for OnClickConsume<E, Src, F> {
-    type Output = OnClickConsume<E::Output, Src::Output, F>;
+    type Built = OnClickConsume<E::Built, Src::Built, F>;
 
-    fn build(self) -> Self::Output {
+    fn build(self) -> Self::Built {
         OnClickConsume {
             element: self.element.build(),
             source: self.source.build(),
@@ -68,7 +68,7 @@ impl<E: HandleEvent, Src: ArgsSource> HandleEvent for OnClickConsume<E, Src, Src
     }
 }
 
-pub const fn on_click_consume<E: BuildElement, Src: Build<Output = ArgSrc>, ArgSrc: ArgsSource>(
+pub const fn on_click_consume<E: BuildElement, Src: Build<Built = ArgSrc>, ArgSrc: ArgsSource>(
     ra_fixture_element: E,
     ra_fixture_source: Src,
     ra_fixture_f: ArgSrc::Fn,

@@ -24,9 +24,9 @@ pub struct Split<Ty, Es> {
 }
 
 impl<Ty: Build, Es: Build> Build for Split<Ty, Es> {
-    type Output = Split<Ty::Output, Es::Output>;
+    type Built = Split<Ty::Built, Es::Built>;
 
-    fn build(self) -> Self::Output {
+    fn build(self) -> Self::Built {
         Split {
             type_: self.type_.build(),
             elements: self.elements.build(),

@@ -18,7 +18,7 @@ use sww::window::RenderWindowSettings;
 
 pub struct App<F: FnOnce(&ActiveEventLoop) -> AppPack>(AppRaw<F>);
 
-pub fn build_settings<B: BuildElement<Output: 'static>>(
+pub fn build_settings<B: BuildElement<Built: 'static>>(
     mut ui_builder: B,
     settings: &impl RenderWindowSettings,
 ) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack + '_> {
@@ -36,7 +36,7 @@ pub fn build_settings<B: BuildElement<Output: 'static>>(
     }))
 }
 
-pub fn build<B: BuildElement<Output: 'static>>(
+pub fn build<B: BuildElement<Built: 'static>>(
     ui_builder: B,
 ) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack> {
     build_settings(ui_builder, &DefaultRenderWindowSettings)

@@ -72,9 +72,9 @@ impl_anchors_tree!(A B C D);
 impl_anchors_tree!(A B C D E);
 
 pub trait Build {
-    type Output;
+    type Built;
 
-    fn build(self) -> Self::Output;
+    fn build(self) -> Self::Built;
 }
 
 pub struct Cache<T>(PhantomData<T>);
@@ -82,9 +82,9 @@ pub struct Cache<T>(PhantomData<T>);
 pub type Cached<T> = RefCell<Option<T>>;
 
 impl<T> Build for Cache<T> {
-    type Output = Cached<T>;
+    type Built = Cached<T>;
 
-    fn build(self) -> Self::Output {
+    fn build(self) -> Self::Built {
         RefCell::new(None)
     }
 }
@@ -94,15 +94,15 @@ pub const fn cache<T>() -> Cache<T> {
 }
 
 // TODO: remove `+ Debug`
-pub trait BuildElement: Build<Output: Element + Debug> + ResolveAnchors {}
-impl<T: Build<Output: Element + Debug> + ResolveAnchors> BuildElement for T {}
+pub trait BuildElement: Build<Built: Element + Debug> + ResolveAnchors {}
+impl<T: Build<Built: Element + Debug> + ResolveAnchors> BuildElement for T {}
 
 macro_rules! tuple_impls {
     ( $($T:ident)+ ) => {
         impl<$($T: Build),+> Build for ($($T),+) {
-            type Output = ($($T::Output),+);
+            type Built = ($($T::Built),+);
 
-            fn build(self) -> Self::Output {
+            fn build(self) -> Self::Built {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 

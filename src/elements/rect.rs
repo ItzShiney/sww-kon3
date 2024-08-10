@@ -12,9 +12,9 @@ use sww::Color;
 pub struct Rect(pub Color);
 
 impl Build for Rect {
-    type Output = Self;
+    type Built = Self;
 
-    fn build(self) -> Self::Output {
+    fn build(self) -> Self::Built {
         self
     }
 }

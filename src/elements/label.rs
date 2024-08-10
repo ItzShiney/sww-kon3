@@ -18,7 +18,7 @@ impl<Src> HandleEvent for Label<Src> {
 
 impl<Src: ValueSource<Value = str>> Element for Label<Src> {}
 
-pub const fn label<Src: Build<Output: ValueSource<Value = str>>>(
+pub const fn label<Src: Build<Built: ValueSource<Value = str>>>(
     ra_fixture_source: Src,
 ) -> Label<Src> {
     Label(ra_fixture_source)

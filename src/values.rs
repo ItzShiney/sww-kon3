@@ -121,9 +121,9 @@ mod traits {
     }
 
     impl<T: AutoValueSource> Build for T {
-        type Output = Self;
+        type Built = Self;
 
-        fn build(self) -> Self::Output {
+        fn build(self) -> Self::Built {
             self
         }
     }
@@ -147,9 +147,9 @@ mod traits {
     }
 
     impl Build for &str {
-        type Output = Self;
+        type Built = Self;
 
-        fn build(self) -> Self::Output {
+        fn build(self) -> Self::Built {
             self
         }
     }
@@ -193,9 +193,9 @@ mod anchors {
     pub struct SetAnchor<A: Anchor>(Shared<A::Value>);
 
     impl<A: Anchor> Build for SetAnchor<A> {
-        type Output = Shared<A::Value>;
+        type Built = Shared<A::Value>;
 
-        fn build(self) -> Self::Output {
+        fn build(self) -> Self::Built {
             self.0
         }
     }
@@ -217,9 +217,9 @@ mod anchors {
     pub struct GetAnchor<A: Anchor>(Option<Shared<A::Value>>);
 
     impl<A: Anchor> Build for GetAnchor<A> {
-        type Output = Shared<A::Value>;
+        type Built = Shared<A::Value>;
 
-        fn build(self) -> Self::Output {
+        fn build(self) -> Self::Built {
             self.0.expect("anchor was not set")
         }
     }
@@ -280,9 +280,9 @@ pub struct Strfy<Src, Cch> {
 }
 
 impl<Src: Build, Cch: Build> Build for Strfy<Src, Cch> {
-    type Output = Strfy<Src::Output, Cch::Output>;
+    type Built = Strfy<Src::Built, Cch::Built>;
 
-    fn build(self) -> Self::Output {
+    fn build(self) -> Self::Built {
         Strfy {
             source: self.source.build(),
             cache: self.cache.build(),
@@ -316,7 +316,7 @@ impl<Src: ValueSource<Value: ToString>> ValueSource for Strfy<Src, Cached<String
     }
 }
 
-pub fn strfy<V: ToString, Src: Build<Output: ValueSource<Value = V>>>(
+pub fn strfy<V: ToString, Src: Build<Built: ValueSource<Value = V>>>(
     ra_fixture_source: Src,
 ) -> Strfy<Src, Cache<String>> {
     Strfy {
@@ -347,9 +347,9 @@ pub struct Concat<Src, Cch> {
 }
 
 impl<Src: Build, Cch: Build> Build for Concat<Src, Cch> {
-    type Output = Concat<Src::Output, Cch::Output>;
+    type Built = Concat<Src::Built, Cch::Built>;
 
-    fn build(self) -> Self::Output {
+    fn build(self) -> Self::Built {
         Concat {
             sources: self.sources.build(),
             cache: self.cache.build(),
