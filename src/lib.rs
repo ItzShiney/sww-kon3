@@ -77,31 +77,6 @@ pub trait Build {
     fn build(self) -> Self::Output;
 }
 
-#[derive(Debug)]
-pub struct Ident<T>(T);
-
-pub const fn id<T>(ra_fixture_value: T) -> Ident<T> {
-    Ident(ra_fixture_value)
-}
-
-impl<T> Build for Ident<T> {
-    type Output = T;
-
-    fn build(self) -> Self::Output {
-        self.0
-    }
-}
-
-impl<T> ResolveAnchors for Ident<T> {
-    type AnchorsSet = ();
-
-    fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
-        None
-    }
-
-    fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
-}
-
 pub struct Cache<T>(PhantomData<T>);
 
 pub type Cached<T> = RefCell<Option<T>>;

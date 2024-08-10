@@ -128,6 +128,16 @@ mod traits {
         }
     }
 
+    impl<T: AutoValueSource> ResolveAnchors for T {
+        type AnchorsSet = ();
+
+        fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
+            None
+        }
+
+        fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
+    }
+
     impl ValueSource for &str {
         type Value = str;
 
