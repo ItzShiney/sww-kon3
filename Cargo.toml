@@ -8,7 +8,7 @@ lto = true
 
 [dependencies]
 kon3-macros = { path = "kon3-macros" }
-sww = { path = "../sww" }
+sww = { path = "../sww" } # git = "https://github.com/ItzShiney/sww"
 
 [lints.clippy]
 nursery = { level = "warn", priority = -1 }
