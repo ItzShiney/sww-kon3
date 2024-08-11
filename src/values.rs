@@ -5,6 +5,8 @@ use crate::Anchor;
 use crate::Build;
 use crate::Cache;
 use crate::Cached;
+use crate::EventResult;
+use crate::IntoEventResult;
 use crate::ResolveAnchors;
 use std::ops;
 
@@ -244,33 +246,33 @@ mod anchors {
 }
 pub use anchors::*;
 
+pub trait ArgSource {
+    type Arg<'s>: 's;
+
+    fn apply_to<R: IntoEventResult>(&self, f: &mut impl FnMut(Self::Arg<'_>) -> R) -> EventResult;
+}
+
+impl<T: ?Sized> ArgSource for Shared<T> {
+    type Arg<'s> = &'s T;
+
+    fn apply_to<R: IntoEventResult>(&self, f: &mut impl FnMut(Self::Arg<'_>) -> R) -> EventResult {
+        f(&self.read()).into_event_result()
+    }
+}
+
 #[derive(Debug, Build)]
 pub struct Write<T>(T);
 
+impl<T: ?Sized> ArgSource for Write<Shared<T>> {
+    type Arg<'s> = &'s mut T;
+
+    fn apply_to<R: IntoEventResult>(&self, f: &mut impl FnMut(Self::Arg<'_>) -> R) -> EventResult {
+        f(&mut self.0.write()).into_event_result()
+    }
+}
+
 pub const fn write<T>(ra_fixture_source: T) -> Write<T> {
     Write(ra_fixture_source)
-}
-
-pub trait ArgsSource {
-    type Fn;
-
-    fn apply_to(&self, f: &Self::Fn);
-}
-
-impl<T: ?Sized> ArgsSource for Shared<T> {
-    type Fn = fn(&T);
-
-    fn apply_to(&self, f: &Self::Fn) {
-        f(&self.read());
-    }
-}
-
-impl<T: ?Sized> ArgsSource for Write<Shared<T>> {
-    type Fn = fn(&mut T);
-
-    fn apply_to(&self, f: &Self::Fn) {
-        f(&mut self.0.write());
-    }
 }
 
 #[derive(Debug)]

@@ -4,7 +4,7 @@ use crate::Anchor;
 use crate::Build;
 use crate::Element;
 use crate::Event;
-use crate::EventConsumed;
+use crate::EventResult;
 use crate::HandleEvent;
 use crate::ResolveAnchors;
 
@@ -50,7 +50,7 @@ impl<Ty: ResolveAnchors, Es: ResolveAnchors> ResolveAnchors for Split<Ty, Es> {
 impl<Ty, A: Element, B: Element> Element for Split<Ty, (A, B)> {}
 
 impl<Ty, Es: HandleEvent> HandleEvent for Split<Ty, Es> {
-    fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
+    fn handle_event(&mut self, event: &Event) -> EventResult {
         self.elements.handle_event(event)
     }
 }

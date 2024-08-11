@@ -9,7 +9,7 @@ mod write;
 pub use read::*;
 pub use write::*;
 
-pub struct Shared<T: ?Sized>(Arc<RwLock<T>>);
+pub struct Shared<T: ?Sized + 'static>(Arc<RwLock<T>>);
 
 impl<T: Debug> Debug for Shared<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

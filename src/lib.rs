@@ -22,14 +22,34 @@ pub enum Event {
     _2,
 }
 
-pub struct EventConsumed;
+pub struct Consume;
 
-pub const fn consume() -> Result<(), EventConsumed> {
-    Err(EventConsumed)
+pub type EventResult = Result<(), Consume>;
+
+pub trait IntoEventResult {
+    fn into_event_result(self) -> EventResult;
+}
+
+impl IntoEventResult for EventResult {
+    fn into_event_result(self) -> EventResult {
+        self
+    }
+}
+
+impl IntoEventResult for () {
+    fn into_event_result(self) -> EventResult {
+        Ok(())
+    }
+}
+
+impl IntoEventResult for Consume {
+    fn into_event_result(self) -> EventResult {
+        Err(Consume)
+    }
 }
 
 pub trait HandleEvent {
-    fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed>;
+    fn handle_event(&mut self, event: &Event) -> EventResult;
 }
 
 pub trait Element: HandleEvent {
@@ -129,7 +149,7 @@ macro_rules! tuple_impls {
         }
 
         impl<$($T: HandleEvent),+> HandleEvent for ($($T),+) {
-            fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
+            fn handle_event(&mut self, event: &Event) -> EventResult {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 

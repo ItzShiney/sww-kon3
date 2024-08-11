@@ -1,24 +1,24 @@
-use crate::consume;
 use crate::shared::Shared;
-use crate::values::ArgsSource;
+use crate::values::ArgSource;
 use crate::Anchor;
 use crate::Build;
 use crate::BuildElement;
 use crate::Element;
 use crate::Event;
-use crate::EventConsumed;
+use crate::EventResult;
 use crate::HandleEvent;
+use crate::IntoEventResult;
 use crate::ResolveAnchors;
 use std::fmt;
 use std::fmt::Debug;
 
-pub struct OnClickConsume<E, Src, F> {
+pub struct OnClick<E, Src, F> {
     element: E,
     source: Src,
     f: F,
 }
 
-impl<E: Debug, Src: Debug, F> Debug for OnClickConsume<E, Src, F> {
+impl<E: Debug, Src: Debug, F> Debug for OnClick<E, Src, F> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("OnClickConsume")
             .field("element", &self.element)
@@ -27,11 +27,11 @@ impl<E: Debug, Src: Debug, F> Debug for OnClickConsume<E, Src, F> {
     }
 }
 
-impl<E: Build, Src: Build, F> Build for OnClickConsume<E, Src, F> {
-    type Built = OnClickConsume<E::Built, Src::Built, F>;
+impl<E: Build, Src: Build, F> Build for OnClick<E, Src, F> {
+    type Built = OnClick<E::Built, Src::Built, F>;
 
     fn build(self) -> Self::Built {
-        OnClickConsume {
+        OnClick {
             element: self.element.build(),
             source: self.source.build(),
             f: self.f,
@@ -39,7 +39,7 @@ impl<E: Build, Src: Build, F> Build for OnClickConsume<E, Src, F> {
     }
 }
 
-impl<E: ResolveAnchors, Src: ResolveAnchors, F> ResolveAnchors for OnClickConsume<E, Src, F> {
+impl<E: ResolveAnchors, Src: ResolveAnchors, F> ResolveAnchors for OnClick<E, Src, F> {
     type AnchorsSet = (E::AnchorsSet, Src::AnchorsSet);
 
     fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
@@ -52,28 +52,34 @@ impl<E: ResolveAnchors, Src: ResolveAnchors, F> ResolveAnchors for OnClickConsum
     }
 }
 
-// impl<E: Element, Src, F> Element for OnClickConsume<E, Src, F> where Self: HandleEvent {}
-impl<E: Element, Src: ArgsSource> Element for OnClickConsume<E, Src, Src::Fn> {}
+impl<E: Element, Src: ArgSource, F: FnMut(Src::Arg<'_>) -> R, R: IntoEventResult> Element
+    for OnClick<E, Src, F>
+{
+}
 
-impl<E: HandleEvent, Src: ArgsSource> HandleEvent for OnClickConsume<E, Src, Src::Fn> {
-    fn handle_event(&mut self, event: &Event) -> Result<(), EventConsumed> {
-        match event {
-            Event::Click => {
-                self.source.apply_to(&self.f);
-                consume()
-            }
-
-            _ => self.element.handle_event(event),
+impl<E: HandleEvent, Src: ArgSource, F: FnMut(Src::Arg<'_>) -> R, R: IntoEventResult> HandleEvent
+    for OnClick<E, Src, F>
+{
+    fn handle_event(&mut self, event: &Event) -> EventResult {
+        if let Event::Click = event {
+            self.source.apply_to(&mut self.f)?;
         }
+
+        self.element.handle_event(event)
     }
 }
 
-pub const fn on_click_consume<E: BuildElement, Src: Build<Built = ArgSrc>, ArgSrc: ArgsSource>(
+pub const fn on_click<
+    E: BuildElement,
+    Src: Build<Built: ArgSource>,
+    F: FnMut(<Src::Built as ArgSource>::Arg<'_>) -> R,
+    R: IntoEventResult,
+>(
     ra_fixture_element: E,
     ra_fixture_source: Src,
-    ra_fixture_f: ArgSrc::Fn,
-) -> OnClickConsume<E, Src, ArgSrc::Fn> {
-    OnClickConsume {
+    ra_fixture_f: F,
+) -> OnClick<E, Src, F> {
+    OnClick {
         element: ra_fixture_element,
         source: ra_fixture_source,
         f: ra_fixture_f,

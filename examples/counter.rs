@@ -16,13 +16,13 @@ fn ui_builder() -> impl BuildElement {
     };
 
     let button = {
-        on_click_consume(
+        on_click(
             layers((
                 label("click me!"),
                 rect(Color::GREEN),
             )),
             write(get::<Counter>()),
-            |counter| *counter += 1,
+            |counter| { *counter += 1; Consume },
         )
     };
 

@@ -3,7 +3,7 @@ use crate::values::ValueSource;
 use crate::Build;
 use crate::Element;
 use crate::Event;
-use crate::EventConsumed;
+use crate::EventResult;
 use crate::HandleEvent;
 use std::fmt::Debug;
 
@@ -11,7 +11,7 @@ use std::fmt::Debug;
 pub struct Label<Src>(Src);
 
 impl<Src> HandleEvent for Label<Src> {
-    fn handle_event(&mut self, _event: &Event) -> Result<(), EventConsumed> {
+    fn handle_event(&mut self, _event: &Event) -> EventResult {
         Ok(())
     }
 }

@@ -3,7 +3,7 @@ use crate::Anchor;
 use crate::Build;
 use crate::Element;
 use crate::Event;
-use crate::EventConsumed;
+use crate::EventResult;
 use crate::HandleEvent;
 use crate::ResolveAnchors;
 use sww::Color;
@@ -32,7 +32,7 @@ impl ResolveAnchors for Rect {
 impl Element for Rect {}
 
 impl HandleEvent for Rect {
-    fn handle_event(&mut self, _event: &Event) -> Result<(), EventConsumed> {
+    fn handle_event(&mut self, _event: &Event) -> EventResult {
         Ok(())
     }
 }
