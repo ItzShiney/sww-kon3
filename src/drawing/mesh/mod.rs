@@ -60,13 +60,3 @@ impl Mesh {
         self.indices.as_ref()
     }
 }
-
-impl RenderWindow<'_> {
-    pub fn mesh_rect(&self, size: Vec2) -> Mesh {
-        Mesh::rect(self, size)
-    }
-
-    pub fn mesh_square(&self, size: f32, ratio: f32) -> Mesh {
-        Mesh::square(self, size, ratio)
-    }
-}

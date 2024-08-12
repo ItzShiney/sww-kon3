@@ -9,7 +9,7 @@ mod pack;
 pub use handle_event::*;
 pub use pack::*;
 
-pub struct App<F>(Lazy<AppPack, F>);
+pub struct App<F: FnOnce(&ActiveEventLoop) -> AppPack>(Lazy<AppPack, F>);
 
 impl<F: FnOnce(&ActiveEventLoop) -> AppPack> App<F> {
     pub fn new(f: F) -> Self {

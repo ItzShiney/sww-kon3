@@ -58,3 +58,25 @@ impl Default for Rectangle {
         }
     }
 }
+
+impl Rectangle {
+    pub fn offset(self, offset: Vec2) -> Self {
+        Self {
+            top_left: self.top_left + offset,
+            size: self.size,
+        }
+    }
+
+    pub fn mul_size(self, times: Vec2) -> Self {
+        Self {
+            top_left: self.top_left,
+            size: self.size * times,
+        }
+    }
+
+    pub fn subrect(self, other: Rectangle) -> Rectangle {
+        let top_left = self.top_left + other.top_left * self.size;
+        let size = self.size * other.size;
+        return Rectangle { top_left, size };
+    }
+}

@@ -54,17 +54,15 @@ impl HandleEvent for MyApp<'_> {
     }
 
     fn on_redraw_requested(&mut self, _info: EventInfo) {
-        let Ok(mut frame) = self.rw.start_drawing() else {
-            return;
-        };
+        let mut frame = self.rw.start_drawing();
 
         self.objects.scale(self.rw.window().ratio());
         self.draw(&mut frame);
     }
 }
 
-impl<'c> MyApp<'_> {
-    fn draw(&mut self, frame: &mut Frame<'c>) {
+impl<'e> MyApp<'_> {
+    fn draw(&mut self, frame: &mut Frame<'e>) {
         let mut render_pass =
             frame
                 .commands

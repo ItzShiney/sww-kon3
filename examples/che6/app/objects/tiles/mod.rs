@@ -34,7 +34,10 @@ pub fn make_white_black_tranforms<'w>(
         }
     }
 
-    (rw.vec_buffer_vertex(white), rw.vec_buffer_vertex(black))
+    (
+        MutVecBuffer::new_vertex(rw, white),
+        MutVecBuffer::new_vertex(rw, black),
+    )
 }
 
 pub struct Tiles<'w> {
@@ -69,8 +72,8 @@ impl<'w> Tiles<'w> {
     }
 }
 
-impl<'c> Tiles<'_> {
-    pub fn draw(&'c self, drawer: &'c Drawer, render_pass: &mut wgpu::RenderPass<'c>) {
+impl<'e> Tiles<'_> {
+    pub fn draw(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         self.white.draw(drawer, render_pass, &self.bind_group1);
         self.black.draw(drawer, render_pass, &self.bind_group1);
     }

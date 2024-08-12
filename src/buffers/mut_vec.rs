@@ -78,9 +78,10 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
 
     fn update(&self, range: impl SliceIndex<[T], Output = [T]>) {
         let slice = &self.values[range];
-        let start = (slice.as_ptr() as usize - self.values.as_ptr() as usize) / mem::size_of::<T>();
+        let start =
+            ((slice.as_ptr() as usize) - (self.values.as_ptr() as usize)) / mem::size_of::<T>();
 
-        let offset = start as wgpu::BufferAddress * mem::size_of::<T>() as wgpu::BufferAddress;
+        let offset = (start as wgpu::BufferAddress) * (mem::size_of::<T>() as wgpu::BufferAddress);
 
         self.queue
             .write_buffer(&self.buffer, offset, bytemuck::cast_slice(slice))
@@ -104,23 +105,6 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
 
     pub fn size(&self) -> wgpu::BufferAddress {
         (self.len() * mem::size_of::<T>()) as u64
-    }
-}
-
-impl RenderWindow<'_> {
-    pub fn vec_buffer<T: bytemuck::NoUninit + Sized>(
-        &self,
-        values: Vec<T>,
-        usage: wgpu::BufferUsages,
-    ) -> MutVecBuffer<T> {
-        MutVecBuffer::new(self, values, usage)
-    }
-
-    pub fn vec_buffer_vertex<T: bytemuck::NoUninit + Sized>(
-        &self,
-        values: Vec<T>,
-    ) -> MutVecBuffer<T> {
-        MutVecBuffer::new_vertex(self, values)
     }
 }
 

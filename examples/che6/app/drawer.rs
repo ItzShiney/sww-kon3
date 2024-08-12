@@ -15,8 +15,8 @@ pub struct Drawer {
 
 impl Drawer {
     pub fn new(rw: &RenderWindow) -> Self {
-        let mesh_pipeline = rw.create_mesh_pipeline();
-        let square = rw.mesh_rect(vec2(1., 1.));
+        let mesh_pipeline = MeshPipeline::new(rw);
+        let square = Mesh::rect(rw, vec2(1., 1.));
 
         Self {
             mesh_pipeline,
@@ -25,12 +25,12 @@ impl Drawer {
     }
 }
 
-impl<'c> Drawer {
+impl<'e> Drawer {
     pub fn draw_squares(
-        &'c self,
-        render_pass: &mut wgpu::RenderPass<'c>,
-        transforms: VecBufferSlice<'c, Transform>,
-        bind_groups: shaders::mesh::BindGroups<'c>,
+        &'e self,
+        render_pass: &mut wgpu::RenderPass<'e>,
+        transforms: VecBufferSlice<'e, Transform>,
+        bind_groups: shaders::mesh::BindGroups<'e>,
     ) {
         DrawableMesh {
             mesh: &self.square,

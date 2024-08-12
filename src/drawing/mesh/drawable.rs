@@ -6,15 +6,15 @@ use crate::drawing::MeshPipeline;
 use crate::shaders;
 use crate::shaders::mesh::Transform;
 
-pub struct DrawableMesh<'c> {
-    pub mesh: &'c Mesh,
-    pub transforms: VecBufferSlice<'c, Transform>,
-    pub bind_groups: shaders::mesh::BindGroups<'c>,
-    pub pipeline: &'c MeshPipeline,
+pub struct DrawableMesh<'e> {
+    pub mesh: &'e Mesh,
+    pub transforms: VecBufferSlice<'e, Transform>,
+    pub bind_groups: shaders::mesh::BindGroups<'e>,
+    pub pipeline: &'e MeshPipeline,
 }
 
-impl<'c> Draw<'c> for DrawableMesh<'c> {
-    fn draw(&self, render_pass: &mut wgpu::RenderPass<'c>) {
+impl<'e> Draw<'e> for DrawableMesh<'e> {
+    fn draw(&self, render_pass: &mut wgpu::RenderPass<'e>) {
         self.pipeline.set(render_pass);
         render_pass.set_vertex_buffer(0, self.mesh.vertices().buffer().slice(..));
         render_pass.set_vertex_buffer(1, self.transforms.buffer.slice(..));

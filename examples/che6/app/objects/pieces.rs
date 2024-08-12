@@ -8,7 +8,6 @@ use sww::buffers::MutBuffer;
 use sww::buffers::MutVecBuffer;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
-use sww::utility::PushLast;
 use sww::window::RenderWindow;
 use sww::Vec2;
 
@@ -40,10 +39,11 @@ impl<'w> Pieces<'w> {
         sheet: PiecesSheet,
         transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
-        let scalable = scalables.push_last(Scalable::new(
+        scalables.push(Scalable::new(
             MutBuffer::new(rw.device(), Transform::default()),
             Vec2::splat(2. / 8.),
         ));
+        let scalable = scalables.last().unwrap();
 
         let bind_group0 = shaders::mesh::BindGroup0::from_bindings(
             rw.device(),
@@ -70,8 +70,8 @@ impl<'w> Pieces<'w> {
     }
 }
 
-impl<'c> Pieces<'_> {
-    pub fn draw(&'c self, drawer: &'c Drawer, render_pass: &mut wgpu::RenderPass<'c>) {
+impl<'e> Pieces<'_> {
+    pub fn draw(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         drawer.draw_squares(
             render_pass,
             self.transforms.slice(..),

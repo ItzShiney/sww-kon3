@@ -65,11 +65,14 @@ impl<'w> RenderWindow<'w> {
         &self.queue
     }
 
-    pub fn start_drawing(&self) -> Result<Frame, wgpu::SurfaceError> {
+    pub fn start_drawing(&self) -> Frame {
         let command_encoder = self.device.create_command_encoder(&Default::default());
-        let surface_texture = self.surface.get_current_texture()?;
+        let surface_texture = self
+            .surface
+            .get_current_texture()
+            .expect("failed to get surface texture");
 
-        Ok(Frame::new(self, command_encoder, surface_texture))
+        Frame::new(self, command_encoder, surface_texture)
     }
 
     pub fn resize_surface(&self, new_size: PhysicalSize) {

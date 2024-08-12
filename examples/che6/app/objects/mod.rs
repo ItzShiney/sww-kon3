@@ -70,8 +70,8 @@ impl<'w> Objects<'w> {
     }
 }
 
-impl<'c> Objects<'_> {
-    pub fn draw(&'c self, drawer: &'c Drawer, render_pass: &mut wgpu::RenderPass<'c>) {
+impl<'e> Objects<'_> {
+    pub fn draw(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         self.tiles.draw(drawer, render_pass);
         self.pieces.draw(drawer, render_pass);
     }
@@ -120,5 +120,5 @@ fn make_piece_transforms<'w>(
         ));
     }
 
-    rw.vec_buffer_vertex(piece_transforms)
+    MutVecBuffer::new_vertex(rw, piece_transforms)
 }

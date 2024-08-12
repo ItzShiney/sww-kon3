@@ -10,21 +10,15 @@ use wgpu::VertexStepMode;
 pub struct MeshPipeline(wgpu::RenderPipeline);
 
 impl MeshPipeline {
-    pub fn set<'w>(&'w self, render_pass: &mut wgpu::RenderPass<'w>) {
-        render_pass.set_pipeline(&self.0);
-    }
-}
-
-impl RenderWindow<'_> {
-    pub fn create_mesh_pipeline(&self) -> MeshPipeline {
+    pub fn new(rw: &RenderWindow) -> MeshPipeline {
         use shaders::mesh::*;
 
-        let device = self.device();
+        let device = rw.device();
         let layout = create_pipeline_layout(device);
         let shader = create_shader_module(device);
 
         let targets = [Some(ColorTargetState {
-            format: self.swapchain_format(),
+            format: rw.swapchain_format(),
             blend: Some(BlendState {
                 color: BlendComponent {
                     src_factor: BlendFactor::SrcAlpha,
@@ -55,5 +49,9 @@ impl RenderWindow<'_> {
                 cache: None,
             }),
         )
+    }
+
+    pub fn set<'w>(&'w self, render_pass: &mut wgpu::RenderPass<'w>) {
+        render_pass.set_pipeline(&self.0);
     }
 }

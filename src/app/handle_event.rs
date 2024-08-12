@@ -56,7 +56,7 @@ pub trait HandleEvent {
     fn on_resized(&mut self, info: EventInfo, new_size: PhysicalSize) {}
     fn on_moved(&mut self, info: EventInfo, new_position: PhysicalPosition) {}
     fn on_close_requested(&mut self, info: EventInfo) {
-        info.event_loop.exit()
+        info.event_loop.exit();
     }
     fn on_destroyed(&mut self, info: EventInfo) {}
     fn on_dropped_file(&mut self, info: EventInfo, path: FilePath) {}

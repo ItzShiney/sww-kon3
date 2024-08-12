@@ -1,3 +1,3 @@
-pub trait Draw<'c>: 'c {
-    fn draw(&self, render_pass: &mut wgpu::RenderPass<'c>);
+pub trait Draw<'e>: 'e {
+    fn draw(&self, render_pass: &mut wgpu::RenderPass<'e>);
 }
