@@ -24,7 +24,7 @@ pub struct MyApp<'w> {
 }
 
 impl<'w> MyApp<'w> {
-    pub fn new(rw: &'w RenderWindow<'w>) -> Self {
+    pub fn new(rw: &'w RenderWindow) -> Self {
         let drawer = Drawer::new(rw);
         let mut objects = Objects::new(rw);
 

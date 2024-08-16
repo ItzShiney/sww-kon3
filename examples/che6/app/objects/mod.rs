@@ -27,7 +27,7 @@ pub struct Objects<'w> {
 }
 
 impl<'w> Objects<'w> {
-    pub fn new(rw: &'w RenderWindow<'w>) -> Self {
+    pub fn new(rw: &'w RenderWindow) -> Self {
         let mut scalables = Scalables::default();
 
         let tiles = Tiles::new(rw, &mut scalables);
@@ -78,7 +78,7 @@ impl<'e> Objects<'_> {
 }
 
 fn make_piece_transforms<'w>(
-    rw: &'w RenderWindow<'w>,
+    rw: &'w RenderWindow,
     sheet: &PiecesSheet,
 ) -> MutVecBuffer<'w, Transform> {
     let mut piece_transforms = MutVecBuffer::default_vertex(rw);

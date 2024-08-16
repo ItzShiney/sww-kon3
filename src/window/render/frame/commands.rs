@@ -7,7 +7,7 @@ pub struct FrameCommands<'w> {
 }
 
 impl<'w> FrameCommands<'w> {
-    pub(super) fn new(info: &'w RenderWindow<'w>, command_encoder: wgpu::CommandEncoder) -> Self {
+    pub(super) fn new(info: &'w RenderWindow, command_encoder: wgpu::CommandEncoder) -> Self {
         Self {
             info,
             encoder: ManuallyDrop::new(command_encoder),

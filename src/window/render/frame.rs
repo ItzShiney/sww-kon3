@@ -13,7 +13,7 @@ pub struct Frame<'w> {
 
 impl<'w> Frame<'w> {
     pub fn new(
-        info: &'w RenderWindow<'w>,
+        info: &'w RenderWindow,
         command_encoder: wgpu::CommandEncoder,
         surface_texture: wgpu::SurfaceTexture,
     ) -> Self {

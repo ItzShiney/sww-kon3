@@ -34,7 +34,7 @@ pub struct Pieces<'w> {
 
 impl<'w> Pieces<'w> {
     pub fn new(
-        rw: &'w RenderWindow<'w>,
+        rw: &'w RenderWindow,
         scalables: &mut Scalables,
         sheet: PiecesSheet,
         transforms: MutVecBuffer<'w, Transform>,

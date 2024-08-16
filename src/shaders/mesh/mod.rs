@@ -77,6 +77,6 @@ impl Rectangle {
     pub fn subrect(self, other: Rectangle) -> Rectangle {
         let top_left = self.top_left + other.top_left * self.size;
         let size = self.size * other.size;
-        return Rectangle { top_left, size };
+        Rectangle { top_left, size }
     }
 }

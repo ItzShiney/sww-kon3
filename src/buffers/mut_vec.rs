@@ -13,7 +13,7 @@ pub struct MutVecBuffer<'w, T> {
 }
 
 impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
-    pub fn new(rw: &'w RenderWindow<'w>, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
+    pub fn new(rw: &'w RenderWindow, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
         let usage = usage | wgpu::BufferUsages::COPY_DST;
 
         Self {
@@ -24,15 +24,15 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
         }
     }
 
-    pub fn default(rw: &'w RenderWindow<'w>, usage: wgpu::BufferUsages) -> Self {
+    pub fn default(rw: &'w RenderWindow, usage: wgpu::BufferUsages) -> Self {
         Self::new(rw, Vec::default(), usage)
     }
 
-    pub fn new_vertex(rw: &'w RenderWindow<'w>, values: Vec<T>) -> Self {
+    pub fn new_vertex(rw: &'w RenderWindow, values: Vec<T>) -> Self {
         Self::new(rw, values, wgpu::BufferUsages::VERTEX)
     }
 
-    pub fn default_vertex(rw: &'w RenderWindow<'w>) -> Self {
+    pub fn default_vertex(rw: &'w RenderWindow) -> Self {
         Self::default(rw, wgpu::BufferUsages::VERTEX)
     }
 

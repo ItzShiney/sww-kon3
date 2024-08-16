@@ -25,10 +25,10 @@ impl Drawer {
 }
 
 impl Drawer {
-    pub fn draw_squares<'e, 'w>(
+    pub fn draw_squares<'e>(
         &'e self,
         render_pass: &mut wgpu::RenderPass<'e>,
-        transforms: &mut MutVecBuffer<'w, Transform>,
+        transforms: &mut MutVecBuffer<Transform>,
         bind_groups: shaders::mesh::BindGroups<'e>,
     ) {
         DrawableMesh {

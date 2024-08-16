@@ -11,7 +11,7 @@ pub struct MyApp<'w> {
 }
 
 impl<'w> MyApp<'w> {
-    pub fn new(rw: &'w RenderWindow<'w>) -> Self {
+    pub fn new(rw: &'w RenderWindow) -> Self {
         Self { rw }
     }
 }
