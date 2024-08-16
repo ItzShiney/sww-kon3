@@ -34,7 +34,7 @@ pub struct Pieces<'w> {
 
 impl<'w> Pieces<'w> {
     pub fn new(
-        rw: &'w RenderWindow,
+        rw: &'w RenderWindow<'w>,
         scalables: &mut Scalables,
         sheet: PiecesSheet,
         transforms: MutVecBuffer<'w, Transform>,
@@ -70,11 +70,11 @@ impl<'w> Pieces<'w> {
     }
 }
 
-impl<'e> Pieces<'_> {
-    pub fn draw(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
+impl Pieces<'_> {
+    pub fn draw<'e>(&'e mut self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         drawer.draw_squares(
             render_pass,
-            self.transforms.slice(..),
+            &mut self.transforms,
             shaders::mesh::BindGroups {
                 bind_group0: &self.bind_group0,
                 bind_group1: &self.bind_group1,

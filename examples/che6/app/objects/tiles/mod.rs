@@ -73,7 +73,7 @@ impl<'w> Tiles<'w> {
 }
 
 impl<'e> Tiles<'_> {
-    pub fn draw(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
+    pub fn draw(&'e mut self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         self.white.draw(drawer, render_pass, &self.bind_group1);
         self.black.draw(drawer, render_pass, &self.bind_group1);
     }

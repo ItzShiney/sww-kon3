@@ -1,5 +1,4 @@
-use sww::buffers::VecBufferSlice;
-use sww::drawing::Draw;
+use sww::buffers::MutVecBuffer;
 use sww::drawing::DrawableMesh;
 use sww::drawing::Mesh;
 use sww::drawing::MeshPipeline;
@@ -25,11 +24,11 @@ impl Drawer {
     }
 }
 
-impl<'e> Drawer {
-    pub fn draw_squares(
+impl Drawer {
+    pub fn draw_squares<'e, 'w>(
         &'e self,
         render_pass: &mut wgpu::RenderPass<'e>,
-        transforms: VecBufferSlice<'e, Transform>,
+        transforms: &mut MutVecBuffer<'w, Transform>,
         bind_groups: shaders::mesh::BindGroups<'e>,
     ) {
         DrawableMesh {

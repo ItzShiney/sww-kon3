@@ -48,14 +48,14 @@ impl<'w> SingleColorTiles<'w> {
 
 impl<'e> SingleColorTiles<'_> {
     pub fn draw(
-        &'e self,
+        &'e mut self,
         drawer: &'e Drawer,
         render_pass: &mut wgpu::RenderPass<'e>,
         bind_group1: &'e shaders::mesh::BindGroup1,
     ) {
         drawer.draw_squares(
             render_pass,
-            self.transforms.slice(..),
+            &mut self.transforms,
             shaders::mesh::BindGroups {
                 bind_group0: &self.bind_group0,
                 bind_group1,

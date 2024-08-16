@@ -71,7 +71,7 @@ impl<'w> Objects<'w> {
 }
 
 impl<'e> Objects<'_> {
-    pub fn draw(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
+    pub fn draw(&'e mut self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         self.tiles.draw(drawer, render_pass);
         self.pieces.draw(drawer, render_pass);
     }

@@ -6,85 +6,54 @@ use std::ops::IndexMut;
 use std::slice::SliceIndex;
 
 pub struct MutVecBuffer<'w, T> {
-    buffer: wgpu::Buffer,
+    rw: &'w RenderWindow<'w>,
     values: Vec<T>,
-    queue: &'w wgpu::Queue,
+    buffer: Option<wgpu::Buffer>,
+    usage: wgpu::BufferUsages,
 }
 
 impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
-    pub fn new(rw: &'w RenderWindow, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
-        let buffer = create_buffer_partially_init(
-            rw.device(),
-            values.as_slice(),
-            values.capacity(),
-            usage | wgpu::BufferUsages::COPY_DST,
-        );
+    pub fn new(rw: &'w RenderWindow<'w>, values: Vec<T>, usage: wgpu::BufferUsages) -> Self {
+        let usage = usage | wgpu::BufferUsages::COPY_DST;
 
         Self {
-            buffer,
+            rw,
             values,
-            queue: rw.queue(),
+            buffer: None,
+            usage,
         }
     }
 
-    pub fn new_vertex(rw: &'w RenderWindow, values: Vec<T>) -> Self {
+    pub fn new_vertex(rw: &'w RenderWindow<'w>, values: Vec<T>) -> Self {
         Self::new(rw, values, wgpu::BufferUsages::VERTEX)
-    }
-
-    pub fn buffer(&self) -> &wgpu::Buffer {
-        &self.buffer
     }
 
     pub fn values(&self) -> &[T] {
         &self.values
     }
 
-    pub fn slice(&self, range: impl SliceIndex<[T], Output = [T]>) -> VecBufferSlice<T> {
-        VecBufferSlice {
-            buffer: &self.buffer,
-            values: &self.values[range],
-        }
-    }
-
-    pub fn slice_mut(
-        &mut self,
-        range: impl SliceIndex<[T], Output = [T]>,
-    ) -> VecBufferSliceMut<'_, T> {
-        let start_ptr = self.values.as_ptr();
-        let values = &mut self.values[range];
-        let start = (values.as_ptr() as usize - start_ptr as usize) / mem::size_of::<T>();
-
-        VecBufferSliceMut {
-            buffer: &self.buffer,
-            queue: self.queue,
-
-            values,
-            start,
-        }
-    }
-
     pub fn push(&mut self, value: T) {
-        if !self.can_push() {
-            panic!("pushing to full VecBuffer");
-        }
-
         self.values.push(value);
-        self.update(self.len() - 1..);
+
+        if !(self.len() < self.capacity()) {
+            self.buffer = None;
+        }
     }
 
-    pub fn can_push(&self) -> bool {
-        self.len() != self.capacity()
-    }
+    pub fn update_buffer(&mut self) -> wgpu::BufferSlice<'_> {
+        let buffer = &*self.buffer.get_or_insert_with(|| {
+            create_buffer_partially_init(
+                self.rw.device(),
+                &self.values,
+                self.values.capacity(),
+                self.usage,
+            )
+        });
 
-    fn update(&self, range: impl SliceIndex<[T], Output = [T]>) {
-        let slice = &self.values[range];
-        let start =
-            ((slice.as_ptr() as usize) - (self.values.as_ptr() as usize)) / mem::size_of::<T>();
-
-        let offset = (start as wgpu::BufferAddress) * (mem::size_of::<T>() as wgpu::BufferAddress);
-
-        self.queue
-            .write_buffer(&self.buffer, offset, bytemuck::cast_slice(slice))
+        self.rw
+            .queue()
+            .write_buffer(buffer, 0, bytemuck::cast_slice(&self.values));
+        buffer.slice(..)
     }
 
     pub fn pop(&mut self) -> Option<T> {
@@ -108,40 +77,16 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct VecBufferSlice<'w, T> {
-    pub buffer: &'w wgpu::Buffer,
-    pub values: &'w [T],
-}
+impl<T, I: SliceIndex<[T]>> Index<I> for MutVecBuffer<'_, T> {
+    type Output = I::Output;
 
-pub struct VecBufferSliceMut<'w, T: bytemuck::NoUninit> {
-    buffer: &'w wgpu::Buffer,
-    queue: &'w wgpu::Queue,
-
-    values: &'w mut [T],
-    start: usize,
-}
-
-impl<'w, T: bytemuck::NoUninit> Index<usize> for VecBufferSliceMut<'w, T> {
-    type Output = T;
-
-    fn index(&self, index: usize) -> &Self::Output {
+    fn index(&self, index: I) -> &Self::Output {
         &self.values[index]
     }
 }
 
-impl<'w, T: bytemuck::NoUninit> IndexMut<usize> for VecBufferSliceMut<'w, T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+impl<T, I: SliceIndex<[T]>> IndexMut<I> for MutVecBuffer<'_, T> {
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut self.values[index]
-    }
-}
-
-impl<T: bytemuck::NoUninit> Drop for VecBufferSliceMut<'_, T> {
-    fn drop(&mut self) {
-        self.queue.write_buffer(
-            self.buffer,
-            self.start as wgpu::BufferAddress * mem::size_of::<T>() as wgpu::BufferAddress,
-            bytemuck::cast_slice(self.values),
-        );
     }
 }
