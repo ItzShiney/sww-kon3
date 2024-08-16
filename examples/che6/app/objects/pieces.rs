@@ -40,7 +40,7 @@ impl<'w> Pieces<'w> {
         transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
         scalables.push(Scalable::new(
-            MutBuffer::new(rw.device(), Transform::default()),
+            MutBuffer::new_uniform(rw.device(), Transform::default()),
             Vec2::splat(2. / 8.),
         ));
         let scalable = scalables.last().unwrap();

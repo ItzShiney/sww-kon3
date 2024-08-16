@@ -23,7 +23,7 @@ impl<'w> SingleColorTiles<'w> {
         transforms: MutVecBuffer<'w, Transform>,
     ) -> Self {
         scalables.push(Scalable::new(
-            MutBuffer::new(
+            MutBuffer::new_uniform(
                 rw.device(),
                 Transform {
                     color: color.into(),

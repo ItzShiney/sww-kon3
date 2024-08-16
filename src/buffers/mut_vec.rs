@@ -24,33 +24,20 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
         }
     }
 
+    pub fn default(rw: &'w RenderWindow<'w>, usage: wgpu::BufferUsages) -> Self {
+        Self::new(rw, Vec::default(), usage)
+    }
+
     pub fn new_vertex(rw: &'w RenderWindow<'w>, values: Vec<T>) -> Self {
         Self::new(rw, values, wgpu::BufferUsages::VERTEX)
     }
 
+    pub fn default_vertex(rw: &'w RenderWindow<'w>) -> Self {
+        Self::default(rw, wgpu::BufferUsages::VERTEX)
+    }
+
     pub fn values(&self) -> &[T] {
         &self.values
-    }
-
-    pub fn push(&mut self, value: T) {
-        self.values.push(value);
-    }
-
-    pub fn push_within_capacity(&mut self, value: T) -> Result<(), T> {
-        if self.values.len() < self.values.capacity() {
-            self.values.push(value);
-            Ok(())
-        } else {
-            Err(value)
-        }
-    }
-
-    pub fn clear(&mut self) {
-        self.values.clear();
-    }
-
-    pub fn pop(&mut self) -> Option<T> {
-        self.values.pop()
     }
 
     pub fn len(&self) -> usize {
@@ -67,6 +54,27 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
 
     pub fn size(&self) -> wgpu::BufferAddress {
         (self.len() * mem::size_of::<T>()) as _
+    }
+
+    pub fn clear(&mut self) {
+        self.values.clear();
+    }
+
+    pub fn pop(&mut self) -> Option<T> {
+        self.values.pop()
+    }
+
+    pub fn push(&mut self, value: T) {
+        self.values.push(value);
+    }
+
+    pub fn push_within_capacity(&mut self, value: T) -> Result<(), T> {
+        if self.values.len() < self.values.capacity() {
+            self.values.push(value);
+            Ok(())
+        } else {
+            Err(value)
+        }
     }
 
     pub fn shrink_to_fit(&mut self) {

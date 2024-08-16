@@ -8,14 +8,19 @@ pub struct MutBuffer<T: bytemuck::NoUninit> {
 }
 
 impl<T: bytemuck::NoUninit> MutBuffer<T> {
-    pub fn new(device: &wgpu::Device, value: T) -> Self {
+    pub fn new(device: &wgpu::Device, value: T, usage: wgpu::BufferUsages) -> Self {
+        let usage = usage | wgpu::BufferUsages::COPY_DST;
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::bytes_of(&value),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            usage,
         });
 
         Self { buffer, value }
+    }
+
+    pub fn new_uniform(device: &wgpu::Device, value: T) -> Self {
+        Self::new(device, value, wgpu::BufferUsages::UNIFORM)
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {

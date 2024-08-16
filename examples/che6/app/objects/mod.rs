@@ -78,10 +78,10 @@ impl<'e> Objects<'_> {
 }
 
 fn make_piece_transforms<'w>(
-    rw: &'w RenderWindow,
+    rw: &'w RenderWindow<'w>,
     sheet: &PiecesSheet,
 ) -> MutVecBuffer<'w, Transform> {
-    let mut piece_transforms = Vec::default();
+    let mut piece_transforms = MutVecBuffer::default_vertex(rw);
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
         for x in -4..4 {
@@ -120,5 +120,5 @@ fn make_piece_transforms<'w>(
         ));
     }
 
-    MutVecBuffer::new_vertex(rw, piece_transforms)
+    piece_transforms
 }
