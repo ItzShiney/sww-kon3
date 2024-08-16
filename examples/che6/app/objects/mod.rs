@@ -81,7 +81,7 @@ fn make_piece_transforms<'w>(
     rw: &'w RenderWindow,
     sheet: &PiecesSheet,
 ) -> MutVecBuffer<'w, Transform> {
-    let mut piece_transforms = Vec::with_capacity(8 * 8);
+    let mut piece_transforms = Vec::default();
 
     for (y, piece_color) in [(-3, PieceColor::White), (3 - 1, PieceColor::Black)] {
         for x in -4..4 {

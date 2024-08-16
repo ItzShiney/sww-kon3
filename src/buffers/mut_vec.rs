@@ -34,26 +34,19 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
 
     pub fn push(&mut self, value: T) {
         self.values.push(value);
+    }
 
-        if !(self.len() < self.capacity()) {
-            self.buffer = None;
+    pub fn push_within_capacity(&mut self, value: T) -> Result<(), T> {
+        if self.values.len() < self.values.capacity() {
+            self.values.push(value);
+            Ok(())
+        } else {
+            Err(value)
         }
     }
 
-    pub fn update_buffer(&mut self) -> wgpu::BufferSlice<'_> {
-        let buffer = &*self.buffer.get_or_insert_with(|| {
-            create_buffer_partially_init(
-                self.rw.device(),
-                &self.values,
-                self.values.capacity(),
-                self.usage,
-            )
-        });
-
-        self.rw
-            .queue()
-            .write_buffer(buffer, 0, bytemuck::cast_slice(&self.values));
-        buffer.slice(..)
+    pub fn clear(&mut self) {
+        self.values.clear();
     }
 
     pub fn pop(&mut self) -> Option<T> {
@@ -73,7 +66,38 @@ impl<'w, T: bytemuck::NoUninit + Sized> MutVecBuffer<'w, T> {
     }
 
     pub fn size(&self) -> wgpu::BufferAddress {
-        (self.len() * mem::size_of::<T>()) as u64
+        (self.len() * mem::size_of::<T>()) as _
+    }
+
+    pub fn shrink_to_fit(&mut self) {
+        self.values.shrink_to_fit();
+    }
+
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.values.shrink_to(min_capacity);
+    }
+
+    pub fn update_buffer(&mut self) -> wgpu::BufferSlice<'_> {
+        if let Some(buffer) = &self.buffer {
+            let buffer_capacity = buffer.size() as usize / mem::size_of::<T>();
+            if buffer_capacity != self.values.capacity() {
+                self.buffer = None;
+            }
+        }
+
+        let buffer = &*self.buffer.get_or_insert_with(|| {
+            create_buffer_partially_init(
+                self.rw.device(),
+                &self.values,
+                self.values.capacity(),
+                self.usage,
+            )
+        });
+
+        self.rw
+            .queue()
+            .write_buffer(buffer, 0, bytemuck::cast_slice(&self.values));
+        buffer.slice(..)
     }
 }
 
