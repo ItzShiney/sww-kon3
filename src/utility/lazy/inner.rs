@@ -1,4 +1,3 @@
-use std::hint::unreachable_unchecked;
 use std::mem::ManuallyDrop;
 
 pub enum Inner<T, F> {
@@ -21,7 +20,7 @@ impl<T, F> Inner<T, F> {
         }
 
         let Self::Value(value) = self else {
-            unsafe { unreachable_unchecked() }
+            unreachable!()
         };
 
         value

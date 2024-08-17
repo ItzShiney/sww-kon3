@@ -1,6 +1,6 @@
 use sww::buffers::MutVecBuffer;
-use sww::drawing::DrawableMesh;
 use sww::drawing::Mesh;
+use sww::drawing::MeshDrawingInfo;
 use sww::drawing::MeshPipeline;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
@@ -31,12 +31,11 @@ impl Drawer {
         transforms: &mut MutVecBuffer<Transform>,
         bind_groups: shaders::mesh::BindGroups<'e>,
     ) {
-        DrawableMesh {
+        MeshDrawingInfo {
             mesh: &self.square,
-            transforms,
             bind_groups,
             pipeline: &self.mesh_pipeline,
         }
-        .draw(render_pass)
+        .draw(render_pass, transforms)
     }
 }

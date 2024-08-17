@@ -15,6 +15,9 @@ pub use pipeline::*;
 pub type Index = u32;
 pub const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct MeshId(wgpu::Id<wgpu::Buffer>);
+
 pub struct Mesh {
     vertices: VecBuffer<InVertex>,
     indices: Option<VecBuffer<Index>>,
@@ -58,5 +61,9 @@ impl Mesh {
 
     pub fn indices(&self) -> Option<&VecBuffer<Index>> {
         self.indices.as_ref()
+    }
+
+    pub fn id(&self) -> MeshId {
+        MeshId(self.vertices.buffer().global_id())
     }
 }
