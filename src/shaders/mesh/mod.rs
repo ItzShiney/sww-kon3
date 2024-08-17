@@ -1,5 +1,6 @@
 #![allow(clippy::derivable_impls)]
 use super::PADDING;
+use crate::Color;
 use glam::vec2;
 use glam::Mat2;
 use glam::Vec2;
@@ -7,6 +8,7 @@ use glam::Vec2;
 include!(concat!(env!("OUT_DIR"), "/mesh.rs"));
 
 pub use bind_groups::*;
+use glam::Vec4;
 
 impl<'s> From<wgpu::BufferBinding<'s>> for BindGroupLayout0<'s> {
     fn from(global_transform: wgpu::BufferBinding<'s>) -> Self {
@@ -14,7 +16,7 @@ impl<'s> From<wgpu::BufferBinding<'s>> for BindGroupLayout0<'s> {
     }
 }
 
-pub fn in_vertex(position: glam::Vec2, color: glam::Vec4, texture_coord: glam::Vec2) -> InVertex {
+pub fn in_vertex(position: glam::Vec2, color: Vec4, texture_coord: glam::Vec2) -> InVertex {
     InVertex {
         position,
         _1: PADDING,
@@ -24,42 +26,56 @@ pub fn in_vertex(position: glam::Vec2, color: glam::Vec4, texture_coord: glam::V
     }
 }
 
-pub fn transform(
-    matrix: Mat2,
-    translation: Vec2,
-    color: glam::Vec4,
-    texture_rect: Rectangle,
-) -> Transform {
-    Transform {
-        matrix,
-        translation,
-        _1: PADDING,
-        color,
-        texture_rect,
+impl Transform {
+    const IDENTITY: Self = Self::new(Vec2::ZERO, Color::WHITE, Rectangle::FULL);
+
+    pub const fn new_matrix(
+        translation: Vec2,
+        matrix: Mat2,
+        color: Vec4,
+        texture_rect: Rectangle,
+    ) -> Transform {
+        Transform {
+            matrix,
+            translation,
+            _1: PADDING,
+            color,
+            texture_rect,
+        }
+    }
+
+    pub const fn new_diagonal(
+        translation: Vec2,
+        diagonal: Vec2,
+        color: Color,
+        texture_rect: Rectangle,
+    ) -> Transform {
+        Transform {
+            matrix: Mat2::from_diagonal(diagonal),
+            translation,
+            _1: PADDING,
+            color: color.to_vec4(),
+            texture_rect,
+        }
+    }
+
+    pub const fn new(translation: Vec2, color: Color, texture_rect: Rectangle) -> Transform {
+        Self::new_diagonal(Vec2::ONE, translation, color, texture_rect)
     }
 }
 
 impl Default for Transform {
     fn default() -> Self {
-        transform(
-            Default::default(),
-            Default::default(),
-            [1.; 4].into(),
-            Default::default(),
-        )
-    }
-}
-
-impl Default for Rectangle {
-    fn default() -> Self {
-        Self {
-            top_left: vec2(0., 0.),
-            size: vec2(1., 1.),
-        }
+        Self::IDENTITY
     }
 }
 
 impl Rectangle {
+    pub const FULL: Self = Self {
+        top_left: vec2(0., 0.),
+        size: vec2(1., 1.),
+    };
+
     pub fn offset(self, offset: Vec2) -> Self {
         Self {
             top_left: self.top_left + offset,
@@ -78,5 +94,11 @@ impl Rectangle {
         let top_left = self.top_left + other.top_left * self.size;
         let size = self.size * other.size;
         Rectangle { top_left, size }
+    }
+}
+
+impl Default for Rectangle {
+    fn default() -> Self {
+        Self::FULL
     }
 }

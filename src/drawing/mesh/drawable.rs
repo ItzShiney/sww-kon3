@@ -7,11 +7,23 @@ use crate::shaders::mesh::Transform;
 
 pub struct MeshDrawingInfo<'e> {
     pub mesh: &'e Mesh,
-    pub bind_groups: shaders::mesh::BindGroups<'e>,
     pub pipeline: &'e MeshPipeline,
+    pub bind_groups: shaders::mesh::BindGroups<'e>,
 }
 
 impl<'e> MeshDrawingInfo<'e> {
+    pub fn new(
+        mesh: &'e Mesh,
+        pipeline: &'e MeshPipeline,
+        bind_groups: shaders::mesh::BindGroups<'e>,
+    ) -> Self {
+        Self {
+            mesh,
+            bind_groups,
+            pipeline,
+        }
+    }
+
     pub fn draw(
         &self,
         render_pass: &mut wgpu::RenderPass<'e>,

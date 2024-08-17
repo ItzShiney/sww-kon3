@@ -2,9 +2,9 @@ alias Padding = vec2f;
 const PADDING: Padding = vec2f(0., 0.);
 
 struct Transform {
-    matrix: mat2x2f,
     translation: vec2f,
     _1: Padding,
+    matrix: mat2x2f,
     color: vec4f,
     texture_rect: Rectangle,
 }
@@ -22,9 +22,9 @@ fn rectangle_then(a: Rectangle, b: Rectangle) -> Rectangle {
 
 fn transforms_then(a: Transform, b: Transform) -> Transform {
     return Transform(
-        b.matrix * a.matrix,
         b.matrix * a.translation + b.translation,
         PADDING,
+        b.matrix * a.matrix,
         a.color * b.color,
         rectangle_then(a.texture_rect, b.texture_rect),
     );
@@ -63,9 +63,9 @@ fn vec_to_mat(v: vec4f) -> mat2x2f {
 
 fn in_to_transform(transform: InTransform) -> Transform {
     return Transform(
-        vec_to_mat(transform.matrix),
         transform.translation,
         PADDING,
+        vec_to_mat(transform.matrix),
         transform.color,
         Rectangle(
             transform.texture_rect_start,

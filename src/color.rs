@@ -42,10 +42,14 @@ impl Color {
     pub const fn to_array(self) -> [f32; 4] {
         [self.r, self.g, self.b, self.a]
     }
+
+    pub const fn to_vec4(self) -> Vec4 {
+        Vec4::from_array(self.to_array())
+    }
 }
 
 impl From<Color> for Vec4 {
     fn from(value: Color) -> Self {
-        Self::from_array(value.to_array())
+        value.to_vec4()
     }
 }
