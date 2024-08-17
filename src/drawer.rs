@@ -1,4 +1,3 @@
-use std::mem::ManuallyDrop;
 use sww::buffers::MutVecBuffer;
 use sww::drawing::MeshDrawingInfo;
 use sww::shaders::mesh::Transform;
@@ -17,49 +16,37 @@ impl<'e> DrawingInfo<'e> {
 }
 
 enum DrawerInner<'e> {
-    DrawingInfo(ManuallyDrop<DrawingInfo<'e>>),
-    Mesh(ManuallyDrop<MeshDrawer<'e>>),
+    DrawingInfo(Option<DrawingInfo<'e>>),
+    Mesh(Option<MeshDrawer<'e>>),
 }
 
 impl<'e> DrawerInner<'e> {
     pub const fn new(drawing_info: DrawingInfo<'e>) -> Self {
-        Self::DrawingInfo(ManuallyDrop::new(drawing_info))
+        Self::DrawingInfo(Some(drawing_info))
     }
 
     pub fn mesh(&mut self) -> &mut MeshDrawer<'e> {
-        if !matches!(self, Self::Mesh(_)) {
-            // SAFETY:
-            // * `self` is being written to immediately after moving out of it using `ManuallyDrop`
-            // * nothing here panics
-            let drawing_info = unsafe { self.flush_take_drawing_info() };
-            *self = Self::Mesh(ManuallyDrop::new(MeshDrawer::new(drawing_info)));
+        if !matches!(self, Self::Mesh(Some(_))) {
+            let drawing_info = self.flush_take_drawing_info();
+            *self = Self::Mesh(Some(MeshDrawer::new(drawing_info)));
         }
 
-        let Self::Mesh(mesh) = self else {
+        let Self::Mesh(Some(mesh)) = self else {
             unreachable!()
         };
 
         mesh
     }
 
-    unsafe fn flush_take_drawing_info(&mut self) -> DrawingInfo<'e> {
+    fn flush_take_drawing_info(&mut self) -> DrawingInfo<'e> {
         match self {
-            DrawerInner::DrawingInfo(drawing_info) => ManuallyDrop::take(drawing_info),
+            DrawerInner::DrawingInfo(drawing_info) => drawing_info.take().unwrap(),
 
             DrawerInner::Mesh(mesh_drawer) => {
-                let mut mesh_drawer = ManuallyDrop::take(mesh_drawer);
+                let mut mesh_drawer = mesh_drawer.take().unwrap();
                 mesh_drawer.flush();
                 mesh_drawer.drawing_info
             }
-        }
-    }
-}
-
-impl Drop for DrawerInner<'_> {
-    fn drop(&mut self) {
-        // SAFETY: if everything else is safe, then `self` currently holds a value, which `DrawingInfo` can be taken from
-        unsafe {
-            self.flush_take_drawing_info();
         }
     }
 }
