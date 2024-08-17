@@ -6,10 +6,10 @@ use crate::Color;
 use glam::vec2;
 use glam::Vec2;
 
-mod drawable;
+mod drawing_info;
 mod pipeline;
 
-pub use drawable::*;
+pub use drawing_info::*;
 pub use pipeline::*;
 
 pub type Index = u32;

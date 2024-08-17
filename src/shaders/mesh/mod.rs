@@ -10,6 +10,25 @@ include!(concat!(env!("OUT_DIR"), "/mesh.rs"));
 pub use bind_groups::*;
 use glam::Vec4;
 
+pub struct BindGroupsOwned {
+    pub bind_group0: BindGroup0,
+    pub bind_group1: BindGroup1,
+}
+
+impl<'s> From<&'s BindGroupsOwned> for BindGroups<'s> {
+    fn from(
+        BindGroupsOwned {
+            bind_group0,
+            bind_group1,
+        }: &'s BindGroupsOwned,
+    ) -> Self {
+        BindGroups {
+            bind_group0,
+            bind_group1,
+        }
+    }
+}
+
 impl<'s> From<wgpu::BufferBinding<'s>> for BindGroupLayout0<'s> {
     fn from(global_transform: wgpu::BufferBinding<'s>) -> Self {
         Self { global_transform }

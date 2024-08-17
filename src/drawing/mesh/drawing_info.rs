@@ -2,34 +2,53 @@ use super::Mesh;
 use super::INDEX_FORMAT;
 use crate::buffers::MutVecBuffer;
 use crate::drawing::MeshPipeline;
-use crate::shaders;
+use crate::shaders::mesh::BindGroups;
+use crate::shaders::mesh::BindGroupsOwned;
 use crate::shaders::mesh::Transform;
+
+pub struct MeshDrawingInfoOwned {
+    pub mesh: Mesh,
+    pub bind_groups: BindGroupsOwned,
+}
 
 pub struct MeshDrawingInfo<'e> {
     pub mesh: &'e Mesh,
-    pub pipeline: &'e MeshPipeline,
-    pub bind_groups: shaders::mesh::BindGroups<'e>,
+    pub bind_groups: BindGroups<'e>,
+}
+
+impl<'s> From<&'s MeshDrawingInfoOwned> for MeshDrawingInfo<'s> {
+    fn from(
+        MeshDrawingInfoOwned {
+            mesh,
+            bind_groups:
+                BindGroupsOwned {
+                    bind_group0,
+                    bind_group1,
+                },
+        }: &'s MeshDrawingInfoOwned,
+    ) -> Self {
+        MeshDrawingInfo {
+            mesh,
+            bind_groups: BindGroups {
+                bind_group0,
+                bind_group1,
+            },
+        }
+    }
 }
 
 impl<'e> MeshDrawingInfo<'e> {
-    pub fn new(
-        mesh: &'e Mesh,
-        pipeline: &'e MeshPipeline,
-        bind_groups: shaders::mesh::BindGroups<'e>,
-    ) -> Self {
-        Self {
-            mesh,
-            bind_groups,
-            pipeline,
-        }
+    pub fn new(mesh: &'e Mesh, bind_groups: BindGroups<'e>) -> Self {
+        Self { mesh, bind_groups }
     }
 
     pub fn draw(
         &self,
         render_pass: &mut wgpu::RenderPass<'e>,
+        pipeline: &MeshPipeline,
         transforms: &mut MutVecBuffer<Transform>,
     ) {
-        self.pipeline.set(render_pass);
+        pipeline.set(render_pass);
         render_pass.set_vertex_buffer(0, self.mesh.vertices().buffer().slice(..));
         render_pass.set_vertex_buffer(1, transforms.update_buffer());
 

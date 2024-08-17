@@ -51,7 +51,7 @@ impl MeshPipeline {
         )
     }
 
-    pub fn set<'w>(&'w self, render_pass: &mut wgpu::RenderPass<'w>) {
+    pub fn set(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_pipeline(&self.0);
     }
 }

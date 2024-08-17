@@ -34,8 +34,7 @@ impl Drawer {
         MeshDrawingInfo {
             mesh: &self.square,
             bind_groups,
-            pipeline: &self.mesh_pipeline,
         }
-        .draw(render_pass, transforms)
+        .draw(render_pass, &self.mesh_pipeline, transforms)
     }
 }
