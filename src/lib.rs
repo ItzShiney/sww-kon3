@@ -12,8 +12,10 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use sww::wgpu;
 
+mod drawer;
 mod location;
 
+pub use drawer::*;
 pub use location::*;
 
 pub enum Event {
@@ -44,7 +46,7 @@ impl IntoEventResult for () {
 
 impl IntoEventResult for Consume {
     fn into_event_result(self) -> EventResult {
-        Err(Consume)
+        Err(Self)
     }
 }
 

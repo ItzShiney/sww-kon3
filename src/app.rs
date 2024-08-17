@@ -27,7 +27,7 @@ pub fn build_settings<B: BuildElement<Built: 'static>>(
 
     App(AppRaw::new(move |event_loop| {
         let window = event_loop
-            .create_window(window_attributes("che6", 400, 200))
+            .create_window(window_attributes("kon3", 400, 200))
             .expect("failed to create window");
 
         AppPack::new(window, rw_builder(settings), move |rw| {

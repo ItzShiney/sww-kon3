@@ -1,0 +1,30 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"command": "cargo build --example counter",
+			"label": "cargo build"
+		},
+		{
+			"type": "shell",
+			"command": "cargo run --example counter",
+			"label": "cargo run"
+		},
+		{
+			"type": "shell",
+			"command": "cargo clean",
+			"label": "cargo clean"
+		},
+		{
+			"type": "shell",
+			"command": "cargo clippy --all-targets",
+			"label": "cargo clippy"
+		},
+		{
+			"type": "shell",
+			"command": "cargo test --example counter",
+			"label": "cargo test"
+		}
+	]
+}

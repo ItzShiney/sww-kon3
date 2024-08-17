@@ -7,7 +7,7 @@ impl Anchor for Counter {
 
 #[rustfmt::skip]
 fn ui_builder() -> impl BuildElement {
-    let counter = {
+    let counter_label = {
         label(concat((
             "clicked ",
             strfy(set::<Counter>(0)),
@@ -15,7 +15,7 @@ fn ui_builder() -> impl BuildElement {
         )))
     };
 
-    let button = {
+    let increase_button = {
         on_click(
             layers((
                 label("click me!"),
@@ -27,8 +27,8 @@ fn ui_builder() -> impl BuildElement {
     };
 
     column((
-        counter,
-        button,
+        counter_label,
+        increase_button,
     ))
 }
 

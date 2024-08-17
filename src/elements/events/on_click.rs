@@ -61,6 +61,7 @@ impl<E: HandleEvent, Src: ArgSource, F: FnMut(Src::Arg<'_>) -> R, R: IntoEventRe
     for OnClick<E, Src, F>
 {
     fn handle_event(&mut self, event: &Event) -> EventResult {
+        #[allow(clippy::equatable_if_let)]
         if let Event::Click = event {
             self.source.apply_to(&mut self.f)?;
         }
