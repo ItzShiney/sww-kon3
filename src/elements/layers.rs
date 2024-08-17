@@ -4,9 +4,8 @@ use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use std::fmt::Debug;
 
-#[derive(Debug, Build)]
+#[derive(Build)]
 pub struct Layers<Es>(Es);
 
 impl<A: Element, B: Element> Element for Layers<(A, B)> {}

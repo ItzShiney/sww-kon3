@@ -9,7 +9,6 @@ pub mod values;
 
 use shared::Shared;
 use std::cell::RefCell;
-use std::fmt::Debug;
 use std::marker::PhantomData;
 use sww::wgpu;
 
@@ -116,9 +115,8 @@ pub const fn cache<T>() -> Cache<T> {
     Cache(PhantomData)
 }
 
-// TODO: remove `+ Debug`
-pub trait BuildElement: Build<Built: Element + Debug> + ResolveAnchors {}
-impl<T: Build<Built: Element + Debug> + ResolveAnchors> BuildElement for T {}
+pub trait BuildElement: Build<Built: Element> + ResolveAnchors {}
+impl<T: Build<Built: Element> + ResolveAnchors> BuildElement for T {}
 
 macro_rules! tuple_impls {
     ( $($T:ident)+ ) => {

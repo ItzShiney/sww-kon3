@@ -9,22 +9,11 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::IntoEventResult;
 use crate::ResolveAnchors;
-use std::fmt;
-use std::fmt::Debug;
 
 pub struct OnClick<E, Src, F> {
     element: E,
     source: Src,
     f: F,
-}
-
-impl<E: Debug, Src: Debug, F> Debug for OnClick<E, Src, F> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("OnClickConsume")
-            .field("element", &self.element)
-            .field("source", &self.source)
-            .finish_non_exhaustive()
-    }
 }
 
 impl<E: Build, Src: Build, F> Build for OnClick<E, Src, F> {

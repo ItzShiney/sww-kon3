@@ -18,7 +18,7 @@ impl<T: ?Sized> ArgSource for Shared<T> {
     }
 }
 
-#[derive(Debug, Build)]
+#[derive(Build)]
 pub struct Write<T>(T);
 
 impl<T: ?Sized> ArgSource for Write<Shared<T>> {

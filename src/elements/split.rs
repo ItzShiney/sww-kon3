@@ -8,7 +8,7 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::ResolveAnchors;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum SplitType {
     Vertical,
     Horizontal,

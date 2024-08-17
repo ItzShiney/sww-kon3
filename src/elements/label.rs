@@ -5,9 +5,8 @@ use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use std::fmt::Debug;
 
-#[derive(Debug, Build)]
+#[derive(Build)]
 pub struct Label<Src>(Src);
 
 impl<Src> HandleEvent for Label<Src> {
