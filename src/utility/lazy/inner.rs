@@ -1,13 +1,11 @@
-use std::mem::ManuallyDrop;
-
 pub enum Inner<T, F> {
-    Lazy(ManuallyDrop<F>),
+    Lazy(Option<F>),
     Value(T),
 }
 
 impl<T, F> Inner<T, F> {
     pub fn new(f: F) -> Self {
-        Self::Lazy(ManuallyDrop::new(f))
+        Self::Lazy(Some(f))
     }
 
     pub fn value<Arg>(&mut self, arg: Arg) -> &mut T
@@ -15,7 +13,7 @@ impl<T, F> Inner<T, F> {
         F: FnOnce(Arg) -> T,
     {
         if let Self::Lazy(f) = self {
-            let f = unsafe { ManuallyDrop::take(f) };
+            let f = f.take().unwrap();
             *self = Self::Value(f(arg));
         }
 
@@ -24,13 +22,5 @@ impl<T, F> Inner<T, F> {
         };
 
         value
-    }
-}
-
-impl<T, F> Drop for Inner<T, F> {
-    fn drop(&mut self) {
-        if let Self::Lazy(f) = self {
-            _ = unsafe { ManuallyDrop::take(f) };
-        }
     }
 }

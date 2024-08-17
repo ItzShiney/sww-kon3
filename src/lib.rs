@@ -1,3 +1,4 @@
+#![deny(unsafe_code)]
 pub use env_logger;
 pub use glam::*;
 pub use wgpu;

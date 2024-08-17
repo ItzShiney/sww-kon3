@@ -1,7 +1,5 @@
-use std::mem::ManuallyDrop;
-
 pub struct FrameSurface {
-    texture: ManuallyDrop<wgpu::SurfaceTexture>,
+    texture: Option<wgpu::SurfaceTexture>,
     view: wgpu::TextureView,
 }
 
@@ -9,13 +7,13 @@ impl FrameSurface {
     pub(super) fn new(surface_texture: wgpu::SurfaceTexture) -> Self {
         let view = surface_texture.texture.create_view(&Default::default());
         Self {
-            texture: ManuallyDrop::new(surface_texture),
+            texture: Some(surface_texture),
             view,
         }
     }
 
     pub fn texture(&self) -> &wgpu::SurfaceTexture {
-        &self.texture
+        self.texture.as_ref().unwrap()
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
@@ -25,7 +23,7 @@ impl FrameSurface {
 
 impl Drop for FrameSurface {
     fn drop(&mut self) {
-        let texture = unsafe { ManuallyDrop::take(&mut self.texture) };
+        let texture = self.texture.take().unwrap();
         texture.present();
     }
 }
