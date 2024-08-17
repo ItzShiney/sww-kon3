@@ -9,7 +9,6 @@ pub mod values;
 use shared::Shared;
 use std::cell::RefCell;
 use std::marker::PhantomData;
-use sww::wgpu;
 
 mod drawer;
 mod location;
@@ -54,11 +53,7 @@ pub trait HandleEvent {
 }
 
 pub trait Element: HandleEvent {
-    fn draw<'c>(&'c self, render_pass: &mut wgpu::RenderPass<'c>, location: Location) {
-        _ = render_pass;
-        _ = location;
-        todo!()
-    }
+    fn draw<'e>(&'e self, drawer: &mut Drawer<'e>, location: Location);
 }
 
 pub trait Anchor: 'static {

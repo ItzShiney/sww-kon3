@@ -1,5 +1,7 @@
 use crate::AnchorsTree;
 use crate::BuildElement;
+use crate::Drawer;
+use crate::DrawingInfo;
 use crate::Element;
 use crate::Location;
 use sww::app::App as AppRaw;
@@ -74,6 +76,8 @@ impl<E: Element> HandleEvent for EventHandler<'_, E> {
 
         let window_size = info.window.inner_size();
         let location = Location::new(window_size);
-        self.ui.draw(&mut render_pass, location);
+
+        let mut drawer = Drawer::new(DrawingInfo::new(self.rw, &mut render_pass));
+        self.ui.draw(&mut drawer, location);
     }
 }

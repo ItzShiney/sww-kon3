@@ -2,6 +2,7 @@ use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 use sww::window::event::PhysicalSize;
 
+#[derive(Clone, Copy)]
 pub struct Location {
     rect: Rectangle,
     window_size: PhysicalSize,
@@ -18,15 +19,15 @@ impl Location {
         }
     }
 
-    pub const fn rect(&self) -> Rectangle {
+    pub const fn rect(self) -> Rectangle {
         self.rect
     }
 
-    pub const fn window_size(&self) -> PhysicalSize {
+    pub const fn window_size(self) -> PhysicalSize {
         self.window_size
     }
 
-    pub fn window_rect_size(&self) -> PhysicalSize {
+    pub fn window_rect_size(self) -> PhysicalSize {
         let rect_size = self.rect.size * 0.5;
         PhysicalSize::new(
             (rect_size.x * self.window_size.width as f32).round() as _,

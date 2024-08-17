@@ -1,12 +1,18 @@
 use crate::shared::Shared;
 use crate::values::AutoValueSource;
+use crate::values::ValueSource;
 use crate::Anchor;
 use crate::Build;
+use crate::Drawer;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
+use crate::Location;
 use crate::ResolveAnchors;
+use sww::shaders::mesh::Rectangle;
+use sww::vec2;
+use sww::Vec2;
 
 #[derive(Clone, Copy)]
 pub enum SplitType {
@@ -47,7 +53,37 @@ impl<Ty: ResolveAnchors, Es: ResolveAnchors> ResolveAnchors for Split<Ty, Es> {
     }
 }
 
-impl<Ty, A: Element, B: Element> Element for Split<Ty, (A, B)> {}
+impl<Ty: ValueSource<Value = SplitType>, A: Element, B: Element> Element for Split<Ty, (A, B)> {
+    fn draw<'e>(&'e self, drawer: &mut Drawer<'e>, location: Location) {
+        const COUNT: usize = 2;
+        const FRACTION: f32 = 1. / COUNT as f32;
+
+        let (subrect_size, subrect_offset) = match *self.type_.value() {
+            SplitType::Vertical => (vec2(1., FRACTION), vec2(0., FRACTION)),
+            SplitType::Horizontal => (vec2(FRACTION, 1.), vec2(FRACTION, 0.)),
+            SplitType::Adaptive => todo!(),
+        };
+
+        let mut top_left = Vec2::default();
+        {
+            let element = &self.elements.0;
+            let weight = 1;
+            let size = subrect_size * weight as f32;
+
+            element.draw(drawer, location.subrect(Rectangle { top_left, size }));
+            top_left += subrect_offset;
+        }
+
+        {
+            let element = &self.elements.1;
+            let weight = 1;
+            let size = subrect_size * weight as f32;
+
+            element.draw(drawer, location.subrect(Rectangle { top_left, size }));
+            top_left += subrect_offset;
+        }
+    }
+}
 
 impl<Ty, Es: HandleEvent> HandleEvent for Split<Ty, Es> {
     fn handle_event(&mut self, event: &Event) -> EventResult {

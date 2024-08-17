@@ -44,6 +44,9 @@ impl<E: ResolveAnchors, Src: ResolveAnchors, F> ResolveAnchors for OnClick<E, Sr
 impl<E: Element, Src: ArgSource, F: FnMut(Src::Arg<'_>) -> R, R: IntoEventResult> Element
     for OnClick<E, Src, F>
 {
+    fn draw<'e>(&'e self, drawer: &mut crate::Drawer<'e>, location: crate::Location) {
+        self.element.draw(drawer, location);
+    }
 }
 
 impl<E: HandleEvent, Src: ArgSource, F: FnMut(Src::Arg<'_>) -> R, R: IntoEventResult> HandleEvent
