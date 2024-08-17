@@ -1,4 +1,4 @@
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 pub use kon3_macros::*;
 
 pub mod app;
