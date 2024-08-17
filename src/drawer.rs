@@ -1,5 +1,6 @@
 use sww::buffers::MutVecBuffer;
 use sww::drawing::MeshDrawingInfo;
+use sww::drawing::MeshPipeline;
 use sww::shaders::mesh::Transform;
 use sww::wgpu;
 use sww::window::RenderWindow;
@@ -14,7 +15,7 @@ impl<'e> DrawingInfo<'e> {
         Self { rw, render_pass }
     }
 
-    pub fn rw(&self) -> &'e RenderWindow<'e> {
+    pub const fn rw(&self) -> &'e RenderWindow<'e> {
         self.rw
     }
 
@@ -62,6 +63,9 @@ impl<'e> ActiveDrawer<'e> {
     }
 }
 
+// TODO:
+// mesh: Option<MeshDrawerInfo<'e>>,
+// active: Option<ActiveDrawer>,
 pub struct Drawer<'e> {
     drawing_info: DrawingInfo<'e>,
     active: Option<ActiveDrawer<'e>>,
@@ -87,6 +91,7 @@ impl<'e> Drawer<'e> {
 
 pub struct MeshDrawerInfo<'e> {
     transforms: MutVecBuffer<'e, Transform>,
+    pipeline: MeshPipeline,
     current_mesh: Option<&'e MeshDrawingInfo<'e>>,
 }
 
@@ -94,6 +99,7 @@ impl<'e> MeshDrawerInfo<'e> {
     pub fn new(rw: &'e RenderWindow) -> Self {
         Self {
             transforms: MutVecBuffer::default_vertex(rw),
+            pipeline: MeshPipeline::new(rw),
             current_mesh: None,
         }
     }
@@ -102,7 +108,7 @@ impl<'e> MeshDrawerInfo<'e> {
 pub type MeshDrawer<'e> = Drawable<'e, &'e mut MeshDrawerInfo<'e>>;
 
 impl<'e> MeshDrawer<'e> {
-    pub fn draw(&mut self, mesh: &'e MeshDrawingInfo, transform: Transform) {
+    pub fn draw(&mut self, mesh: &'e MeshDrawingInfo<'e>, transform: Transform) {
         if self
             .value
             .current_mesh
@@ -118,7 +124,11 @@ impl<'e> MeshDrawer<'e> {
 
     fn flush(&mut self) {
         if let Some(mesh_drawing_info) = self.value.current_mesh {
-            mesh_drawing_info.draw(self.drawing_info.render_pass, &mut self.value.transforms);
+            mesh_drawing_info.draw(
+                self.drawing_info.render_pass,
+                &self.value.pipeline,
+                &mut self.value.transforms,
+            );
         }
     }
 }

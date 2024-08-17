@@ -8,6 +8,7 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::Location;
 use crate::ResolveAnchors;
+use sww::shaders::mesh::Rectangle;
 use sww::shaders::mesh::Transform;
 use sww::Color;
 
@@ -37,7 +38,7 @@ impl Element for Rect {
         let rect = location.rect();
         let mesh_drawing_info = todo!();
         let transform =
-            Transform::new_diagonal(rect.size, rect.top_left, self.0, Default::default());
+            Transform::new_diagonal(rect.size, rect.top_left, self.0, Rectangle::default());
 
         drawer.mesh().draw(mesh_drawing_info, transform);
     }

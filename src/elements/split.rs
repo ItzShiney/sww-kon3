@@ -58,16 +58,19 @@ impl<Ty: ValueSource<Value = SplitType>, A: Element, B: Element> Element for Spl
         const COUNT: usize = 2;
         const FRACTION: f32 = 1. / COUNT as f32;
 
-        let (subrect_size, subrect_offset) = match *self.type_.value() {
-            SplitType::Vertical => (vec2(1., FRACTION), vec2(0., FRACTION)),
-            SplitType::Horizontal => (vec2(FRACTION, 1.), vec2(FRACTION, 0.)),
-            SplitType::Adaptive => todo!(),
+        let (subrect_size, subrect_offset) = {
+            let type_ = *self.type_.value();
+            match type_ {
+                SplitType::Vertical => (vec2(1., FRACTION), vec2(0., FRACTION)),
+                SplitType::Horizontal => (vec2(FRACTION, 1.), vec2(FRACTION, 0.)),
+                SplitType::Adaptive => todo!(),
+            }
         };
 
         let mut top_left = Vec2::default();
         {
             let element = &self.elements.0;
-            let weight = 1;
+            let weight = 1_usize;
             let size = subrect_size * weight as f32;
 
             element.draw(drawer, location.subrect(Rectangle { top_left, size }));
@@ -76,7 +79,7 @@ impl<Ty: ValueSource<Value = SplitType>, A: Element, B: Element> Element for Spl
 
         {
             let element = &self.elements.1;
-            let weight = 1;
+            let weight = 1_usize;
             let size = subrect_size * weight as f32;
 
             element.draw(drawer, location.subrect(Rectangle { top_left, size }));
