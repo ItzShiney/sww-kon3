@@ -12,7 +12,7 @@ use std::ops::DerefMut;
 pub enum SourcedValue<'s, T: ToOwned + ?Sized> {
     Ref(&'s T),
     Guard(SharedReadGuard<'s, T>),
-    Cached(cell::Ref<'s, Option<T::Owned>>),
+    Cached(cell::RefMut<'s, Option<T::Owned>>),
 }
 
 impl<'s, T: ToOwned + ?Sized> Deref for SourcedValue<'s, T> {
@@ -49,24 +49,6 @@ impl<T: ?Sized> DerefMut for SourcedValueMut<'_, T> {
             Self::Ref(value) => value,
             Self::Guard(value) => value,
         }
-    }
-}
-
-impl<'s, T: ToOwned + ?Sized> From<cell::Ref<'s, Option<T::Owned>>> for SourcedValue<'s, T> {
-    fn from(value: cell::Ref<'s, Option<T::Owned>>) -> Self {
-        Self::Cached(value)
-    }
-}
-
-impl<'s, T: ToOwned + ?Sized> From<SharedReadGuard<'s, T>> for SourcedValue<'s, T> {
-    fn from(value: SharedReadGuard<'s, T>) -> Self {
-        Self::Guard(value)
-    }
-}
-
-impl<'s, T: ?Sized> From<SharedWriteGuard<'s, T>> for SourcedValueMut<'s, T> {
-    fn from(value: SharedWriteGuard<'s, T>) -> Self {
-        Self::Guard(value)
     }
 }
 

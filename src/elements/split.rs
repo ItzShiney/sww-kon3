@@ -56,43 +56,32 @@ impl<Ty: ResolveAnchors, Es: ResolveAnchors> ResolveAnchors for Split<Ty, Es> {
 
 impl<Ty: ValueSource<Value = SplitType>, A: Element, B: Element> Element for Split<Ty, (A, B)> {
     fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
-        const COUNT: usize = 2;
-        const FRACTION: f32 = 1. / COUNT as f32;
+        let elements: [(usize, &dyn Element); 2] = [(1, &self.elements.0), (1, &self.elements.1)];
 
-        let (subrect_size, subrect_offset) = {
+        let total_weight: usize = elements.iter().map(|&(weight, _)| weight).sum();
+        let fraction = 1. / total_weight as f32;
+
+        let (rect_fraction_size, rect_fraction_offset) = {
             let type_ = *self.type_.value();
             match type_ {
-                SplitType::Vertical => (vec2(1., FRACTION), vec2(0., FRACTION)),
-                SplitType::Horizontal => (vec2(FRACTION, 1.), vec2(FRACTION, 0.)),
+                SplitType::Vertical => (vec2(1., fraction), vec2(0., fraction)),
+                SplitType::Horizontal => (vec2(fraction, 1.), vec2(fraction, 0.)),
                 SplitType::Adaptive => todo!(),
             }
         };
 
-        let mut top_left = Vec2::default();
-        {
-            let element = &self.elements.0;
-            let weight = 1_usize;
-            let size = subrect_size * weight as f32;
+        let mut top_left = Vec2::ZERO;
+        for (weight, element) in elements {
+            let weight = weight as f32;
+            let size = rect_fraction_size * weight;
+            let offset = rect_fraction_offset * weight;
 
             element.draw(
                 drawer,
                 resources,
-                location.subrect(Rectangle { top_left, size }),
+                location.subrect(Rectangle::new(top_left, size)),
             );
-            top_left += subrect_offset;
-        }
-
-        {
-            let element = &self.elements.1;
-            let weight = 1_usize;
-            let size = subrect_size * weight as f32;
-
-            element.draw(
-                drawer,
-                resources,
-                location.subrect(Rectangle { top_left, size }),
-            );
-            top_left += subrect_offset;
+            top_left += offset;
         }
     }
 }

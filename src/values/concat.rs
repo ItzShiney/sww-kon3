@@ -43,7 +43,17 @@ impl<A: ValueSource<Value = str>, B: ValueSource<Value = str>, C: ValueSource<Va
     type Value = str;
 
     fn value(&self) -> SourcedValue<'_, Self::Value> {
-        todo!()
+        let mut value = self.cache.borrow_mut();
+        *value = None; // FIXME
+        value.get_or_insert_with(|| {
+            format!(
+                "{}{}{}",
+                &*self.sources.0.value(),
+                &*self.sources.1.value(),
+                &*self.sources.2.value(),
+            )
+        });
+        SourcedValue::Cached(value)
     }
 }
 

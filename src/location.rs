@@ -11,9 +11,10 @@ pub struct Location {
 impl Location {
     pub const fn new(window_size: PhysicalSize) -> Self {
         Self {
+            // FIXME
             rect: Rectangle {
-                top_left: vec2(-1., -1.),
-                size: vec2(2., 2.),
+                top_left: vec2(-1., 1.),
+                size: vec2(2., -2.),
             },
             window_size,
         }

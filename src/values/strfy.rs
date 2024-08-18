@@ -37,17 +37,17 @@ impl<Src: ResolveAnchors, Cch> ResolveAnchors for Strfy<Src, Cch> {
     }
 }
 
-impl<Src: ValueSource<Value: ToString>> ValueSource for Strfy<Src, Cached<String>> {
+// FIXME: `+ std::fmt::Debug`
+impl<Src: ValueSource<Value: ToString + std::fmt::Debug>> ValueSource
+    for Strfy<Src, Cached<String>>
+{
     type Value = str;
 
     fn value(&self) -> SourcedValue<'_, Self::Value> {
-        {
-            let mut value = self.cache.borrow_mut();
-            if value.is_none() {
-                *value = Some(self.source.value().to_string());
-            }
-        }
-        self.cache.borrow().into()
+        let mut value = self.cache.borrow_mut();
+        *value = None; // FIXME
+        value.get_or_insert_with(|| self.source.value().to_string());
+        SourcedValue::Cached(value)
     }
 }
 

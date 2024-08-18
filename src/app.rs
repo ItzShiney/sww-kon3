@@ -4,6 +4,7 @@ use crate::BuildElement;
 use crate::Drawer;
 use crate::DrawingInfo;
 use crate::Element;
+use crate::Event;
 use crate::Location;
 use sww::app::App as AppRaw;
 use sww::app::AppPack;
@@ -11,7 +12,10 @@ use sww::app::EventInfo;
 use sww::app::HandleEvent;
 use sww::wgpu;
 use sww::window::event::ActiveEventLoop;
+use sww::window::event::DeviceId;
+use sww::window::event::ElementState;
 use sww::window::event::EventLoopError;
+use sww::window::event::MouseButton;
 use sww::window::event::PhysicalSize;
 use sww::window::event_loop;
 use sww::window::rw_builder;
@@ -31,7 +35,7 @@ pub fn build_settings<B: BuildElement<Built: 'static>>(
 
     App(AppRaw::new(move |event_loop| {
         let window = event_loop
-            .create_window(window_attributes("kon3", 400, 200))
+            .create_window(window_attributes("kon3", 550, 310))
             .expect("failed to create window");
 
         AppPack::new(window, rw_builder(settings), move |rw| {
@@ -90,5 +94,17 @@ impl<E: Element> HandleEvent for EventHandler<'_, E> {
 
         let mut drawer = Drawer::new(DrawingInfo::new(self.rw, &mut render_pass));
         self.ui.draw(&mut drawer, &mut self.resources, location);
+    }
+
+    fn on_mouse_input(
+        &mut self,
+        _info: EventInfo,
+        _device_id: DeviceId,
+        state: ElementState,
+        _button: MouseButton,
+    ) {
+        if state == ElementState::Released {
+            _ = self.ui.handle_event(&Event::Click);
+        }
     }
 }
