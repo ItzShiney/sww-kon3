@@ -1,6 +1,5 @@
 #![forbid(unsafe_code)]
 pub use env_logger;
-pub use glam::*;
 pub use wgpu;
 
 pub mod app;
@@ -14,3 +13,7 @@ pub mod window;
 pub use color::*;
 
 mod color;
+
+pub use glam::vec2;
+pub use glam::Mat2;
+pub use glam::Vec2;

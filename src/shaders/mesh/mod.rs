@@ -63,14 +63,14 @@ impl Transform {
         }
     }
 
-    pub const fn new_diagonal(
+    pub const fn new_scale(
         translation: Vec2,
-        diagonal: Vec2,
+        scale: Vec2,
         color: Color,
         texture_rect: Rectangle,
     ) -> Transform {
         Transform {
-            matrix: Mat2::from_diagonal(diagonal),
+            matrix: Mat2::from_diagonal(scale),
             translation,
             _1: PADDING,
             color: color.to_vec4(),
@@ -79,7 +79,7 @@ impl Transform {
     }
 
     pub const fn new(translation: Vec2, color: Color, texture_rect: Rectangle) -> Transform {
-        Self::new_diagonal(Vec2::ONE, translation, color, texture_rect)
+        Self::new_scale(translation, Vec2::ONE, color, texture_rect)
     }
 }
 

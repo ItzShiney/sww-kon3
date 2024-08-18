@@ -53,7 +53,7 @@ pub trait HandleEvent {
     }
 
     fn on_activation_token_done(&mut self, info: EventInfo, serial: AsyncRequestSerial, token: ActivationToken) {}
-    fn on_resized(&mut self, info: EventInfo, new_size: PhysicalSize) {}
+    fn on_resized(&mut self, info: EventInfo, new_size: PhysicalSize);
     fn on_moved(&mut self, info: EventInfo, new_position: PhysicalPosition) {}
     fn on_close_requested(&mut self, info: EventInfo) {
         info.event_loop.exit();
