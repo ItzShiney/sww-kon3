@@ -1,3 +1,4 @@
+use crate::resources::Resources;
 use crate::shared::Shared;
 use crate::values::AutoValueSource;
 use crate::values::ValueSource;
@@ -54,7 +55,7 @@ impl<Ty: ResolveAnchors, Es: ResolveAnchors> ResolveAnchors for Split<Ty, Es> {
 }
 
 impl<Ty: ValueSource<Value = SplitType>, A: Element, B: Element> Element for Split<Ty, (A, B)> {
-    fn draw<'e>(&'e self, drawer: &mut Drawer<'e>, location: Location) {
+    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
         const COUNT: usize = 2;
         const FRACTION: f32 = 1. / COUNT as f32;
 
@@ -73,7 +74,11 @@ impl<Ty: ValueSource<Value = SplitType>, A: Element, B: Element> Element for Spl
             let weight = 1_usize;
             let size = subrect_size * weight as f32;
 
-            element.draw(drawer, location.subrect(Rectangle { top_left, size }));
+            element.draw(
+                drawer,
+                resources,
+                location.subrect(Rectangle { top_left, size }),
+            );
             top_left += subrect_offset;
         }
 
@@ -82,7 +87,11 @@ impl<Ty: ValueSource<Value = SplitType>, A: Element, B: Element> Element for Spl
             let weight = 1_usize;
             let size = subrect_size * weight as f32;
 
-            element.draw(drawer, location.subrect(Rectangle { top_left, size }));
+            element.draw(
+                drawer,
+                resources,
+                location.subrect(Rectangle { top_left, size }),
+            );
             top_left += subrect_offset;
         }
     }

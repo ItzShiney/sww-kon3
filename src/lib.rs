@@ -6,6 +6,7 @@ pub mod prelude;
 pub mod shared;
 pub mod values;
 
+use resources::Resources;
 use shared::Shared;
 use std::cell::RefCell;
 use std::marker::PhantomData;
@@ -53,7 +54,7 @@ pub trait HandleEvent {
 }
 
 pub trait Element: HandleEvent {
-    fn draw<'e>(&'e self, drawer: &mut Drawer<'e>, location: Location);
+    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location);
 }
 
 pub trait Anchor: 'static {

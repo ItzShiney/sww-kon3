@@ -1,6 +1,9 @@
+pub mod resources;
+
 use sww::buffers::MutVecBuffer;
-use sww::drawing::MeshDrawingInfo;
+use sww::drawing::Mesh;
 use sww::drawing::MeshPipeline;
+use sww::shaders::mesh::BindGroups;
 use sww::shaders::mesh::Transform;
 use sww::wgpu;
 use sww::window::RenderWindow;
@@ -24,13 +27,13 @@ impl<'e> DrawingInfo<'e> {
     }
 }
 
-pub struct Drawable<'e, T> {
-    drawing_info: &'e mut DrawingInfo<'e>,
+pub struct WithDrawingInfo<'d, 'e, T> {
+    drawing_info: &'d mut DrawingInfo<'e>,
     value: T,
 }
 
-impl<'e, T> Drawable<'e, T> {
-    pub fn new(drawing_info: &'e mut DrawingInfo<'e>, value: T) -> Self {
+impl<'d, 'e, T> WithDrawingInfo<'d, 'e, T> {
+    pub fn new(drawing_info: &'d mut DrawingInfo<'e>, value: T) -> Self {
         Self {
             drawing_info,
             value,
@@ -43,7 +46,7 @@ enum ActiveDrawer<'e> {
     _1,
 }
 
-impl<'e> From<MeshDrawerInfo<'e>> for ActiveDrawer<'e> {
+impl<'r, 'e> From<MeshDrawerInfo<'e>> for ActiveDrawer<'e> {
     fn from(mesh: MeshDrawerInfo<'e>) -> Self {
         Self::Mesh(mesh)
     }
@@ -72,27 +75,44 @@ pub struct Drawer<'e> {
 }
 
 impl<'e> Drawer<'e> {
-    pub const fn new(drawing_info: DrawingInfo<'e>) -> Self {
+    pub fn new(drawing_info: DrawingInfo<'e>) -> Self {
         Self {
             drawing_info,
             active: None,
         }
     }
 
-    pub fn mesh(&'e mut self) -> MeshDrawer<'e> {
+    pub fn mesh(&mut self) -> MeshDrawer<'_, 'e> {
         let mesh = self
             .active
             .get_or_insert_with(|| MeshDrawerInfo::new(self.drawing_info.rw).into())
             .mesh(self.drawing_info.rw);
 
-        Drawable::new(&mut self.drawing_info, mesh)
+        MeshDrawer::new(&mut self.drawing_info, mesh)
     }
+}
+
+impl Drop for Drawer<'_> {
+    fn drop(&mut self) {
+        if let Some(active) = &mut self.active {
+            match active {
+                ActiveDrawer::Mesh(mesh) => MeshDrawer::new(&mut self.drawing_info, mesh).flush(),
+                ActiveDrawer::_1 => unreachable!(),
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct MeshDrawingInfo<'e> {
+    pub mesh: &'e Mesh,
+    pub bind_groups: BindGroups<'e>,
 }
 
 pub struct MeshDrawerInfo<'e> {
     transforms: MutVecBuffer<'e, Transform>,
     pipeline: MeshPipeline,
-    current_mesh: Option<&'e MeshDrawingInfo<'e>>,
+    current_mesh: Option<MeshDrawingInfo<'e>>,
 }
 
 impl<'e> MeshDrawerInfo<'e> {
@@ -105,10 +125,10 @@ impl<'e> MeshDrawerInfo<'e> {
     }
 }
 
-pub type MeshDrawer<'e> = Drawable<'e, &'e mut MeshDrawerInfo<'e>>;
+pub type MeshDrawer<'d, 'e> = WithDrawingInfo<'d, 'e, &'d mut MeshDrawerInfo<'e>>;
 
-impl<'e> MeshDrawer<'e> {
-    pub fn draw(&mut self, mesh: &'e MeshDrawingInfo<'e>, transform: Transform) {
+impl<'e> MeshDrawer<'_, 'e> {
+    pub fn draw(&mut self, mesh: MeshDrawingInfo<'e>, transform: Transform) {
         if self
             .value
             .current_mesh
@@ -123,12 +143,14 @@ impl<'e> MeshDrawer<'e> {
     }
 
     fn flush(&mut self) {
-        if let Some(mesh_drawing_info) = self.value.current_mesh {
-            mesh_drawing_info.draw(
+        if let Some(MeshDrawingInfo { mesh, bind_groups }) = self.value.current_mesh {
+            mesh.draw(
                 self.drawing_info.render_pass,
                 &self.value.pipeline,
+                bind_groups,
                 &mut self.value.transforms,
             );
+            self.value.transforms.clear();
         }
     }
 }

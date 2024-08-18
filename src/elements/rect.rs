@@ -1,3 +1,7 @@
+use crate::resources::tags::mesh::DefaultTexture;
+use crate::resources::tags::mesh::NoTransform;
+use crate::resources::tags::mesh::UnitSquareTopLeft;
+use crate::resources::Resources;
 use crate::shared::Shared;
 use crate::Anchor;
 use crate::Build;
@@ -7,13 +11,18 @@ use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::Location;
+use crate::MeshDrawingInfo;
 use crate::ResolveAnchors;
+use sww::shaders::mesh::BindGroups;
 use sww::shaders::mesh::Rectangle;
 use sww::shaders::mesh::Transform;
 use sww::Color;
 
+// TODO: ValueSource<Value = Color>
 #[derive(Debug)]
-pub struct Rect(pub Color);
+pub struct Rect {
+    color: Color,
+}
 
 impl Build for Rect {
     type Built = Self;
@@ -34,13 +43,21 @@ impl ResolveAnchors for Rect {
 }
 
 impl Element for Rect {
-    fn draw<'e>(&'e self, drawer: &mut Drawer<'e>, location: Location) {
+    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
         let rect = location.rect();
-        let mesh_drawing_info = todo!();
         let transform =
-            Transform::new_diagonal(rect.size, rect.top_left, self.0, Rectangle::default());
+            Transform::new_scale(rect.top_left, rect.size, self.color, Rectangle::default());
 
-        drawer.mesh().draw(mesh_drawing_info, transform);
+        drawer.mesh().draw(
+            MeshDrawingInfo {
+                mesh: resources.get::<UnitSquareTopLeft>(),
+                bind_groups: BindGroups {
+                    bind_group0: resources.get::<NoTransform>(),
+                    bind_group1: resources.get::<DefaultTexture>(),
+                },
+            },
+            transform,
+        );
     }
 }
 
@@ -51,5 +68,7 @@ impl HandleEvent for Rect {
 }
 
 pub const fn rect(ra_fixture_color: Color) -> Rect {
-    Rect(ra_fixture_color)
+    Rect {
+        color: ra_fixture_color,
+    }
 }

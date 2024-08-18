@@ -1,13 +1,16 @@
+use crate::resources::Resources;
 use crate::shared::Shared;
 use crate::values::ArgSource;
 use crate::Anchor;
 use crate::Build;
 use crate::BuildElement;
+use crate::Drawer;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::IntoEventResult;
+use crate::Location;
 use crate::ResolveAnchors;
 
 pub struct OnClick<E, Src, F> {
@@ -44,8 +47,8 @@ impl<E: ResolveAnchors, Src: ResolveAnchors, F> ResolveAnchors for OnClick<E, Sr
 impl<E: Element, Src: ArgSource, F: FnMut(Src::Arg<'_>) -> R, R: IntoEventResult> Element
     for OnClick<E, Src, F>
 {
-    fn draw<'e>(&'e self, drawer: &mut crate::Drawer<'e>, location: crate::Location) {
-        self.element.draw(drawer, location);
+    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
+        self.element.draw(drawer, resources, location);
     }
 }
 

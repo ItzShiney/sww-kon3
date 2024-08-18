@@ -1,4 +1,5 @@
 use crate as kon3;
+use crate::resources::Resources;
 use crate::values::ValueSource;
 use crate::Build;
 use crate::Drawer;
@@ -18,8 +19,9 @@ impl<Src> HandleEvent for Label<Src> {
 }
 
 impl<Src: ValueSource<Value = str>> Element for Label<Src> {
-    fn draw<'e>(&'e self, drawer: &mut Drawer<'e>, location: Location) {
-        // TODO
+    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
+        // FIXME
+        super::rect(sww::Color::RED).draw(drawer, resources, location)
     }
 }
 

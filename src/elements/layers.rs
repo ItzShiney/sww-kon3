@@ -1,27 +1,30 @@
 use crate as kon3;
+use crate::resources::Resources;
 use crate::Build;
+use crate::Drawer;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
+use crate::Location;
 
 #[derive(Build)]
 pub struct Layers<Es>(Es);
 
 impl<A: Element, B: Element> Element for Layers<(A, B)> {
-    fn draw<'e>(&'e self, drawer: &mut crate::Drawer<'e>, location: crate::Location) {
+    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
         let (a, b) = &self.0;
-        b.draw(drawer, location);
-        a.draw(drawer, location);
+        b.draw(drawer, resources, location);
+        a.draw(drawer, resources, location);
     }
 }
 
 impl<A: Element, B: Element, C: Element> Element for Layers<(A, B, C)> {
-    fn draw<'e>(&'e self, drawer: &mut crate::Drawer<'e>, location: crate::Location) {
+    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
         let (a, b, c) = &self.0;
-        c.draw(drawer, location);
-        b.draw(drawer, location);
-        a.draw(drawer, location);
+        c.draw(drawer, resources, location);
+        b.draw(drawer, resources, location);
+        a.draw(drawer, resources, location);
     }
 }
 

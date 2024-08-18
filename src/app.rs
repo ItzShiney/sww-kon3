@@ -1,3 +1,4 @@
+use crate::resources::Resources;
 use crate::AnchorsTree;
 use crate::BuildElement;
 use crate::Drawer;
@@ -11,6 +12,7 @@ use sww::app::HandleEvent;
 use sww::wgpu;
 use sww::window::event::ActiveEventLoop;
 use sww::window::event::EventLoopError;
+use sww::window::event::PhysicalSize;
 use sww::window::event_loop;
 use sww::window::rw_builder;
 use sww::window::window_attributes;
@@ -33,7 +35,11 @@ pub fn build_settings<B: BuildElement<Built: 'static>>(
             .expect("failed to create window");
 
         AppPack::new(window, rw_builder(settings), move |rw| {
-            Box::new(EventHandler { rw, ui })
+            Box::new(EventHandler {
+                rw,
+                ui,
+                resources: Resources::new(rw),
+            })
         })
     }))
 }
@@ -53,9 +59,14 @@ impl<F: FnOnce(&ActiveEventLoop) -> AppPack> App<F> {
 struct EventHandler<'w, E: Element> {
     rw: &'w RenderWindow<'w>,
     ui: E,
+    resources: Resources,
 }
 
 impl<E: Element> HandleEvent for EventHandler<'_, E> {
+    fn on_resized(&mut self, _info: EventInfo, new_size: PhysicalSize) {
+        self.rw.resize_surface(new_size);
+    }
+
     fn on_redraw_requested(&mut self, info: EventInfo) {
         let mut frame = self.rw.start_drawing();
         let mut render_pass =
@@ -78,6 +89,6 @@ impl<E: Element> HandleEvent for EventHandler<'_, E> {
         let location = Location::new(window_size);
 
         let mut drawer = Drawer::new(DrawingInfo::new(self.rw, &mut render_pass));
-        self.ui.draw(&mut drawer, location);
+        self.ui.draw(&mut drawer, &mut self.resources, location);
     }
 }
