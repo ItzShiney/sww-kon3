@@ -1,17 +1,13 @@
 alias Padding = vec2f;
 const PADDING: Padding = vec2f(0., 0.);
 
-struct Transform {
-    translation: vec2f,
-    _1: Padding,
-    matrix: mat2x2f,
-    color: vec4f,
-    texture_rect: Rectangle,
-}
-
 struct Rectangle {
     top_left: vec2f,
     size: vec2f,
+}
+
+fn vec_to_rect(v: vec4f) -> Rectangle {
+    return Rectangle(v.xy, v.zw);
 }
 
 fn rectangle_then(a: Rectangle, b: Rectangle) -> Rectangle {
@@ -22,9 +18,9 @@ fn rectangle_then(a: Rectangle, b: Rectangle) -> Rectangle {
 
 fn transforms_then(a: Transform, b: Transform) -> Transform {
     return Transform(
+        b.matrix * a.matrix,
         b.matrix * a.translation + b.translation,
         PADDING,
-        b.matrix * a.matrix,
         a.color * b.color,
         rectangle_then(a.texture_rect, b.texture_rect),
     );
@@ -41,20 +37,25 @@ fn apply_transform_color(transform: Transform, color: vec4f) -> vec4f {
 ////////////////////////////////////////////////////////////
 
 struct InVertex {
-    @location(0) position: vec2f,
-    @location(1) _1: Padding,
-    @location(2) color: vec4f,
-    @location(3) texture_coord: vec2f,
-    @location(4) _2: Padding,
+    @location(0) color: vec4f,
+    @location(1) position: vec2f,
+    @location(2) texture_coord: vec2f,
 }
 
+// should always be changed together
+struct Transform {
+    matrix: mat2x2f,
+    translation: vec2f,
+    _1: Padding,
+    color: vec4f,
+    texture_rect: Rectangle,
+}
 struct InTransform {
-    @location(5) matrix: vec4f,
-    @location(6) translation: vec2f,
-    @location(7) _1: Padding,
-    @location(8) color: vec4f,
-    @location(9) texture_rect_start: vec2f,
-    @location(10) texture_rect_end: vec2f,
+    @location(3) matrix: vec4f,
+    @location(4) translation: vec2f,
+    @location(5) _1: Padding,
+    @location(6) color: vec4f,
+    @location(7) texture_rect: vec4f,
 }
 
 fn vec_to_mat(v: vec4f) -> mat2x2f {
@@ -63,14 +64,11 @@ fn vec_to_mat(v: vec4f) -> mat2x2f {
 
 fn in_to_transform(transform: InTransform) -> Transform {
     return Transform(
+        vec_to_mat(transform.matrix),
         transform.translation,
         PADDING,
-        vec_to_mat(transform.matrix),
         transform.color,
-        Rectangle(
-            transform.texture_rect_start,
-            transform.texture_rect_end,
-        ),
+        vec_to_rect(transform.texture_rect),
     );
 }
 

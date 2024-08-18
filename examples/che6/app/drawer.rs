@@ -1,11 +1,10 @@
 use sww::buffers::MutVecBuffer;
 use sww::drawing::Mesh;
-use sww::drawing::MeshDrawingInfo;
 use sww::drawing::MeshPipeline;
 use sww::shaders;
 use sww::shaders::mesh::Transform;
-use sww::vec2;
 use sww::window::RenderWindow;
+use sww::Vec2;
 
 pub struct Drawer {
     mesh_pipeline: MeshPipeline,
@@ -15,7 +14,7 @@ pub struct Drawer {
 impl Drawer {
     pub fn new(rw: &RenderWindow) -> Self {
         let mesh_pipeline = MeshPipeline::new(rw);
-        let square = Mesh::rect(rw, vec2(1., 1.));
+        let square = Mesh::rect(rw, Vec2::ONE);
 
         Self {
             mesh_pipeline,
@@ -31,10 +30,6 @@ impl Drawer {
         transforms: &mut MutVecBuffer<Transform>,
         bind_groups: shaders::mesh::BindGroups<'e>,
     ) {
-        MeshDrawingInfo {
-            mesh: &self.square,
-            bind_groups,
-        }
-        .draw(render_pass, &self.mesh_pipeline, transforms)
+        (self.square).draw(render_pass, &self.mesh_pipeline, bind_groups, transforms)
     }
 }

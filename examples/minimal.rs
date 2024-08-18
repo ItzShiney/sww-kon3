@@ -16,7 +16,11 @@ impl<'w> MyApp<'w> {
     }
 }
 
-impl HandleEvent for MyApp<'_> {}
+impl HandleEvent for MyApp<'_> {
+    fn on_resized(&mut self, _info: sww::app::EventInfo, new_size: event::PhysicalSize) {
+        self.rw.resize_surface(new_size);
+    }
+}
 
 pub fn main() {
     env_logger::init();

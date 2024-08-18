@@ -1,7 +1,6 @@
 #![allow(clippy::derivable_impls)]
 use super::PADDING;
 use crate::Color;
-use glam::vec2;
 use glam::Mat2;
 use glam::Vec2;
 
@@ -35,18 +34,16 @@ impl<'s> From<wgpu::BufferBinding<'s>> for BindGroupLayout0<'s> {
     }
 }
 
-pub fn in_vertex(position: glam::Vec2, color: Vec4, texture_coord: glam::Vec2) -> InVertex {
+pub fn in_vertex(position: Vec2, color: Vec4, texture_coord: Vec2) -> InVertex {
     InVertex {
-        position,
-        _1: PADDING,
         color,
+        position,
         texture_coord,
-        _2: PADDING,
     }
 }
 
 impl Transform {
-    const IDENTITY: Self = Self::new(Vec2::ZERO, Color::WHITE, Rectangle::FULL);
+    pub const IDENTITY: Self = Self::new(Vec2::ZERO, Color::WHITE, Rectangle::FULL);
 
     pub const fn new_matrix(
         translation: Vec2,
@@ -90,10 +87,11 @@ impl Default for Transform {
 }
 
 impl Rectangle {
-    pub const FULL: Self = Self {
-        top_left: vec2(0., 0.),
-        size: vec2(1., 1.),
-    };
+    pub const FULL: Self = Self::new(Vec2::ZERO, Vec2::ONE);
+
+    pub const fn new(top_left: Vec2, size: Vec2) -> Self {
+        Self { top_left, size }
+    }
 
     pub fn offset(self, offset: Vec2) -> Self {
         Self {
