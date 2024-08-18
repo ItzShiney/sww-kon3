@@ -65,28 +65,16 @@ pub trait AnchorsTree {
     fn resolve_anchors(builder: &mut impl ResolveAnchors);
 }
 
+impl AnchorsTree for () {
+    fn resolve_anchors(_builder: &mut impl ResolveAnchors) {}
+}
+
 impl<A: Anchor> AnchorsTree for A {
     fn resolve_anchors(builder: &mut impl ResolveAnchors) {
         let anchor = builder.get_anchor::<A>().expect("anchor wasn't set");
         builder.resolve_anchor::<A>(&anchor);
     }
 }
-
-macro_rules! impl_anchors_tree {
-    ($($T:ident)*) => {
-        impl<$($T: AnchorsTree),*> AnchorsTree for ($($T),*) {
-            fn resolve_anchors(_builder: &mut impl ResolveAnchors) {
-                $( $T::resolve_anchors(_builder); )*
-            }
-        }
-    };
-}
-
-impl_anchors_tree!();
-impl_anchors_tree!(A B);
-impl_anchors_tree!(A B C);
-impl_anchors_tree!(A B C D);
-impl_anchors_tree!(A B C D E);
 
 pub trait Build {
     type Built;
@@ -113,7 +101,7 @@ pub const fn cache<T>() -> Cache<T> {
 pub trait BuildElement: Build<Built: Element> + ResolveAnchors {}
 impl<T: Build<Built: Element> + ResolveAnchors> BuildElement for T {}
 
-macro_rules! tuple_impls {
+macro_rules! impl_tuple {
     ( $($T:ident)+ ) => {
         impl<$($T: Build),+> Build for ($($T),+) {
             type Built = ($($T::Built),+);
@@ -123,6 +111,12 @@ macro_rules! tuple_impls {
                 let ($($T),+) = self;
 
                 ($($T.build()),+)
+            }
+        }
+
+        impl<$($T: AnchorsTree),*> AnchorsTree for ($($T),*) {
+            fn resolve_anchors(_builder: &mut impl ResolveAnchors) {
+                $( $T::resolve_anchors(_builder); )*
             }
         }
 
@@ -156,10 +150,17 @@ macro_rules! tuple_impls {
     };
 }
 
-tuple_impls!(A B);
-tuple_impls!(A B C);
-tuple_impls!(A B C D);
-tuple_impls!(A B C D E);
+impl_tuple!(A B);
+impl_tuple!(A B C);
+impl_tuple!(A B C D);
+impl_tuple!(A B C D E);
+impl_tuple!(A B C D E F);
+impl_tuple!(A B C D E F G);
+impl_tuple!(A B C D E F G H);
+impl_tuple!(A B C D E F G H I);
+impl_tuple!(A B C D E F G H I J);
+impl_tuple!(A B C D E F G H I J K);
+impl_tuple!(A B C D E F G H I J K L);
 
 pub trait ResolveAnchors {
     type AnchorsSet: AnchorsTree;
