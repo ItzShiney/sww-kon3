@@ -1,13 +1,11 @@
 use std::sync::Arc;
-use std::sync::RwLock;
+use std::sync::Mutex;
 
-mod read;
-mod write;
+mod lock;
 
-pub use read::*;
-pub use write::*;
+pub use lock::*;
 
-pub struct Shared<T: ?Sized + 'static>(Arc<RwLock<T>>);
+pub struct Shared<T: ?Sized + 'static>(Arc<Mutex<T>>);
 
 impl<T: ?Sized> Clone for Shared<T> {
     fn clone(&self) -> Self {
@@ -17,16 +15,12 @@ impl<T: ?Sized> Clone for Shared<T> {
 
 impl<T> Shared<T> {
     pub fn new(value: T) -> Self {
-        Self(Arc::new(RwLock::new(value)))
+        Self(Arc::new(Mutex::new(value)))
     }
 }
 
 impl<T: ?Sized> Shared<T> {
-    pub fn read(&self) -> SharedReadGuard<'_, T> {
-        SharedReadGuard(self.0.read().expect("shared value was already locked"))
-    }
-
-    pub fn write(&self) -> SharedWriteGuard<'_, T> {
-        SharedWriteGuard(self.0.write().expect("shared value was already locked"))
+    pub fn lock(&self) -> SharedLock<'_, T> {
+        SharedLock(self.0.lock().expect("shared value was already locked"))
     }
 }

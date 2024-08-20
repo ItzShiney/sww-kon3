@@ -14,7 +14,7 @@ impl<T: ?Sized> ArgSource for Shared<T> {
     type Arg<'s> = &'s T;
 
     fn apply_to<R: IntoEventResult>(&self, f: &mut impl FnMut(Self::Arg<'_>) -> R) -> EventResult {
-        f(&self.read()).into_event_result()
+        f(&self.lock()).into_event_result()
     }
 }
 
@@ -25,7 +25,7 @@ impl<T: ?Sized> ArgSource for Write<Shared<T>> {
     type Arg<'s> = &'s mut T;
 
     fn apply_to<R: IntoEventResult>(&self, f: &mut impl FnMut(Self::Arg<'_>) -> R) -> EventResult {
-        f(&mut self.0.write()).into_event_result()
+        f(&mut self.0.lock()).into_event_result()
     }
 }
 

@@ -1,6 +1,5 @@
 use super::CacheRef;
-use crate::shared::SharedReadGuard;
-use crate::shared::SharedWriteGuard;
+use crate::shared::SharedLock;
 use crate::Anchor;
 use crate::Build;
 use crate::ResolveAnchors;
@@ -11,7 +10,7 @@ use std::ops::DerefMut;
 
 pub enum SourcedValue<'s, T: ToOwned + ?Sized> {
     Ref(&'s T),
-    Guard(SharedReadGuard<'s, T>),
+    Lock(SharedLock<'s, T>),
     Cached(CacheRef<'s, T::Owned>),
 }
 
@@ -22,14 +21,14 @@ impl<'s, T: ToOwned + ?Sized> Deref for SourcedValue<'s, T> {
         match self {
             Self::Ref(value) => value,
             Self::Cached(value) => (**value).borrow(),
-            Self::Guard(value) => value,
+            Self::Lock(value) => value,
         }
     }
 }
 
 pub enum SourcedValueMut<'s, T: ?Sized> {
     Ref(&'s mut T),
-    Guard(SharedWriteGuard<'s, T>),
+    Lock(SharedLock<'s, T>),
 }
 
 impl<T: ?Sized> Deref for SourcedValueMut<'_, T> {
@@ -38,7 +37,7 @@ impl<T: ?Sized> Deref for SourcedValueMut<'_, T> {
     fn deref(&self) -> &Self::Target {
         match self {
             Self::Ref(value) => value,
-            Self::Guard(value) => value,
+            Self::Lock(value) => value,
         }
     }
 }
@@ -47,7 +46,7 @@ impl<T: ?Sized> DerefMut for SourcedValueMut<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
             Self::Ref(value) => value,
-            Self::Guard(value) => value,
+            Self::Lock(value) => value,
         }
     }
 }
@@ -139,7 +138,7 @@ impl<T: ToOwned + ?Sized> ValueSource for Shared<T> {
     type Value = T;
 
     fn value(&self) -> SourcedValue<'_, Self::Value> {
-        SourcedValue::Guard(self.read())
+        SourcedValue::Lock(self.lock())
     }
 }
 
@@ -148,6 +147,6 @@ where
     Self: ValueSource<Value = T>,
 {
     fn value_mut(&mut self) -> SourcedValueMut<'_, Self::Value> {
-        SourcedValueMut::Guard(self.write())
+        SourcedValueMut::Lock(self.lock())
     }
 }

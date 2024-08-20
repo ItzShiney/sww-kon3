@@ -2,11 +2,11 @@ use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::ops::Deref;
 use std::ops::DerefMut;
-use std::sync::RwLockWriteGuard;
+use std::sync::MutexGuard;
 
-pub struct SharedWriteGuard<'s, T: ?Sized>(pub(super) RwLockWriteGuard<'s, T>);
+pub struct SharedLock<'s, T: ?Sized>(pub(super) MutexGuard<'s, T>);
 
-impl<T: ?Sized> Deref for SharedWriteGuard<'_, T> {
+impl<T: ?Sized> Deref for SharedLock<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -14,19 +14,19 @@ impl<T: ?Sized> Deref for SharedWriteGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> DerefMut for SharedWriteGuard<'_, T> {
+impl<T: ?Sized> DerefMut for SharedLock<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T: ?Sized> Borrow<T> for SharedWriteGuard<'_, T> {
+impl<T: ?Sized> Borrow<T> for SharedLock<'_, T> {
     fn borrow(&self) -> &T {
         &self.0
     }
 }
 
-impl<T: ?Sized> BorrowMut<T> for SharedWriteGuard<'_, T> {
+impl<T: ?Sized> BorrowMut<T> for SharedLock<'_, T> {
     fn borrow_mut(&mut self) -> &mut T {
         &mut self.0
     }
