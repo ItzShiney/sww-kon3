@@ -18,8 +18,8 @@ fn ui_builder() -> impl BuildElement {
     let increase_button = {
         on_click(
             layers((
-                label("click me!"),
                 rect(Color::GREEN),
+                label("click me!"),
             )),
             write(get::<Counter>()),
             |counter| { *counter += 1; Consume },

@@ -14,17 +14,17 @@ pub struct Layers<Es>(Es);
 impl<A: Element, B: Element> Element for Layers<(A, B)> {
     fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
         let (a, b) = &self.0;
-        b.draw(drawer, resources, location);
         a.draw(drawer, resources, location);
+        b.draw(drawer, resources, location);
     }
 }
 
 impl<A: Element, B: Element, C: Element> Element for Layers<(A, B, C)> {
     fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
         let (a, b, c) = &self.0;
-        c.draw(drawer, resources, location);
-        b.draw(drawer, resources, location);
         a.draw(drawer, resources, location);
+        b.draw(drawer, resources, location);
+        c.draw(drawer, resources, location);
     }
 }
 
