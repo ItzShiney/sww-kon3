@@ -1,31 +1,28 @@
+use super::Cache;
 use super::SourcedValue;
 use super::ValueSource;
-use crate::cache;
 use crate::shared::Shared;
 use crate::Anchor;
 use crate::Build;
-use crate::Cache;
-use crate::Cached;
 use crate::ResolveAnchors;
 
-#[derive(Debug)]
-pub struct Concat<Src, Cch> {
+pub struct Concat<Src> {
     sources: Src,
-    cache: Cch,
+    cache: Cache<String>,
 }
 
-impl<Src: Build, Cch: Build> Build for Concat<Src, Cch> {
-    type Built = Concat<Src::Built, Cch::Built>;
+impl<Src: Build> Build for Concat<Src> {
+    type Built = Concat<Src::Built>;
 
     fn build(self) -> Self::Built {
         Concat {
             sources: self.sources.build(),
-            cache: self.cache.build(),
+            cache: self.cache,
         }
     }
 }
 
-impl<Src: ResolveAnchors, Cch> ResolveAnchors for Concat<Src, Cch> {
+impl<Src: ResolveAnchors> ResolveAnchors for Concat<Src> {
     type AnchorsSet = Src::AnchorsSet;
 
     fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
@@ -38,28 +35,25 @@ impl<Src: ResolveAnchors, Cch> ResolveAnchors for Concat<Src, Cch> {
 }
 
 impl<A: ValueSource<Value = str>, B: ValueSource<Value = str>, C: ValueSource<Value = str>>
-    ValueSource for Concat<(A, B, C), Cached<String>>
+    ValueSource for Concat<(A, B, C)>
 {
     type Value = str;
 
     fn value(&self) -> SourcedValue<'_, Self::Value> {
-        let mut value = self.cache.borrow_mut();
-        *value = None; // FIXME
-        value.get_or_insert_with(|| {
+        SourcedValue::Cached(self.cache.get_or_insert_with(|| {
             format!(
                 "{}{}{}",
                 &*self.sources.0.value(),
                 &*self.sources.1.value(),
                 &*self.sources.2.value(),
             )
-        });
-        SourcedValue::Cached(value)
+        }))
     }
 }
 
-pub const fn concat<Srcs>(ra_fixture_sources: Srcs) -> Concat<Srcs, Cache<String>> {
+pub const fn concat<Srcs>(ra_fixture_sources: Srcs) -> Concat<Srcs> {
     Concat {
         sources: ra_fixture_sources,
-        cache: cache(),
+        cache: Cache::new(),
     }
 }

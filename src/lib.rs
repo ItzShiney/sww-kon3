@@ -8,8 +8,6 @@ pub mod values;
 
 use resources::Resources;
 use shared::Shared;
-use std::cell::RefCell;
-use std::marker::PhantomData;
 
 mod drawer;
 mod location;
@@ -80,22 +78,6 @@ pub trait Build {
     type Built;
 
     fn build(self) -> Self::Built;
-}
-
-pub struct Cache<T>(PhantomData<T>);
-
-pub type Cached<T> = RefCell<Option<T>>;
-
-impl<T> Build for Cache<T> {
-    type Built = Cached<T>;
-
-    fn build(self) -> Self::Built {
-        RefCell::new(None)
-    }
-}
-
-pub const fn cache<T>() -> Cache<T> {
-    Cache(PhantomData)
 }
 
 pub trait BuildElement: Build<Built: Element> + ResolveAnchors {}

@@ -1,3 +1,4 @@
+use super::CacheRef;
 use crate::shared::SharedReadGuard;
 use crate::shared::SharedWriteGuard;
 use crate::Anchor;
@@ -5,14 +6,13 @@ use crate::Build;
 use crate::ResolveAnchors;
 use crate::Shared;
 use std::borrow::Borrow;
-use std::cell;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
 pub enum SourcedValue<'s, T: ToOwned + ?Sized> {
     Ref(&'s T),
     Guard(SharedReadGuard<'s, T>),
-    Cached(cell::RefMut<'s, Option<T::Owned>>),
+    Cached(CacheRef<'s, T::Owned>),
 }
 
 impl<'s, T: ToOwned + ?Sized> Deref for SourcedValue<'s, T> {
@@ -21,7 +21,7 @@ impl<'s, T: ToOwned + ?Sized> Deref for SourcedValue<'s, T> {
     fn deref(&self) -> &Self::Target {
         match self {
             Self::Ref(value) => value,
-            Self::Cached(value) => value.as_ref().expect("value was not cached").borrow(),
+            Self::Cached(value) => (**value).borrow(),
             Self::Guard(value) => value,
         }
     }

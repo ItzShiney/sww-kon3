@@ -24,7 +24,6 @@ pub enum SplitType {
 
 impl AutoValueSource for SplitType {}
 
-#[derive(Debug)]
 pub struct Split<Ty, Es> {
     ty: Ty,
     elements: Es,

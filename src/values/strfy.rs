@@ -1,31 +1,28 @@
+use super::Cache;
 use super::SourcedValue;
 use super::ValueSource;
-use crate::cache;
 use crate::shared::Shared;
 use crate::Anchor;
 use crate::Build;
-use crate::Cache;
-use crate::Cached;
 use crate::ResolveAnchors;
 
-#[derive(Debug)]
-pub struct Strfy<Src, Cch> {
+pub struct Strfy<Src> {
     source: Src,
-    cache: Cch,
+    cache: Cache<String>,
 }
 
-impl<Src: Build, Cch: Build> Build for Strfy<Src, Cch> {
-    type Built = Strfy<Src::Built, Cch::Built>;
+impl<Src: Build> Build for Strfy<Src> {
+    type Built = Strfy<Src::Built>;
 
     fn build(self) -> Self::Built {
         Strfy {
             source: self.source.build(),
-            cache: self.cache.build(),
+            cache: self.cache,
         }
     }
 }
 
-impl<Src: ResolveAnchors, Cch> ResolveAnchors for Strfy<Src, Cch> {
+impl<Src: ResolveAnchors> ResolveAnchors for Strfy<Src> {
     type AnchorsSet = Src::AnchorsSet;
 
     fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
@@ -38,24 +35,22 @@ impl<Src: ResolveAnchors, Cch> ResolveAnchors for Strfy<Src, Cch> {
 }
 
 // FIXME: `+ std::fmt::Debug`
-impl<Src: ValueSource<Value: ToString + std::fmt::Debug>> ValueSource
-    for Strfy<Src, Cached<String>>
-{
+impl<Src: ValueSource<Value: ToString + std::fmt::Debug>> ValueSource for Strfy<Src> {
     type Value = str;
 
     fn value(&self) -> SourcedValue<'_, Self::Value> {
-        let mut value = self.cache.borrow_mut();
-        *value = None; // FIXME
-        value.get_or_insert_with(|| self.source.value().to_string());
-        SourcedValue::Cached(value)
+        SourcedValue::Cached(
+            self.cache
+                .get_or_insert_with(|| self.source.value().to_string()),
+        )
     }
 }
 
 pub fn strfy<V: ToString, Src: Build<Built: ValueSource<Value = V>>>(
     ra_fixture_source: Src,
-) -> Strfy<Src, Cache<String>> {
+) -> Strfy<Src> {
     Strfy {
         source: ra_fixture_source,
-        cache: cache(),
+        cache: Cache::new(),
     }
 }

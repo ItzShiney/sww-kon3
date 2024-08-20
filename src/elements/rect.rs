@@ -19,7 +19,6 @@ use sww::shaders::mesh::Transform;
 use sww::Color;
 
 // TODO: ValueSource<Value = Color>
-#[derive(Debug)]
 pub struct Rect {
     color: Color,
 }
