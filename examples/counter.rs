@@ -18,8 +18,10 @@ fn ui_builder() -> impl Element {
                 rect(Color::GREEN),
                 label("click me!"),
             )),
-            write(counter.clone()),
-            |counter| { *counter += 1; Consume },
+            {
+                let counter = counter.clone();
+                move || { *counter.lock() += 1; Consume }
+            },
         )
     };
 
