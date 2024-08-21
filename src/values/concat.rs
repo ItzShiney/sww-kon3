@@ -1,26 +1,31 @@
 use super::Cache;
-use super::SourcedValue;
+use super::CacheRef;
 use super::ValueSource;
+use std::borrow::Borrow;
+use std::ops::Deref;
 
 pub struct Concat<Src> {
     sources: Src,
     cache: Cache<String>,
 }
 
-impl<A: ValueSource<Value = str>, B: ValueSource<Value = str>, C: ValueSource<Value = str>>
-    ValueSource for Concat<(A, B, C)>
+impl<
+        A: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<str>>>,
+        B: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<str>>>,
+        C: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<str>>>,
+    > ValueSource for Concat<(A, B, C)>
 {
-    type Value = str;
+    type Value<'s> = CacheRef<'s, String> where Self: 's;
 
-    fn value(&self) -> SourcedValue<'_, Self::Value> {
-        SourcedValue::Cached(self.cache.get_or_insert_with(|| {
+    fn value(&self) -> Self::Value<'_> {
+        self.cache.get_or_insert_with(|| {
             format!(
                 "{}{}{}",
-                &*self.sources.0.value(),
-                &*self.sources.1.value(),
-                &*self.sources.2.value(),
+                (*self.sources.0.value()).borrow(),
+                (*self.sources.1.value()).borrow(),
+                (*self.sources.2.value()).borrow(),
             )
-        }))
+        })
     }
 }
 

@@ -7,6 +7,8 @@ use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::Location;
+use std::borrow::Borrow;
+use std::ops::Deref;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 use sww::Vec2;
@@ -27,7 +29,7 @@ pub struct Split<Ty, Es> {
 
 macro_rules! impl_tuple {
     ( $($T:ident)+ ) => {
-        impl<Ty: ValueSource<Value = SplitType>, $($T: Element),+> Element
+        impl<Ty: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<SplitType>>>, $($T: Element),+> Element
             for Split<Ty, ($($T),+)>
         {
             fn draw<'e>(
@@ -39,7 +41,7 @@ macro_rules! impl_tuple {
                 #[allow(non_snake_case)]
                 let ($($T),+) = &self.elements;
                 draw_helper(
-                    *self.ty.value(),
+                    *(*self.ty.value()).borrow(),
                     [$((1, $T)),+],
                     drawer,
                     resources,

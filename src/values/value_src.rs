@@ -1,64 +1,25 @@
-use super::CacheRef;
 use crate::shared::SharedLock;
 use crate::Shared;
-use std::borrow::Borrow;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-pub enum SourcedValue<'s, T: ToOwned + ?Sized> {
-    Ref(&'s T),
-    Lock(SharedLock<'s, T>),
-    Cached(CacheRef<'s, T::Owned>),
-}
-
-impl<'s, T: ToOwned + ?Sized> Deref for SourcedValue<'s, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Ref(value) => value,
-            Self::Cached(value) => (**value).borrow(),
-            Self::Lock(value) => value,
-        }
-    }
-}
-
-pub enum SourcedValueMut<'s, T: ?Sized> {
-    Ref(&'s mut T),
-    Lock(SharedLock<'s, T>),
-}
-
-impl<T: ?Sized> Deref for SourcedValueMut<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Ref(value) => value,
-            Self::Lock(value) => value,
-        }
-    }
-}
-
-impl<T: ?Sized> DerefMut for SourcedValueMut<'_, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        match self {
-            Self::Ref(value) => value,
-            Self::Lock(value) => value,
-        }
-    }
-}
-
 pub trait ValueSource {
-    type Value: ToOwned + ?Sized;
+    type Value<'s>: Deref + 's
+    where
+        Self: 's;
 
-    fn value(&self) -> SourcedValue<'_, Self::Value>;
+    fn value(&self) -> Self::Value<'_>;
 }
 
 pub trait ValueSourceMut: ValueSource {
-    fn value_mut(&mut self) -> SourcedValueMut<'_, Self::Value>;
+    type ValueMut<'s>: DerefMut + 's
+    where
+        Self: 's;
+
+    fn value_mut(&mut self) -> Self::ValueMut<'_>;
 }
 
-pub trait AutoValueSource: ToOwned {}
+pub trait AutoValueSource {}
 
 impl AutoValueSource for u8 {}
 impl AutoValueSource for u16 {}
@@ -74,40 +35,45 @@ impl AutoValueSource for i128 {}
 impl AutoValueSource for isize {}
 
 impl<T: AutoValueSource> ValueSource for T {
-    type Value = T;
+    type Value<'s> = &'s T where Self: 's;
 
-    fn value(&self) -> SourcedValue<'_, T> {
-        SourcedValue::Ref(self)
+    fn value(&self) -> Self::Value<'_> {
+        self
     }
 }
 
 impl<T: AutoValueSource> ValueSourceMut for T {
-    fn value_mut(&mut self) -> SourcedValueMut<'_, T> {
-        SourcedValueMut::Ref(self)
+    type ValueMut<'s> = &'s mut T where Self: 's;
+
+    fn value_mut(&mut self) -> Self::ValueMut<'_> {
+        self
     }
 }
 
 impl ValueSource for &str {
-    type Value = str;
+    type Value<'s> = &'s str where Self: 's;
 
-    fn value(&self) -> SourcedValue<'_, Self::Value> {
-        SourcedValue::Ref(self)
+    fn value(&self) -> Self::Value<'_> {
+        self
     }
 }
 
-impl<T: ToOwned + ?Sized> ValueSource for Shared<T> {
-    type Value = T;
+impl<T: ?Sized> ValueSource for Shared<T> {
+    type Value<'s> = SharedLock<'s, T>
+    where
+        Self: 's;
 
-    fn value(&self) -> SourcedValue<'_, Self::Value> {
-        SourcedValue::Lock(self.lock())
+    fn value(&self) -> Self::Value<'_> {
+        self.lock()
     }
 }
 
-impl<T: ?Sized> ValueSourceMut for Shared<T>
-where
-    Self: ValueSource<Value = T>,
-{
-    fn value_mut(&mut self) -> SourcedValueMut<'_, Self::Value> {
-        SourcedValueMut::Lock(self.lock())
+impl<T: ?Sized> ValueSourceMut for Shared<T> {
+    type ValueMut<'s> = SharedLock<'s, T>
+    where
+        Self: 's;
+
+    fn value_mut(&mut self) -> Self::ValueMut<'_> {
+        self.lock()
     }
 }
