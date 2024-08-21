@@ -1,5 +1,5 @@
 use crate::resources::Resources;
-use crate::values::ValueSource;
+use crate::values::ValueSourceBorrow;
 use crate::Drawer;
 use crate::Element;
 use crate::Event;
@@ -8,7 +8,6 @@ use crate::HandleEvent;
 use crate::Location;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use std::ops::Deref;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 
@@ -21,7 +20,7 @@ impl<Src> HandleEvent for Label<Src> {
     }
 }
 
-impl<Src: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<str>>>> Element for Label<Src> {
+impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
     fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
         // FIXME
         use super::rect;
@@ -45,8 +44,6 @@ impl<Src: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<str>>>> Element fo
     }
 }
 
-pub const fn label<Src: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<str>>>>(
-    ra_fixture_source: Src,
-) -> Label<Src> {
+pub const fn label<Src: ValueSourceBorrow<str>>(ra_fixture_source: Src) -> Label<Src> {
     Label(ra_fixture_source)
 }

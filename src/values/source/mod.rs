@@ -1,5 +1,6 @@
 use crate::shared::SharedLock;
 use crate::Shared;
+use std::borrow::Borrow;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
@@ -49,4 +50,13 @@ impl ValueSource for &str {
     fn value(&self) -> Self::Value<'_> {
         self
     }
+}
+
+pub trait ValueSourceBorrow<V: ?Sized>:
+    for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<V>>>
+{
+}
+impl<V: ?Sized, T: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<V>>> + ?Sized>
+    ValueSourceBorrow<V> for T
+{
 }

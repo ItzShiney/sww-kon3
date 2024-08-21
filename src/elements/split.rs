@@ -1,6 +1,6 @@
 use crate::resources::Resources;
 use crate::values::AutoValueSource;
-use crate::values::ValueSource;
+use crate::values::ValueSourceBorrow;
 use crate::Drawer;
 use crate::Element;
 use crate::Event;
@@ -8,7 +8,6 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::Location;
 use std::borrow::Borrow;
-use std::ops::Deref;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 use sww::Vec2;
@@ -29,7 +28,7 @@ pub struct Split<Ty, Es> {
 
 macro_rules! impl_tuple {
     ( $($T:ident)+ ) => {
-        impl<Ty: for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<SplitType>>>, $($T: Element),+> Element
+        impl<Ty: ValueSourceBorrow<SplitType>, $($T: Element),+> Element
             for Split<Ty, ($($T),+)>
         {
             fn draw<'e>(
