@@ -1,16 +1,13 @@
 use kon3::prelude::*;
 
-struct Counter;
-impl Anchor for Counter {
-    type Value = usize;
-}
-
 #[rustfmt::skip]
-fn ui_builder() -> impl BuildElement {
+fn ui_builder() -> impl Element {
+    let counter = Shared::new(0_usize);
+
     let counter_label = {
         label(concat((
             "clicked ",
-            strfy(set::<Counter>(0)),
+            strfy(counter.clone()),
             " times",
         )))
     };
@@ -21,7 +18,7 @@ fn ui_builder() -> impl BuildElement {
                 rect(Color::GREEN),
                 label("click me!"),
             )),
-            write(get::<Counter>()),
+            write(counter.clone()),
             |counter| { *counter += 1; Consume },
         )
     };

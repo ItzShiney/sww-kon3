@@ -1,6 +1,4 @@
 use crate::resources::Resources;
-use crate::AnchorsTree;
-use crate::BuildElement;
 use crate::Drawer;
 use crate::DrawingInfo;
 use crate::Element;
@@ -26,13 +24,10 @@ use sww::window::RenderWindowSettings;
 
 pub struct App<F: FnOnce(&ActiveEventLoop) -> AppPack>(AppRaw<F>);
 
-pub fn build_settings<B: BuildElement<Built: 'static>>(
-    mut ui_builder: B,
+pub fn build_settings(
+    ui: impl Element + 'static,
     settings: &impl RenderWindowSettings,
 ) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack + '_> {
-    B::AnchorsSet::resolve_anchors(&mut ui_builder);
-    let ui = ui_builder.build();
-
     App(AppRaw::new(move |event_loop| {
         let window = event_loop
             .create_window(window_attributes("kon3", 550, 310))
@@ -48,10 +43,8 @@ pub fn build_settings<B: BuildElement<Built: 'static>>(
     }))
 }
 
-pub fn build<B: BuildElement<Built: 'static>>(
-    ui_builder: B,
-) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack> {
-    build_settings(ui_builder, &DefaultRenderWindowSettings)
+pub fn build(ui: impl Element + 'static) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack> {
+    build_settings(ui, &DefaultRenderWindowSettings)
 }
 
 impl<F: FnOnce(&ActiveEventLoop) -> AppPack> App<F> {

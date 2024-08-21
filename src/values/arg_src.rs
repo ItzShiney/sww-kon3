@@ -1,6 +1,4 @@
-use crate as kon3;
 use crate::shared::Shared;
-use crate::Build;
 use crate::EventResult;
 use crate::IntoEventResult;
 
@@ -18,7 +16,6 @@ impl<T: ?Sized> ArgSource for Shared<T> {
     }
 }
 
-#[derive(Build)]
 pub struct Write<T>(T);
 
 impl<T: ?Sized> ArgSource for Write<Shared<T>> {

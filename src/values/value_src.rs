@@ -1,8 +1,5 @@
 use super::CacheRef;
 use crate::shared::SharedLock;
-use crate::Anchor;
-use crate::Build;
-use crate::ResolveAnchors;
 use crate::Shared;
 use std::borrow::Borrow;
 use std::ops::Deref;
@@ -90,48 +87,12 @@ impl<T: AutoValueSource> ValueSourceMut for T {
     }
 }
 
-impl<T: AutoValueSource> Build for T {
-    type Built = Self;
-
-    fn build(self) -> Self::Built {
-        self
-    }
-}
-
-impl<T: AutoValueSource> ResolveAnchors for T {
-    type AnchorsSet = ();
-
-    fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
-        None
-    }
-
-    fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
-}
-
 impl ValueSource for &str {
     type Value = str;
 
     fn value(&self) -> SourcedValue<'_, Self::Value> {
         SourcedValue::Ref(self)
     }
-}
-
-impl Build for &str {
-    type Built = Self;
-
-    fn build(self) -> Self::Built {
-        self
-    }
-}
-
-impl ResolveAnchors for &str {
-    type AnchorsSet = ();
-
-    fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
-        None
-    }
-
-    fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
 }
 
 impl<T: ToOwned + ?Sized> ValueSource for Shared<T> {

@@ -1,16 +1,12 @@
 use crate::resources::Resources;
-use crate::shared::Shared;
 use crate::values::AutoValueSource;
 use crate::values::ValueSource;
-use crate::Anchor;
-use crate::Build;
 use crate::Drawer;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::Location;
-use crate::ResolveAnchors;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 use sww::Vec2;
@@ -27,30 +23,6 @@ impl AutoValueSource for SplitType {}
 pub struct Split<Ty, Es> {
     ty: Ty,
     elements: Es,
-}
-
-impl<Ty: Build, Es: Build> Build for Split<Ty, Es> {
-    type Built = Split<Ty::Built, Es::Built>;
-
-    fn build(self) -> Self::Built {
-        Split {
-            ty: self.ty.build(),
-            elements: self.elements.build(),
-        }
-    }
-}
-
-impl<Ty: ResolveAnchors, Es: ResolveAnchors> ResolveAnchors for Split<Ty, Es> {
-    type AnchorsSet = (Ty::AnchorsSet, Es::AnchorsSet);
-
-    fn get_anchor<_A: Anchor>(&self) -> Option<Shared<_A::Value>> {
-        (self.ty.get_anchor::<_A>()).or_else(|| self.elements.get_anchor::<_A>())
-    }
-
-    fn resolve_anchor<_A: Anchor>(&mut self, anchor: &Shared<_A::Value>) {
-        self.ty.resolve_anchor::<_A>(anchor);
-        self.elements.resolve_anchor::<_A>(anchor);
-    }
 }
 
 macro_rules! impl_tuple {
@@ -127,21 +99,21 @@ impl<Ty, Es: HandleEvent> HandleEvent for Split<Ty, Es> {
     }
 }
 
-pub const fn split<Es: Build>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
+pub const fn split<Es>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
     Split {
         ty: SplitType::Adaptive,
         elements: ra_fixture_elements,
     }
 }
 
-pub const fn line<Es: Build>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
+pub const fn line<Es>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
     Split {
         ty: SplitType::Horizontal,
         elements: ra_fixture_elements,
     }
 }
 
-pub const fn column<Es: Build>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
+pub const fn column<Es>(ra_fixture_elements: Es) -> Split<SplitType, Es> {
     Split {
         ty: SplitType::Vertical,
         elements: ra_fixture_elements,

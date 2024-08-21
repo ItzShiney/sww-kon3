@@ -1,6 +1,4 @@
-use crate as kon3;
 use crate::resources::Resources;
-use crate::Build;
 use crate::Drawer;
 use crate::Element;
 use crate::Event;
@@ -8,7 +6,6 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::Location;
 
-#[derive(Build)]
 pub struct Layers<Es>(Es);
 
 impl<A: Element, B: Element> Element for Layers<(A, B)> {

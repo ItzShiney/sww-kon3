@@ -2,9 +2,6 @@ use crate::resources::tags::mesh::DefaultTexture;
 use crate::resources::tags::mesh::NoTransform;
 use crate::resources::tags::mesh::UnitSquareTopLeft;
 use crate::resources::Resources;
-use crate::shared::Shared;
-use crate::Anchor;
-use crate::Build;
 use crate::Drawer;
 use crate::Element;
 use crate::Event;
@@ -12,7 +9,6 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::Location;
 use crate::MeshDrawingInfo;
-use crate::ResolveAnchors;
 use sww::shaders::mesh::BindGroups;
 use sww::shaders::mesh::Rectangle;
 use sww::shaders::mesh::Transform;
@@ -21,24 +17,6 @@ use sww::Color;
 // TODO: ValueSource<Value = Color>
 pub struct Rect {
     color: Color,
-}
-
-impl Build for Rect {
-    type Built = Self;
-
-    fn build(self) -> Self::Built {
-        self
-    }
-}
-
-impl ResolveAnchors for Rect {
-    type AnchorsSet = ();
-
-    fn get_anchor<A: Anchor>(&self) -> Option<Shared<A::Value>> {
-        None
-    }
-
-    fn resolve_anchor<A: Anchor>(&mut self, _anchor: &Shared<A::Value>) {}
 }
 
 impl Element for Rect {

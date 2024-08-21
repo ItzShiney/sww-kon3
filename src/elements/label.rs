@@ -1,7 +1,5 @@
-use crate as kon3;
 use crate::resources::Resources;
 use crate::values::ValueSource;
-use crate::Build;
 use crate::Drawer;
 use crate::Element;
 use crate::Event;
@@ -13,7 +11,6 @@ use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 
 // TODO: turn into `text` field
-#[derive(Build)]
 pub struct Label<Src>(Src);
 
 impl<Src> HandleEvent for Label<Src> {
@@ -46,8 +43,6 @@ impl<Src: ValueSource<Value = str>> Element for Label<Src> {
     }
 }
 
-pub const fn label<Src: Build<Built: ValueSource<Value = str>>>(
-    ra_fixture_source: Src,
-) -> Label<Src> {
+pub const fn label<Src: ValueSource<Value = str>>(ra_fixture_source: Src) -> Label<Src> {
     Label(ra_fixture_source)
 }
