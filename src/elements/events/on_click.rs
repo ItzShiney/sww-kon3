@@ -1,5 +1,4 @@
-use crate::resources::Resources;
-use crate::Drawer;
+use crate::drawer::DrawPass;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
@@ -12,13 +11,13 @@ pub struct OnClick<E, F> {
     f: F,
 }
 
-impl<E: Element, F: FnMut() -> R, R: IntoEventResult> Element for OnClick<E, F> {
-    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
-        self.element.draw(drawer, resources, location);
+impl<R, E: Element<R>, F: FnMut() -> U, U: IntoEventResult> Element<R> for OnClick<E, F> {
+    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
+        self.element.draw(pass, resources, location);
     }
 }
 
-impl<E: HandleEvent, F: FnMut() -> R, R: IntoEventResult> HandleEvent for OnClick<E, F> {
+impl<E: HandleEvent, F: FnMut() -> U, U: IntoEventResult> HandleEvent for OnClick<E, F> {
     fn handle_event(&mut self, event: &Event) -> EventResult {
         #[allow(clippy::equatable_if_let)]
         if let Event::Click = event {
@@ -29,7 +28,7 @@ impl<E: HandleEvent, F: FnMut() -> R, R: IntoEventResult> HandleEvent for OnClic
     }
 }
 
-pub const fn on_click<E: Element, F: FnMut() -> R, R: IntoEventResult>(
+pub const fn on_click<E, F: FnMut() -> U, U: IntoEventResult>(
     ra_fixture_element: E,
     ra_fixture_f: F,
 ) -> OnClick<E, F> {

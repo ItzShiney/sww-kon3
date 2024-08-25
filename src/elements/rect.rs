@@ -1,8 +1,8 @@
-use crate::resources::tags::mesh::DefaultTexture;
-use crate::resources::tags::mesh::NoTransform;
-use crate::resources::tags::mesh::UnitSquareTopLeft;
-use crate::resources::Resources;
-use crate::Drawer;
+use crate::drawer::DrawPass;
+use crate::resources::mesh::DefaultTexture;
+use crate::resources::mesh::NoGlobalTransform;
+use crate::resources::mesh::UnitSquareTopLeft;
+use crate::resources::ResourceFrom;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
@@ -14,23 +14,28 @@ use sww::shaders::mesh::Rectangle;
 use sww::shaders::mesh::Transform;
 use sww::Color;
 
-// TODO: ValueSource<Value = Color>
+// TODO ValueSource<Value = Color>
 pub struct Rect {
     color: Color,
 }
 
-impl Element for Rect {
-    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
+impl<R> Element<R> for Rect
+where
+    UnitSquareTopLeft: ResourceFrom<R>,
+    NoGlobalTransform: ResourceFrom<R>,
+    DefaultTexture: ResourceFrom<R>,
+{
+    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
         let rect = location.rect();
         let transform =
             Transform::new_scale(rect.top_left, rect.size, self.color, Rectangle::default());
 
-        drawer.mesh().draw(
-            MeshDrawingInfo {
-                mesh: resources.get::<UnitSquareTopLeft>(),
+        pass.mesh().draw(
+            &MeshDrawingInfo {
+                mesh: UnitSquareTopLeft::resource_from(resources),
                 bind_groups: BindGroups {
-                    bind_group0: resources.get::<NoTransform>(),
-                    bind_group1: resources.get::<DefaultTexture>(),
+                    bind_group0: NoGlobalTransform::resource_from(resources),
+                    bind_group1: DefaultTexture::resource_from(resources),
                 },
             },
             transform,

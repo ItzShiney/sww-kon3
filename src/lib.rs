@@ -4,7 +4,6 @@ pub mod prelude;
 pub mod shared;
 pub mod values;
 
-use resources::Resources;
 use shared::Shared;
 
 mod drawer;
@@ -49,8 +48,8 @@ pub trait HandleEvent {
     fn handle_event(&mut self, event: &Event) -> EventResult;
 }
 
-pub trait Element: HandleEvent {
-    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location);
+pub trait Element<R>: HandleEvent {
+    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location);
 }
 
 macro_rules! impl_tuple {

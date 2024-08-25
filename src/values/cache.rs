@@ -6,11 +6,12 @@ use std::ops::DerefMut;
 pub struct Cache<T>(RefCell<Option<T>>);
 
 impl<T> Cache<T> {
+    #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
         Self(RefCell::new(None))
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset(&self) {
         *self.0.borrow_mut() = None;
     }
 

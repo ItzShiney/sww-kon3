@@ -1,7 +1,8 @@
+use app::Resources;
 use kon3::prelude::*;
 
 #[rustfmt::skip]
-fn ui_builder() -> impl Element {
+fn ui_builder() -> impl Element<Resources> {
     let counter = Shared::new(0_usize);
 
     let counter_label = {
@@ -19,6 +20,7 @@ fn ui_builder() -> impl Element {
                 label("click me!"),
             )),
             {
+                #[allow(clippy::redundant_clone)]
                 let counter = counter.clone();
                 move || { *counter.lock() += 1; Consume }
             },

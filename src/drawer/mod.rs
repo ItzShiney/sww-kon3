@@ -1,5 +1,6 @@
 pub mod resources;
 
+use std::ptr;
 use sww::buffers::MutVecBuffer;
 use sww::drawing::Mesh;
 use sww::drawing::MeshPipeline;
@@ -8,149 +9,131 @@ use sww::shaders::mesh::Transform;
 use sww::wgpu;
 use sww::window::RenderWindow;
 
-pub struct DrawingInfo<'e> {
-    rw: &'e RenderWindow<'e>,
-    render_pass: &'e mut wgpu::RenderPass<'e>,
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ActiveDrawer {
+    Mesh,
 }
 
-impl<'e> DrawingInfo<'e> {
-    pub fn new(rw: &'e RenderWindow<'e>, render_pass: &'e mut wgpu::RenderPass<'e>) -> Self {
-        Self { rw, render_pass }
-    }
-
-    pub const fn rw(&self) -> &'e RenderWindow<'e> {
-        self.rw
-    }
-
-    pub fn render_pass(&'e mut self) -> &'e mut wgpu::RenderPass<'e> {
-        self.render_pass
-    }
+#[derive(Default)]
+pub struct Drawers<'w> {
+    active: Option<ActiveDrawer>,
+    mesh: Option<MeshDrawerInfo<'w>>,
 }
 
-pub struct WithDrawingInfo<'d, 'e, T> {
-    drawing_info: &'d mut DrawingInfo<'e>,
-    value: T,
+pub struct DrawPass<'w, 's, 'e> {
+    rw: &'w RenderWindow<'w>,
+    render_pass: &'s mut wgpu::RenderPass<'e>,
+    drawers: &'s mut Drawers<'w>,
 }
 
-impl<'d, 'e, T> WithDrawingInfo<'d, 'e, T> {
-    pub fn new(drawing_info: &'d mut DrawingInfo<'e>, value: T) -> Self {
+impl<'w, 's, 'e> DrawPass<'w, 's, 'e> {
+    pub fn new(
+        rw: &'w RenderWindow<'w>,
+        render_pass: &'s mut wgpu::RenderPass<'e>,
+        drawers: &'s mut Drawers<'w>,
+    ) -> Self {
         Self {
-            drawing_info,
-            value,
+            rw,
+            render_pass,
+            drawers,
         }
     }
 }
 
-enum ActiveDrawer<'e> {
-    Mesh(MeshDrawerInfo<'e>),
-    _1,
-}
+impl<'w, 'e> DrawPass<'w, '_, 'e> {
+    pub fn mesh(&mut self) -> MeshDrawer<'w, '_, 'e> {
+        self.set_active(ActiveDrawer::Mesh);
+        let info = (self.drawers.mesh).get_or_insert_with(|| MeshDrawerInfo::new(self.rw));
 
-impl<'r, 'e> From<MeshDrawerInfo<'e>> for ActiveDrawer<'e> {
-    fn from(mesh: MeshDrawerInfo<'e>) -> Self {
-        Self::Mesh(mesh)
-    }
-}
-
-impl<'e> ActiveDrawer<'e> {
-    pub fn mesh(&mut self, rw: &'e RenderWindow<'e>) -> &mut MeshDrawerInfo<'e> {
-        if !matches!(self, Self::Mesh(_)) {
-            *self = Self::Mesh(MeshDrawerInfo::new(rw));
-        }
-
-        let Self::Mesh(mesh) = self else {
-            unreachable!()
-        };
-
-        mesh
-    }
-}
-
-// TODO:
-// mesh: Option<MeshDrawerInfo<'e>>,
-// active: Option<ActiveDrawer>,
-pub struct Drawer<'e> {
-    drawing_info: DrawingInfo<'e>,
-    active: Option<ActiveDrawer<'e>>,
-}
-
-impl<'e> Drawer<'e> {
-    pub fn new(drawing_info: DrawingInfo<'e>) -> Self {
-        Self {
-            drawing_info,
-            active: None,
+        MeshDrawer {
+            render_pass: self.render_pass,
+            info,
         }
     }
 
-    pub fn mesh(&mut self) -> MeshDrawer<'_, 'e> {
-        let mesh = self
-            .active
-            .get_or_insert_with(|| MeshDrawerInfo::new(self.drawing_info.rw).into())
-            .mesh(self.drawing_info.rw);
-
-        MeshDrawer::new(&mut self.drawing_info, mesh)
+    fn set_active(&mut self, active: ActiveDrawer) {
+        if (self.drawers.active).is_some_and(|self_active| self_active != active) {
+            self.flush();
+        }
+        self.drawers.active = Some(active);
     }
-}
 
-impl Drop for Drawer<'_> {
-    fn drop(&mut self) {
-        if let Some(active) = &mut self.active {
+    fn flush(&mut self) {
+        if let Some(active) = self.drawers.active {
             match active {
-                ActiveDrawer::Mesh(mesh) => MeshDrawer::new(&mut self.drawing_info, mesh).flush(),
-                ActiveDrawer::_1 => unreachable!(),
+                ActiveDrawer::Mesh => {
+                    let info = self.drawers.mesh.as_mut().unwrap();
+                    MeshDrawer {
+                        render_pass: self.render_pass,
+                        info,
+                    }
+                    .flush();
+                }
             }
         }
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct MeshDrawingInfo<'e> {
-    pub mesh: &'e Mesh,
-    pub bind_groups: BindGroups<'e>,
+impl Drop for DrawPass<'_, '_, '_> {
+    fn drop(&mut self) {
+        self.flush();
+    }
 }
 
-pub struct MeshDrawerInfo<'e> {
-    transforms: MutVecBuffer<'e, Transform>,
+#[derive(Clone)]
+pub struct MeshDrawingInfo {
+    pub mesh: &'static Mesh,
+    pub bind_groups: BindGroups<'static>,
+}
+
+impl PartialEq for MeshDrawingInfo {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq(&self.mesh, &other.mesh)
+    }
+}
+
+impl Eq for MeshDrawingInfo {}
+
+pub struct MeshDrawerInfo<'w> {
+    transforms: MutVecBuffer<'w, Transform>,
     pipeline: MeshPipeline,
-    current_mesh: Option<MeshDrawingInfo<'e>>,
+    current_mesh_info: Option<MeshDrawingInfo>,
 }
 
-impl<'e> MeshDrawerInfo<'e> {
-    pub fn new(rw: &'e RenderWindow) -> Self {
+impl<'w> MeshDrawerInfo<'w> {
+    pub fn new(rw: &'w RenderWindow) -> Self {
         Self {
             transforms: MutVecBuffer::default_vertex(rw),
             pipeline: MeshPipeline::new(rw),
-            current_mesh: None,
+            current_mesh_info: None,
         }
     }
 }
 
-pub type MeshDrawer<'d, 'e> = WithDrawingInfo<'d, 'e, &'d mut MeshDrawerInfo<'e>>;
+pub struct MeshDrawer<'w, 's, 'e> {
+    render_pass: &'s mut wgpu::RenderPass<'e>,
+    info: &'s mut MeshDrawerInfo<'w>,
+}
 
-impl<'e> MeshDrawer<'_, 'e> {
-    pub fn draw(&mut self, mesh: MeshDrawingInfo<'e>, transform: Transform) {
-        if self
-            .value
-            .current_mesh
-            .map(|current_mesh| current_mesh.mesh.id())
-            != Some(mesh.mesh.id())
-        {
+impl<'e> MeshDrawer<'_, '_, 'e> {
+    pub fn draw(&mut self, mesh_info: &MeshDrawingInfo, transform: Transform) {
+        if self.info.current_mesh_info.as_ref() == Some(mesh_info) {
             self.flush();
         }
 
-        self.value.current_mesh = Some(mesh);
-        self.value.transforms.push(transform);
+        self.info.current_mesh_info = Some(mesh_info.clone());
+        self.info.transforms.push(transform);
     }
 
     fn flush(&mut self) {
-        if let Some(MeshDrawingInfo { mesh, bind_groups }) = self.value.current_mesh {
+        if let Some(MeshDrawingInfo { mesh, bind_groups }) = self.info.current_mesh_info {
             mesh.draw(
-                self.drawing_info.render_pass,
-                &self.value.pipeline,
+                self.render_pass,
+                &self.info.pipeline,
                 bind_groups,
-                &mut self.value.transforms,
+                &mut self.info.transforms,
             );
-            self.value.transforms.clear();
+            self.info.transforms.clear();
         }
     }
 }

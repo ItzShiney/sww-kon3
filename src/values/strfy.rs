@@ -12,12 +12,11 @@ impl<Src: for<'s> ValueSource<Value<'s>: Deref<Target: ToString>>> ValueSource f
     type Value<'s> = CacheRef<'s, String> where Self: 's;
 
     fn value(&self) -> Self::Value<'_> {
-        self.cache
-            .get_or_insert_with(|| self.source.value().to_string())
+        (self.cache).get_or_insert_with(|| self.source.value().to_string())
     }
 }
 
-pub fn strfy<Src: for<'s> ValueSource<Value<'s>: Deref<Target: ToString>>>(
+pub const fn strfy<Src: for<'s> ValueSource<Value<'s>: Deref<Target: ToString>>>(
     ra_fixture_source: Src,
 ) -> Strfy<Src> {
     Strfy {

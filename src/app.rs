@@ -1,6 +1,5 @@
-use crate::resources::Resources;
-use crate::Drawer;
-use crate::DrawingInfo;
+use crate::DrawPass;
+use crate::Drawers;
 use crate::Element;
 use crate::Event;
 use crate::Location;
@@ -24,8 +23,50 @@ use sww::window::RenderWindowSettings;
 
 pub struct App<F: FnOnce(&ActiveEventLoop) -> AppPack>(AppRaw<F>);
 
-pub fn build_settings(
-    ui: impl Element + 'static,
+// FIXME autogenerate from UI
+mod resources {
+    #[allow(clippy::wildcard_imports)]
+    use crate::resources::mesh::*;
+    use crate::resources::Resource;
+    use crate::resources::ResourceFrom;
+    use sww::window::RenderWindow;
+
+    pub struct Resources(&'static (UnitSquareTopLeft, NoGlobalTransform, DefaultTexture));
+
+    impl Resources {
+        pub fn new(rw: &RenderWindow) -> Self {
+            Self(Box::leak(Box::new((
+                Resource::new(rw),
+                Resource::new(rw),
+                Resource::new(rw),
+            ))))
+        }
+    }
+
+    impl ResourceFrom<Resources> for UnitSquareTopLeft {
+        fn resource_from(resources: &Resources) -> &'static Self {
+            &(resources.0).0
+        }
+    }
+
+    impl ResourceFrom<Resources> for NoGlobalTransform {
+        fn resource_from(resources: &Resources) -> &'static Self {
+            &(resources.0).1
+        }
+    }
+
+    impl ResourceFrom<Resources> for DefaultTexture {
+        fn resource_from(resources: &Resources) -> &'static Self {
+            &(resources.0).2
+        }
+    }
+}
+#[allow(clippy::wildcard_imports)]
+pub use resources::*;
+
+// FIXME `Resources` -> `U::RequiredResources`
+pub fn build_settings<U: Element<Resources> + 'static>(
+    ui: U,
     settings: &impl RenderWindowSettings,
 ) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack + '_> {
     App(AppRaw::new(move |event_loop| {
@@ -38,12 +79,15 @@ pub fn build_settings(
                 rw,
                 ui,
                 resources: Resources::new(rw),
+                drawers: Drawers::default(),
             })
         })
     }))
 }
 
-pub fn build(ui: impl Element + 'static) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack> {
+pub fn build(
+    ui: impl Element<Resources> + 'static,
+) -> App<impl FnOnce(&ActiveEventLoop) -> AppPack> {
     build_settings(ui, &DefaultRenderWindowSettings)
 }
 
@@ -53,13 +97,14 @@ impl<F: FnOnce(&ActiveEventLoop) -> AppPack> App<F> {
     }
 }
 
-struct EventHandler<'w, E: Element> {
+struct EventHandler<'w, R, E: Element<R>> {
     rw: &'w RenderWindow<'w>,
     ui: E,
-    resources: Resources,
+    resources: R,
+    drawers: Drawers<'w>,
 }
 
-impl<E: Element> HandleEvent for EventHandler<'_, E> {
+impl<R, E: Element<R>> HandleEvent for EventHandler<'_, R, E> {
     fn on_resized(&mut self, _info: EventInfo, new_size: PhysicalSize) {
         self.rw.resize_surface(new_size);
     }
@@ -67,26 +112,23 @@ impl<E: Element> HandleEvent for EventHandler<'_, E> {
     fn on_redraw_requested(&mut self, info: EventInfo) {
         let mut frame = self.rw.start_drawing();
         let mut render_pass =
-            frame
-                .commands
-                .encoder()
-                .begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: frame.surface.view(),
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    ..Default::default()
-                });
+            (frame.commands.encoder()).begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: frame.surface.view(),
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                ..Default::default()
+            });
 
         let window_size = info.window.inner_size();
         let location = Location::new(window_size);
 
-        let mut drawer = Drawer::new(DrawingInfo::new(self.rw, &mut render_pass));
-        self.ui.draw(&mut drawer, &mut self.resources, location);
+        let mut pass = DrawPass::new(self.rw, &mut render_pass, &mut self.drawers);
+        (self.ui).draw(&mut pass, &self.resources, location);
     }
 
     fn on_mouse_input(

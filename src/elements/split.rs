@@ -1,7 +1,6 @@
-use crate::resources::Resources;
+use crate::drawer::DrawPass;
 use crate::values::AutoValueSource;
 use crate::values::ValueSourceBorrow;
-use crate::Drawer;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
@@ -28,21 +27,21 @@ pub struct Split<Ty, Es> {
 
 macro_rules! impl_tuple {
     ( $($T:ident)+ ) => {
-        impl<Ty: ValueSourceBorrow<SplitType>, $($T: Element),+> Element
+        impl<R, Ty: ValueSourceBorrow<SplitType>, $($T: Element<R>),+> Element<R>
             for Split<Ty, ($($T),+)>
         {
-            fn draw<'e>(
+            fn draw(
                 &self,
-                drawer: &mut Drawer<'e>,
-                resources: &'e Resources,
+                pass: &mut DrawPass,
+                resources: &R,
                 location: Location,
             ) {
                 #[allow(non_snake_case)]
                 let ($($T),+) = &self.elements;
                 draw_helper(
                     *(*self.ty.value()).borrow(),
-                    [$((1, $T)),+],
-                    drawer,
+                    &[$((1, $T)),+],
+                    pass,
                     resources,
                     location,
                 );
@@ -63,11 +62,11 @@ impl_tuple!(A B C D E F G H I J);
 impl_tuple!(A B C D E F G H I J K);
 impl_tuple!(A B C D E F G H I J K L);
 
-fn draw_helper<'e, const N: usize>(
+fn draw_helper<R>(
     ty: SplitType,
-    elements: [(usize, &dyn Element); N],
-    drawer: &mut Drawer<'e>,
-    resources: &'e Resources,
+    elements: &[(usize, &dyn Element<R>)],
+    pass: &mut DrawPass,
+    resources: &R,
     location: Location,
 ) {
     let total_weight: usize = elements.iter().map(|&(weight, _)| weight).sum();
@@ -80,13 +79,13 @@ fn draw_helper<'e, const N: usize>(
     };
 
     let mut top_left = Vec2::ZERO;
-    for (weight, element) in elements {
+    for (weight, element) in elements.iter().copied() {
         let weight = weight as f32;
         let size = rect_fraction_size * weight;
         let offset = rect_fraction_offset * weight;
 
         element.draw(
-            drawer,
+            pass,
             resources,
             location.subrect(Rectangle::new(top_left, size)),
         );

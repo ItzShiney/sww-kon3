@@ -13,6 +13,11 @@
 		},
 		{
 			"type": "shell",
+			"command": "cargo check",
+			"label": "cargo check"
+		},
+		{
+			"type": "shell",
 			"command": "cargo clean",
 			"label": "cargo clean"
 		},

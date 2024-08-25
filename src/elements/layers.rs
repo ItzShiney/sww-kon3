@@ -1,5 +1,4 @@
-use crate::resources::Resources;
-use crate::Drawer;
+use crate::drawer::DrawPass;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
@@ -8,20 +7,20 @@ use crate::Location;
 
 pub struct Layers<Es>(Es);
 
-impl<A: Element, B: Element> Element for Layers<(A, B)> {
-    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
+impl<R, A: Element<R>, B: Element<R>> Element<R> for Layers<(A, B)> {
+    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
         let (a, b) = &self.0;
-        a.draw(drawer, resources, location);
-        b.draw(drawer, resources, location);
+        a.draw(pass, resources, location);
+        b.draw(pass, resources, location);
     }
 }
 
-impl<A: Element, B: Element, C: Element> Element for Layers<(A, B, C)> {
-    fn draw<'e>(&self, drawer: &mut Drawer<'e>, resources: &'e Resources, location: Location) {
+impl<R, A: Element<R>, B: Element<R>, C: Element<R>> Element<R> for Layers<(A, B, C)> {
+    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
         let (a, b, c) = &self.0;
-        a.draw(drawer, resources, location);
-        b.draw(drawer, resources, location);
-        c.draw(drawer, resources, location);
+        a.draw(pass, resources, location);
+        b.draw(pass, resources, location);
+        c.draw(pass, resources, location);
     }
 }
 
