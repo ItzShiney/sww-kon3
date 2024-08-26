@@ -1,4 +1,5 @@
 use crate::shared::SharedLock;
+use crate::InvalidateCache;
 use crate::Shared;
 use std::borrow::Borrow;
 use std::ops::Deref;
@@ -44,11 +45,23 @@ impl<T: ?Sized> ValueSourceMut for Shared<T> {
     }
 }
 
+impl<T: ?Sized, N: ?Sized> InvalidateCache<T> for Shared<N> {
+    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+        self.addr() == shared.addr()
+    }
+}
+
 impl ValueSource for &str {
     type Value<'s> = &'s str where Self: 's;
 
     fn value(&self) -> Self::Value<'_> {
         self
+    }
+}
+
+impl<T: ?Sized> InvalidateCache<T> for &str {
+    fn invalidate_cache(&self, _shared: &Shared<T>) -> bool {
+        false
     }
 }
 

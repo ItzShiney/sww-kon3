@@ -1,10 +1,12 @@
 use crate::drawer::DrawPass;
+use crate::shared::Shared;
 use crate::values::AutoValueSource;
 use crate::values::ValueSourceBorrow;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
+use crate::InvalidateCache;
 use crate::Location;
 use std::borrow::Borrow;
 use sww::shaders::mesh::Rectangle;
@@ -62,6 +64,14 @@ impl_tuple!(A B C D E F G H I J);
 impl_tuple!(A B C D E F G H I J K);
 impl_tuple!(A B C D E F G H I J K L);
 
+impl<T: ?Sized, Ty: InvalidateCache<T>, Es: InvalidateCache<T>> InvalidateCache<T>
+    for Split<Ty, Es>
+{
+    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+        self.ty.invalidate_cache(shared) || self.elements.invalidate_cache(shared)
+    }
+}
+
 fn draw_helper<R>(
     ty: SplitType,
     elements: &[(usize, &dyn Element<R>)],
@@ -94,7 +104,7 @@ fn draw_helper<R>(
 }
 
 impl<Ty, Es: HandleEvent> HandleEvent for Split<Ty, Es> {
-    fn handle_event(&mut self, event: &Event) -> EventResult {
+    fn handle_event(&self, event: &Event) -> EventResult {
         self.elements.handle_event(event)
     }
 }

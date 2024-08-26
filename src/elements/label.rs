@@ -3,22 +3,24 @@ use crate::resources::mesh::DefaultTexture;
 use crate::resources::mesh::NoGlobalTransform;
 use crate::resources::mesh::UnitSquareTopLeft;
 use crate::resources::ResourceFrom;
+use crate::shared::Shared;
 use crate::values::ValueSourceBorrow;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
+use crate::InvalidateCache;
 use crate::Location;
 use std::borrow::Borrow;
-use std::hash::Hash;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 
-// TODO turn into `text` field
-pub struct Label<Src>(Src);
+pub struct Label<Src> {
+    source: Src,
+}
 
 impl<Src> HandleEvent for Label<Src> {
-    fn handle_event(&mut self, _event: &Event) -> EventResult {
+    fn handle_event(&self, _event: &Event) -> EventResult {
         Ok(())
     }
 }
@@ -36,10 +38,11 @@ where
 
         let hash = {
             use std::hash::DefaultHasher;
+            use std::hash::Hash;
             use std::hash::Hasher;
 
             let mut hasher = DefaultHasher::default();
-            (*self.0.value()).borrow().hash(&mut hasher);
+            (*self.source.value()).borrow().hash(&mut hasher);
             (hasher.finish() % 16) as usize
         };
 
@@ -52,6 +55,14 @@ where
     }
 }
 
+impl<T: ?Sized, Src: InvalidateCache<T>> InvalidateCache<T> for Label<Src> {
+    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+        self.source.invalidate_cache(shared)
+    }
+}
+
 pub const fn label<Src: ValueSourceBorrow<str>>(ra_fixture_source: Src) -> Label<Src> {
-    Label(ra_fixture_source)
+    Label {
+        source: ra_fixture_source,
+    }
 }

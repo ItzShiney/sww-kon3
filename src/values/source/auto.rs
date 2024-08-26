@@ -1,9 +1,11 @@
 use super::ValueSource;
 use super::ValueSourceMut;
+use crate::shared::Shared;
+use crate::InvalidateCache;
 
 pub trait AutoValueSource {}
 
-impl<T: AutoValueSource> ValueSource for T {
+impl<T: AutoValueSource + ?Sized> ValueSource for T {
     type Value<'s> = &'s T where Self: 's;
 
     fn value(&self) -> Self::Value<'_> {
@@ -11,11 +13,17 @@ impl<T: AutoValueSource> ValueSource for T {
     }
 }
 
-impl<T: AutoValueSource> ValueSourceMut for T {
+impl<T: AutoValueSource + ?Sized> ValueSourceMut for T {
     type ValueMut<'s> = &'s mut T where Self: 's;
 
     fn value_mut(&mut self) -> Self::ValueMut<'_> {
         self
+    }
+}
+
+impl<T: ?Sized, N: AutoValueSource + ?Sized> InvalidateCache<T> for N {
+    fn invalidate_cache(&self, _shared: &Shared<T>) -> bool {
+        false
     }
 }
 

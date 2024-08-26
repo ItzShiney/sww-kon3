@@ -2,6 +2,8 @@ use super::Cache;
 use super::CacheRef;
 use super::ValueSource;
 use super::ValueSourceBorrow;
+use crate::shared::Shared;
+use crate::InvalidateCache;
 use std::borrow::Borrow;
 
 pub struct Concat<Src> {
@@ -23,6 +25,17 @@ impl<A: ValueSourceBorrow<str>, B: ValueSourceBorrow<str>, C: ValueSourceBorrow<
                 (*self.sources.2.value()).borrow(),
             )
         })
+    }
+}
+
+impl<T: ?Sized, Src: InvalidateCache<T>> InvalidateCache<T> for Concat<Src> {
+    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+        if self.sources.invalidate_cache(shared) {
+            self.cache.reset();
+            true
+        } else {
+            false
+        }
     }
 }
 

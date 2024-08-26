@@ -5,6 +5,7 @@ pub mod shared;
 pub mod values;
 
 use shared::Shared;
+use std::sync::Arc;
 
 mod drawer;
 mod location;
@@ -45,22 +46,53 @@ impl IntoEventResult for Consume {
 }
 
 pub trait HandleEvent {
-    fn handle_event(&mut self, event: &Event) -> EventResult;
+    fn handle_event(&self, event: &Event) -> EventResult;
 }
 
 pub trait Element<R>: HandleEvent {
     fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location);
 }
 
+impl<R, T: Element<R> + ?Sized> Element<R> for Arc<T> {
+    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
+        self.as_ref().draw(pass, resources, location);
+    }
+}
+
+impl<T: HandleEvent + ?Sized> HandleEvent for Arc<T> {
+    fn handle_event(&self, event: &Event) -> EventResult {
+        self.as_ref().handle_event(event)
+    }
+}
+
+impl<T: ?Sized, N: InvalidateCache<T> + ?Sized> InvalidateCache<T> for Arc<N> {
+    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+        self.as_ref().invalidate_cache(shared)
+    }
+}
+
+pub trait InvalidateCache<T: ?Sized> {
+    fn invalidate_cache(&self, shared: &Shared<T>) -> bool;
+}
+
 macro_rules! impl_tuple {
     ( $($T:ident)+ ) => {
         impl<$($T: HandleEvent),+> HandleEvent for ($($T),+) {
-            fn handle_event(&mut self, event: &Event) -> EventResult {
+            fn handle_event(&self, event: &Event) -> EventResult {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 
                 $( $T.handle_event(event)?; )+
                 Ok(())
+            }
+        }
+
+        impl<T: ?Sized, $($T: InvalidateCache<T>),+> InvalidateCache<T> for ($($T),+) {
+            fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+                #[allow(non_snake_case)]
+                let ($($T),+) = self;
+
+                $( $T.invalidate_cache(shared) )||+
             }
         }
     };

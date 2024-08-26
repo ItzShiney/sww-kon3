@@ -1,4 +1,5 @@
 use crate::drawer::DrawPass;
+use crate::prelude::Shared;
 use crate::resources::mesh::DefaultTexture;
 use crate::resources::mesh::NoGlobalTransform;
 use crate::resources::mesh::UnitSquareTopLeft;
@@ -7,6 +8,7 @@ use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
+use crate::InvalidateCache;
 use crate::Location;
 use crate::MeshDrawingInfo;
 use sww::shaders::mesh::BindGroups;
@@ -44,8 +46,14 @@ where
 }
 
 impl HandleEvent for Rect {
-    fn handle_event(&mut self, _event: &Event) -> EventResult {
+    fn handle_event(&self, _event: &Event) -> EventResult {
         Ok(())
+    }
+}
+
+impl<T: ?Sized> InvalidateCache<T> for Rect {
+    fn invalidate_cache(&self, _shared: &Shared<T>) -> bool {
+        false
     }
 }
 

@@ -1,6 +1,8 @@
 use super::Cache;
 use super::CacheRef;
 use super::ValueSource;
+use crate::shared::Shared;
+use crate::InvalidateCache;
 use std::ops::Deref;
 
 pub struct Strfy<Src> {
@@ -13,6 +15,17 @@ impl<Src: for<'s> ValueSource<Value<'s>: Deref<Target: ToString>>> ValueSource f
 
     fn value(&self) -> Self::Value<'_> {
         (self.cache).get_or_insert_with(|| self.source.value().to_string())
+    }
+}
+
+impl<T: ?Sized, Src: InvalidateCache<T>> InvalidateCache<T> for Strfy<Src> {
+    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+        if self.source.invalidate_cache(shared) {
+            self.cache.reset();
+            true
+        } else {
+            false
+        }
     }
 }
 
