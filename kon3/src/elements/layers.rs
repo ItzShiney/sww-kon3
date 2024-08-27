@@ -6,6 +6,7 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::InvalidateCache;
 use crate::Location;
+use crate::ReversedTuple;
 
 pub struct Layers<Es> {
     elements: Es,
@@ -28,9 +29,12 @@ impl<R, A: Element<R>, B: Element<R>, C: Element<R>> Element<R> for Layers<(A, B
     }
 }
 
-impl<Es: HandleEvent> HandleEvent for Layers<Es> {
+impl<Es: HandleEvent> HandleEvent for Layers<Es>
+where
+    for<'s> ReversedTuple<&'s Es>: HandleEvent,
+{
     fn handle_event(&self, event: &Event) -> EventResult {
-        self.elements.handle_event(event)
+        ReversedTuple(&self.elements).handle_event(event)
     }
 }
 

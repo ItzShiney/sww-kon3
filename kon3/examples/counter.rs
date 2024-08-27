@@ -1,33 +1,19 @@
 use kon3::prelude::*;
 
-#[rustfmt::skip]
 fn element_builder(app: &SharedBuilder) -> impl Element<Resources> {
     let counter = app.shared(0_usize);
 
-    let counter_label = {
-        label(concat((
-            "clicked ",
-            strfy(counter.clone()),
-            " times",
-        )))
-    };
-
-    let increase_button = {
-        on_click(
-            layers((
-                rect(Color::GREEN),
-                label("click me!"),
-            )),
-            move || { *counter.lock() += 1; Consume }
-        )
-    };
-
     column((
-        counter_label,
-        increase_button,
+        '_counter: { label(concat(("clicked ", strfy(counter.clone()), " times"))) },
+        '_button: {
+            on_click(
+                layers((rect(Color::GREEN), label("click me!"))),
+                consume(move || *counter.lock() += 1),
+            )
+        },
     ))
 }
 
 fn main() {
-    app::build(element_builder).run().unwrap();
+    app::run(element_builder).unwrap();
 }

@@ -45,6 +45,13 @@ impl IntoEventResult for Consume {
     }
 }
 
+pub fn consume(ra_fixture_f: impl Fn()) -> impl Fn() -> Consume {
+    move || {
+        ra_fixture_f();
+        Consume
+    }
+}
+
 pub trait HandleEvent {
     fn handle_event(&self, event: &Event) -> EventResult;
 }
@@ -75,14 +82,23 @@ pub trait InvalidateCache {
     fn invalidate_cache(&self, addr: shared::Addr) -> bool;
 }
 
+pub struct ReversedTuple<T>(pub T);
+
 macro_rules! impl_tuple {
-    ( $($T:ident)+ ) => {
+    ( $($T:ident)+ ; $($Reversed:tt)+ ) => {
         impl<$($T: HandleEvent),+> HandleEvent for ($($T),+) {
             fn handle_event(&self, event: &Event) -> EventResult {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 
                 $( $T.handle_event(event)?; )+
+                Ok(())
+            }
+        }
+
+        impl<$($T: HandleEvent),+> HandleEvent for ReversedTuple<&($($T),+)> {
+            fn handle_event(&self, event: &Event) -> EventResult {
+                $( self.0 .$Reversed.handle_event(event)?; )+
                 Ok(())
             }
         }
@@ -98,14 +114,14 @@ macro_rules! impl_tuple {
     };
 }
 
-impl_tuple!(A B);
-impl_tuple!(A B C);
-impl_tuple!(A B C D);
-impl_tuple!(A B C D E);
-impl_tuple!(A B C D E F);
-impl_tuple!(A B C D E F G);
-impl_tuple!(A B C D E F G H);
-impl_tuple!(A B C D E F G H I);
-impl_tuple!(A B C D E F G H I J);
-impl_tuple!(A B C D E F G H I J K);
-impl_tuple!(A B C D E F G H I J K L);
+impl_tuple!(A B; 1 0);
+impl_tuple!(A B C; 2 1 0);
+impl_tuple!(A B C D; 3 2 1 0);
+impl_tuple!(A B C D E; 4 3 2 1 0);
+impl_tuple!(A B C D E F; 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G; 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H; 7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I; 8 7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I J; 9 8 7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I J K; 10 9 8 7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I J K L; 11 10 9 8 7 6 5 4 3 2 1 0);

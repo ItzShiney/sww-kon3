@@ -68,7 +68,6 @@ mod resources {
     }
 }
 pub use resources::*;
-use sww::window::Window;
 
 // FIXME `Resources` -> `U::RequiredResources`
 pub fn build_settings<E: Element<Resources> + 'static>(
@@ -102,15 +101,17 @@ pub fn build_settings<E: Element<Resources> + 'static>(
     }))
 }
 
-pub fn build<E: Element<Resources> + 'static>(
+pub fn run_settings<E: Element<Resources> + 'static>(
     element_builder: impl FnOnce(&SharedBuilder) -> E,
-) -> App<
-    E,
-    impl FnOnce(&ActiveEventLoop) -> Window,
-    impl FnOnce(&Arc<Window>) -> RenderWindow,
-    impl FnOnce(&Arc<RenderWindow>) -> EventHandler<Resources, E>,
-> {
-    build_settings(element_builder, DefaultRenderWindowSettings)
+    settings: impl RenderWindowSettings + 'static,
+) -> Result<(), EventLoopError> {
+    build_settings(element_builder, settings).run()
+}
+
+pub fn run<E: Element<Resources> + 'static>(
+    element_builder: impl FnOnce(&SharedBuilder) -> E,
+) -> Result<(), EventLoopError> {
+    build_settings(element_builder, DefaultRenderWindowSettings).run()
 }
 
 #[allow(clippy::type_complexity)]
