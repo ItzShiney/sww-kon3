@@ -1,0 +1,7 @@
+[package]
+name = "kon3"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sww = { path = "../sww" } # git = "https://github.com/ItzShiney/sww"
