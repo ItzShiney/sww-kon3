@@ -1,6 +1,6 @@
 use super::ValueSource;
 use super::ValueSourceMut;
-use crate::shared::Shared;
+use crate::shared;
 use crate::InvalidateCache;
 
 pub trait AutoValueSource {}
@@ -21,8 +21,8 @@ impl<T: AutoValueSource + ?Sized> ValueSourceMut for T {
     }
 }
 
-impl<T: ?Sized, N: AutoValueSource + ?Sized> InvalidateCache<T> for N {
-    fn invalidate_cache(&self, _shared: &Shared<T>) -> bool {
+impl<T: AutoValueSource + ?Sized> InvalidateCache for T {
+    fn invalidate_cache(&self, _addr: shared::Addr) -> bool {
         false
     }
 }

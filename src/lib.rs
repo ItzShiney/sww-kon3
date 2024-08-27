@@ -49,7 +49,7 @@ pub trait HandleEvent {
     fn handle_event(&self, event: &Event) -> EventResult;
 }
 
-pub trait Element<R>: HandleEvent {
+pub trait Element<R>: HandleEvent + InvalidateCache {
     fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location);
 }
 
@@ -65,14 +65,14 @@ impl<T: HandleEvent + ?Sized> HandleEvent for Arc<T> {
     }
 }
 
-impl<T: ?Sized, N: InvalidateCache<T> + ?Sized> InvalidateCache<T> for Arc<N> {
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
-        self.as_ref().invalidate_cache(shared)
+impl<T: InvalidateCache + ?Sized> InvalidateCache for Arc<T> {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        self.as_ref().invalidate_cache(addr)
     }
 }
 
-pub trait InvalidateCache<T: ?Sized> {
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool;
+pub trait InvalidateCache {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool;
 }
 
 macro_rules! impl_tuple {
@@ -87,12 +87,12 @@ macro_rules! impl_tuple {
             }
         }
 
-        impl<T: ?Sized, $($T: InvalidateCache<T>),+> InvalidateCache<T> for ($($T),+) {
-            fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
+        impl<$($T: InvalidateCache),+> InvalidateCache for ($($T),+) {
+            fn invalidate_cache(&self, addr: shared::Addr) -> bool {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 
-                $( $T.invalidate_cache(shared) )||+
+                $( $T.invalidate_cache(addr) )||+
             }
         }
     };

@@ -2,7 +2,7 @@ use super::Cache;
 use super::CacheRef;
 use super::ValueSource;
 use super::ValueSourceBorrow;
-use crate::shared::Shared;
+use crate::shared;
 use crate::InvalidateCache;
 use std::borrow::Borrow;
 
@@ -28,9 +28,9 @@ impl<A: ValueSourceBorrow<str>, B: ValueSourceBorrow<str>, C: ValueSourceBorrow<
     }
 }
 
-impl<T: ?Sized, Src: InvalidateCache<T>> InvalidateCache<T> for Concat<Src> {
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
-        if self.sources.invalidate_cache(shared) {
+impl<Src: InvalidateCache> InvalidateCache for Concat<Src> {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        if self.sources.invalidate_cache(addr) {
             self.cache.reset();
             true
         } else {

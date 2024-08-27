@@ -1,4 +1,5 @@
-use crate::shared::SharedLock;
+use crate::shared;
+use crate::shared::SharedGuard;
 use crate::InvalidateCache;
 use crate::Shared;
 use std::borrow::Borrow;
@@ -9,7 +10,7 @@ mod auto;
 
 pub use auto::*;
 
-pub trait ValueSource {
+pub trait ValueSource: InvalidateCache {
     type Value<'s>: Deref + 's
     where
         Self: 's;
@@ -26,7 +27,7 @@ pub trait ValueSourceMut: ValueSource {
 }
 
 impl<T: ?Sized> ValueSource for Shared<T> {
-    type Value<'s> = SharedLock<'s, T>
+    type Value<'s> = SharedGuard<'s, T>
     where
         Self: 's;
 
@@ -36,7 +37,7 @@ impl<T: ?Sized> ValueSource for Shared<T> {
 }
 
 impl<T: ?Sized> ValueSourceMut for Shared<T> {
-    type ValueMut<'s> = SharedLock<'s, T>
+    type ValueMut<'s> = SharedGuard<'s, T>
     where
         Self: 's;
 
@@ -45,9 +46,9 @@ impl<T: ?Sized> ValueSourceMut for Shared<T> {
     }
 }
 
-impl<T: ?Sized, N: ?Sized> InvalidateCache<T> for Shared<N> {
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
-        self.addr() == shared.addr()
+impl<T: ?Sized> InvalidateCache for Shared<T> {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        self.addr() == addr
     }
 }
 
@@ -59,8 +60,8 @@ impl ValueSource for &str {
     }
 }
 
-impl<T: ?Sized> InvalidateCache<T> for &str {
-    fn invalidate_cache(&self, _shared: &Shared<T>) -> bool {
+impl InvalidateCache for &str {
+    fn invalidate_cache(&self, _addr: shared::Addr) -> bool {
         false
     }
 }

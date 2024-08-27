@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
+// FIXME use `Mutex`
 pub struct Cache<T>(RefCell<Option<T>>);
 
 impl<T> Cache<T> {

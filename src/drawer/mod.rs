@@ -1,6 +1,7 @@
 pub mod resources;
 
 use std::ptr;
+use std::sync::Arc;
 use sww::buffers::MutVecBuffer;
 use sww::drawing::Mesh;
 use sww::drawing::MeshPipeline;
@@ -15,22 +16,22 @@ pub enum ActiveDrawer {
 }
 
 #[derive(Default)]
-pub struct Drawers<'w> {
+pub struct Drawers {
     active: Option<ActiveDrawer>,
-    mesh: Option<MeshDrawerInfo<'w>>,
+    mesh: Option<MeshDrawerInfo>,
 }
 
-pub struct DrawPass<'w, 's, 'e> {
-    rw: &'w RenderWindow<'w>,
+pub struct DrawPass<'s, 'e> {
+    rw: Arc<RenderWindow>,
     render_pass: &'s mut wgpu::RenderPass<'e>,
-    drawers: &'s mut Drawers<'w>,
+    drawers: &'s mut Drawers,
 }
 
-impl<'w, 's, 'e> DrawPass<'w, 's, 'e> {
+impl<'s, 'e> DrawPass<'s, 'e> {
     pub fn new(
-        rw: &'w RenderWindow<'w>,
+        rw: Arc<RenderWindow>,
         render_pass: &'s mut wgpu::RenderPass<'e>,
-        drawers: &'s mut Drawers<'w>,
+        drawers: &'s mut Drawers,
     ) -> Self {
         Self {
             rw,
@@ -40,10 +41,11 @@ impl<'w, 's, 'e> DrawPass<'w, 's, 'e> {
     }
 }
 
-impl<'w, 'e> DrawPass<'w, '_, 'e> {
-    pub fn mesh(&mut self) -> MeshDrawer<'w, '_, 'e> {
+impl<'e> DrawPass<'_, 'e> {
+    pub fn mesh(&mut self) -> MeshDrawer<'_, 'e> {
         self.set_active(ActiveDrawer::Mesh);
-        let info = (self.drawers.mesh).get_or_insert_with(|| MeshDrawerInfo::new(self.rw));
+        let info =
+            (self.drawers.mesh).get_or_insert_with(|| MeshDrawerInfo::new(Arc::clone(&self.rw)));
 
         MeshDrawer {
             render_pass: self.render_pass,
@@ -74,7 +76,7 @@ impl<'w, 'e> DrawPass<'w, '_, 'e> {
     }
 }
 
-impl Drop for DrawPass<'_, '_, '_> {
+impl Drop for DrawPass<'_, '_> {
     fn drop(&mut self) {
         self.flush();
     }
@@ -94,28 +96,31 @@ impl PartialEq for MeshDrawingInfo {
 
 impl Eq for MeshDrawingInfo {}
 
-pub struct MeshDrawerInfo<'w> {
-    transforms: MutVecBuffer<'w, Transform>,
+pub struct MeshDrawerInfo {
+    transforms: MutVecBuffer<Transform>,
     pipeline: MeshPipeline,
     current_mesh_info: Option<MeshDrawingInfo>,
 }
 
-impl<'w> MeshDrawerInfo<'w> {
-    pub fn new(rw: &'w RenderWindow) -> Self {
+impl MeshDrawerInfo {
+    pub fn new(rw: Arc<RenderWindow>) -> Self {
+        let pipeline = MeshPipeline::new(&rw);
+        let transforms = MutVecBuffer::default_vertex(rw);
+
         Self {
-            transforms: MutVecBuffer::default_vertex(rw),
-            pipeline: MeshPipeline::new(rw),
+            transforms,
+            pipeline,
             current_mesh_info: None,
         }
     }
 }
 
-pub struct MeshDrawer<'w, 's, 'e> {
+pub struct MeshDrawer<'s, 'e> {
     render_pass: &'s mut wgpu::RenderPass<'e>,
-    info: &'s mut MeshDrawerInfo<'w>,
+    info: &'s mut MeshDrawerInfo,
 }
 
-impl<'e> MeshDrawer<'_, '_, 'e> {
+impl<'e> MeshDrawer<'_, 'e> {
     pub fn draw(&mut self, mesh_info: &MeshDrawingInfo, transform: Transform) {
         if self.info.current_mesh_info.as_ref() == Some(mesh_info) {
             self.flush();
@@ -131,7 +136,7 @@ impl<'e> MeshDrawer<'_, '_, 'e> {
                 self.render_pass,
                 &self.info.pipeline,
                 bind_groups,
-                &mut self.info.transforms,
+                &self.info.transforms,
             );
             self.info.transforms.clear();
         }

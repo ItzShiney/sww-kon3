@@ -1,5 +1,5 @@
 use crate::drawer::DrawPass;
-use crate::shared::Shared;
+use crate::shared;
 use crate::values::AutoValueSource;
 use crate::values::ValueSourceBorrow;
 use crate::Element;
@@ -64,11 +64,9 @@ impl_tuple!(A B C D E F G H I J);
 impl_tuple!(A B C D E F G H I J K);
 impl_tuple!(A B C D E F G H I J K L);
 
-impl<T: ?Sized, Ty: InvalidateCache<T>, Es: InvalidateCache<T>> InvalidateCache<T>
-    for Split<Ty, Es>
-{
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
-        self.ty.invalidate_cache(shared) || self.elements.invalidate_cache(shared)
+impl<Ty: InvalidateCache, Es: InvalidateCache> InvalidateCache for Split<Ty, Es> {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        self.ty.invalidate_cache(addr) || self.elements.invalidate_cache(addr)
     }
 }
 

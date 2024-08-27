@@ -1,5 +1,5 @@
 use crate::drawer::DrawPass;
-use crate::shared::Shared;
+use crate::shared;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
@@ -34,9 +34,9 @@ impl<Es: HandleEvent> HandleEvent for Layers<Es> {
     }
 }
 
-impl<T: ?Sized, Es: InvalidateCache<T>> InvalidateCache<T> for Layers<Es> {
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
-        self.elements.invalidate_cache(shared)
+impl<Es: InvalidateCache> InvalidateCache for Layers<Es> {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        self.elements.invalidate_cache(addr)
     }
 }
 

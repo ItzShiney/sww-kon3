@@ -3,7 +3,7 @@ use crate::resources::mesh::DefaultTexture;
 use crate::resources::mesh::NoGlobalTransform;
 use crate::resources::mesh::UnitSquareTopLeft;
 use crate::resources::ResourceFrom;
-use crate::shared::Shared;
+use crate::shared;
 use crate::values::ValueSourceBorrow;
 use crate::Element;
 use crate::Event;
@@ -55,9 +55,9 @@ where
     }
 }
 
-impl<T: ?Sized, Src: InvalidateCache<T>> InvalidateCache<T> for Label<Src> {
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
-        self.source.invalidate_cache(shared)
+impl<Src: InvalidateCache> InvalidateCache for Label<Src> {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        self.source.invalidate_cache(addr)
     }
 }
 

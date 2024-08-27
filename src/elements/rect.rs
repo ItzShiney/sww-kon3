@@ -1,9 +1,9 @@
 use crate::drawer::DrawPass;
-use crate::prelude::Shared;
 use crate::resources::mesh::DefaultTexture;
 use crate::resources::mesh::NoGlobalTransform;
 use crate::resources::mesh::UnitSquareTopLeft;
 use crate::resources::ResourceFrom;
+use crate::shared;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
@@ -51,8 +51,8 @@ impl HandleEvent for Rect {
     }
 }
 
-impl<T: ?Sized> InvalidateCache<T> for Rect {
-    fn invalidate_cache(&self, _shared: &Shared<T>) -> bool {
+impl InvalidateCache for Rect {
+    fn invalidate_cache(&self, _addr: shared::Addr) -> bool {
         false
     }
 }

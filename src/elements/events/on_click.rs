@@ -1,5 +1,5 @@
 use crate::drawer::DrawPass;
-use crate::shared::Shared;
+use crate::shared;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
@@ -30,9 +30,9 @@ impl<E: HandleEvent, F: Fn() -> U, U: IntoEventResult> HandleEvent for OnClick<E
     }
 }
 
-impl<T: ?Sized, E: InvalidateCache<T>, F> InvalidateCache<T> for OnClick<E, F> {
-    fn invalidate_cache(&self, shared: &Shared<T>) -> bool {
-        self.element.invalidate_cache(shared)
+impl<E: InvalidateCache, F> InvalidateCache for OnClick<E, F> {
+    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        self.element.invalidate_cache(addr)
     }
 }
 
