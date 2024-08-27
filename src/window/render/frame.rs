@@ -6,6 +6,7 @@ mod surface;
 pub use commands::*;
 pub use surface::*;
 
+// TODO make fields private
 pub struct Frame<'w> {
     pub commands: FrameCommands<'w>,
     pub surface: FrameSurface,

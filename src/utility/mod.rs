@@ -1,3 +1,3 @@
 mod lazy;
 
-pub(crate) use lazy::*;
+pub use lazy::*;

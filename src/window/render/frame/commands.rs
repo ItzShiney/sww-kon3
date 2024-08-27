@@ -1,7 +1,7 @@
 use crate::window::RenderWindow;
 
 pub struct FrameCommands<'w> {
-    info: &'w RenderWindow<'w>,
+    info: &'w RenderWindow,
     encoder: Option<wgpu::CommandEncoder>,
 }
 

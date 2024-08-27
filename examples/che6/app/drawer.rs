@@ -27,7 +27,7 @@ impl Drawer {
     pub fn draw_squares<'e>(
         &'e self,
         render_pass: &mut wgpu::RenderPass<'e>,
-        transforms: &mut MutVecBuffer<Transform>,
+        transforms: &MutVecBuffer<Transform>,
         bind_groups: shaders::mesh::BindGroups<'e>,
     ) {
         (self.square).draw(render_pass, &self.mesh_pipeline, bind_groups, transforms)

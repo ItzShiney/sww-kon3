@@ -1,31 +1,32 @@
 use crate::window::*;
 use event::*;
 use pollster::FutureExt;
-use std::cell::RefCell;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 mod frame;
 
 pub use frame::*;
 
-pub struct RenderWindow<'w> {
-    window: &'w Window,
-    surface: wgpu::Surface<'w>,
-    surface_config: RefCell<wgpu::SurfaceConfiguration>,
+pub struct RenderWindow {
+    window: Arc<Window>,
+    surface: wgpu::Surface<'static>,
+    surface_config: Mutex<wgpu::SurfaceConfiguration>,
     swapchain_format: wgpu::TextureFormat,
     device: wgpu::Device,
     queue: wgpu::Queue,
 }
 
-impl<'w> RenderWindow<'w> {
+impl RenderWindow {
     pub fn new(
-        window: &'w Window,
+        window: Arc<Window>,
         settings: &impl RenderWindowSettings,
     ) -> Result<Self, AppInfoError> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(settings.instance_descriptor());
 
-        let surface = instance.create_surface(window).unwrap();
+        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
         let adapter = instance
             .request_adapter(&settings.request_adapter_options(&surface))
             .block_on()
@@ -53,8 +54,8 @@ impl<'w> RenderWindow<'w> {
         })
     }
 
-    pub fn window(&self) -> &Window {
-        self.window
+    pub fn window(&self) -> &Arc<Window> {
+        &self.window
     }
 
     pub fn device(&self) -> &wgpu::Device {
@@ -76,7 +77,7 @@ impl<'w> RenderWindow<'w> {
     }
 
     pub fn resize_surface(&self, new_size: PhysicalSize) {
-        let mut surface_config = self.surface_config.borrow_mut();
+        let mut surface_config = self.surface_config.lock().unwrap();
 
         surface_config.width = new_size.width.max(1);
         surface_config.height = new_size.height.max(1);
@@ -89,8 +90,10 @@ impl<'w> RenderWindow<'w> {
     }
 }
 
-pub fn rw_builder(
-    settings: &impl RenderWindowSettings,
-) -> impl FnOnce(&Window) -> RenderWindow + '_ {
-    move |window| RenderWindow::new(window, settings).unwrap()
+pub fn rw_builder(settings: impl RenderWindowSettings) -> impl Fn(&Arc<Window>) -> RenderWindow {
+    move |window| RenderWindow::new(Arc::clone(window), &settings).unwrap()
+}
+
+pub fn rw_builder_default() -> fn(&Arc<Window>) -> RenderWindow {
+    move |window| RenderWindow::new(Arc::clone(window), &DefaultRenderWindowSettings).unwrap()
 }

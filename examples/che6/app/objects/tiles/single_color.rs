@@ -1,6 +1,7 @@
 use crate::Drawer;
 use crate::Scalable;
 use crate::Scalables;
+use std::sync::Arc;
 use sww::buffers::Binding;
 use sww::buffers::MutBuffer;
 use sww::buffers::MutVecBuffer;
@@ -10,17 +11,17 @@ use sww::window::RenderWindow;
 use sww::Color;
 use sww::Vec2;
 
-pub struct SingleColorTiles<'w> {
-    pub transforms: MutVecBuffer<'w, Transform>,
+pub struct SingleColorTiles {
+    pub transforms: MutVecBuffer<Transform>,
     bind_group0: shaders::mesh::BindGroup0,
 }
 
-impl<'w> SingleColorTiles<'w> {
+impl SingleColorTiles {
     pub fn new(
-        rw: &'w RenderWindow,
+        rw: &Arc<RenderWindow>,
         scalables: &mut Scalables,
         color: Color,
-        transforms: MutVecBuffer<'w, Transform>,
+        transforms: MutVecBuffer<Transform>,
     ) -> Self {
         scalables.push(Scalable::new(
             MutBuffer::new_uniform(
@@ -46,16 +47,16 @@ impl<'w> SingleColorTiles<'w> {
     }
 }
 
-impl<'e> SingleColorTiles<'_> {
-    pub fn draw(
-        &'e mut self,
+impl SingleColorTiles {
+    pub fn draw<'e>(
+        &'e self,
         drawer: &'e Drawer,
         render_pass: &mut wgpu::RenderPass<'e>,
         bind_group1: &'e shaders::mesh::BindGroup1,
     ) {
         drawer.draw_squares(
             render_pass,
-            &mut self.transforms,
+            &self.transforms,
             shaders::mesh::BindGroups {
                 bind_group0: &self.bind_group0,
                 bind_group1,

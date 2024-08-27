@@ -73,12 +73,12 @@ impl Mesh {
         render_pass: &mut wgpu::RenderPass<'e>,
         pipeline: &MeshPipeline,
         bind_groups: BindGroups<'e>,
-        transforms: &mut MutVecBuffer<Transform>,
+        transforms: &MutVecBuffer<Transform>,
     ) {
         pipeline.set(render_pass);
         bind_groups.set(render_pass);
         render_pass.set_vertex_buffer(0, self.vertices().buffer().slice(..));
-        render_pass.set_vertex_buffer(1, transforms.update_buffer());
+        render_pass.set_vertex_buffer(1, transforms.buffer().slice(..));
 
         let instances = 0..transforms.values().len() as _;
         if let Some(indices) = self.indices() {

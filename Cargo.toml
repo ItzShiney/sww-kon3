@@ -13,7 +13,6 @@ image = "*"
 wgpu = "*"
 glam = { version = "*", features = ["bytemuck"] }
 log = { version = "*", features = ["release_max_level_off"] }
-ouroboros = "*"
 
 [build-dependencies]
 wgsl_to_wgpu = "*"

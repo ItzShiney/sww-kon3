@@ -1,6 +1,7 @@
 use crate::pieces::PieceColor;
 use crate::pieces::PieceType;
 use event::*;
+use std::sync::Arc;
 use sww::app::EventInfo;
 use sww::app::HandleEvent;
 use sww::vec2;
@@ -17,14 +18,14 @@ pub fn translation(x: i32, y: i32) -> Vec2 {
     vec2(x as _, y as _)
 }
 
-pub struct MyApp<'w> {
-    rw: &'w RenderWindow<'w>,
-    objects: Objects<'w>,
+pub struct EventHandler {
+    rw: Arc<RenderWindow>,
+    objects: Objects,
     drawer: Drawer,
 }
 
-impl<'w> MyApp<'w> {
-    pub fn new(rw: &'w RenderWindow) -> Self {
+impl EventHandler {
+    pub fn new(rw: &Arc<RenderWindow>) -> Self {
         let drawer = Drawer::new(rw);
         let mut objects = Objects::new(rw);
 
@@ -40,29 +41,13 @@ impl<'w> MyApp<'w> {
         ));
 
         Self {
-            rw,
+            rw: Arc::clone(rw),
             drawer,
             objects,
         }
     }
-}
 
-impl HandleEvent for MyApp<'_> {
-    fn on_resized(&mut self, _info: EventInfo, new_size: PhysicalSize) {
-        self.rw.resize_surface(new_size);
-        self.rw.window().request_redraw();
-    }
-
-    fn on_redraw_requested(&mut self, _info: EventInfo) {
-        let mut frame = self.rw.start_drawing();
-
-        self.objects.scale(self.rw.window().ratio());
-        self.draw(&mut frame);
-    }
-}
-
-impl<'e> MyApp<'_> {
-    fn draw(&mut self, frame: &mut Frame<'e>) {
+    fn draw(&self, frame: &mut Frame) {
         let mut render_pass =
             frame
                 .commands
@@ -80,5 +65,19 @@ impl<'e> MyApp<'_> {
                 });
 
         self.objects.draw(&self.drawer, &mut render_pass);
+    }
+}
+
+impl HandleEvent for EventHandler {
+    fn on_resized(&self, _info: EventInfo, new_size: PhysicalSize) {
+        self.rw.resize_surface(new_size);
+        self.rw.window().request_redraw();
+    }
+
+    fn on_redraw_requested(&self, _info: EventInfo) {
+        let mut frame = self.rw.start_drawing();
+
+        self.objects.scale(self.rw.window().ratio());
+        self.draw(&mut frame);
     }
 }

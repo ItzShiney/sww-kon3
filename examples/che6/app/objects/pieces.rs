@@ -3,6 +3,7 @@ use crate::pieces::PiecesSheetCoord;
 use crate::Drawer;
 use crate::Scalable;
 use crate::Scalables;
+use std::sync::Arc;
 use sww::buffers::Binding;
 use sww::buffers::MutBuffer;
 use sww::buffers::MutVecBuffer;
@@ -25,19 +26,19 @@ pub fn make_piece_transform(
     }
 }
 
-pub struct Pieces<'w> {
-    pub transforms: MutVecBuffer<'w, Transform>,
+pub struct Pieces {
+    pub transforms: MutVecBuffer<Transform>,
     sheet: PiecesSheet,
     bind_group0: shaders::mesh::BindGroup0,
     bind_group1: shaders::mesh::BindGroup1,
 }
 
-impl<'w> Pieces<'w> {
+impl Pieces {
     pub fn new(
-        rw: &'w RenderWindow,
+        rw: &Arc<RenderWindow>,
         scalables: &mut Scalables,
         sheet: PiecesSheet,
-        transforms: MutVecBuffer<'w, Transform>,
+        transforms: MutVecBuffer<Transform>,
     ) -> Self {
         scalables.push(Scalable::new(
             MutBuffer::new_uniform(rw.device(), Transform::default()),
@@ -70,11 +71,11 @@ impl<'w> Pieces<'w> {
     }
 }
 
-impl Pieces<'_> {
-    pub fn draw<'e>(&'e mut self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
+impl Pieces {
+    pub fn draw<'e>(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         drawer.draw_squares(
             render_pass,
-            &mut self.transforms,
+            &self.transforms,
             shaders::mesh::BindGroups {
                 bind_group0: &self.bind_group0,
                 bind_group1: &self.bind_group1,

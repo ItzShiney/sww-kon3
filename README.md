@@ -1,5 +1,5 @@
 # sww
 
-My wrapper for `wgpu` crate, hugely inspired by SFML and designed to correct its mistakes and provide more general and fast API.
+My wrapper for `wgpu` crate, hugely inspired by SFML and designed to correct its mistakes and provide a faster API.
 
-Mainly targets my own upcoming projects.
+Mainly made for my own (upcoming) projects.

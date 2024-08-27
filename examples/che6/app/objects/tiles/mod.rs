@@ -1,6 +1,7 @@
 use crate::translation;
 use crate::Drawer;
 use crate::Scalables;
+use std::sync::Arc;
 use sww::buffers::MutVecBuffer;
 use sww::media;
 use sww::shaders;
@@ -12,9 +13,9 @@ mod single_color;
 
 pub use single_color::*;
 
-pub fn make_white_black_tranforms<'w>(
-    rw: &'w RenderWindow,
-) -> (MutVecBuffer<'w, Transform>, MutVecBuffer<'w, Transform>) {
+pub fn make_white_black_tranforms(
+    rw: &Arc<RenderWindow>,
+) -> (MutVecBuffer<Transform>, MutVecBuffer<Transform>) {
     let mut white = Vec::default();
     let mut black = Vec::default();
 
@@ -35,19 +36,19 @@ pub fn make_white_black_tranforms<'w>(
     }
 
     (
-        MutVecBuffer::new_vertex(rw, white),
-        MutVecBuffer::new_vertex(rw, black),
+        MutVecBuffer::new_vertex(Arc::clone(rw), white),
+        MutVecBuffer::new_vertex(Arc::clone(rw), black),
     )
 }
 
-pub struct Tiles<'w> {
-    white: SingleColorTiles<'w>,
-    black: SingleColorTiles<'w>,
+pub struct Tiles {
+    white: SingleColorTiles,
+    black: SingleColorTiles,
     bind_group1: shaders::mesh::BindGroup1,
 }
 
-impl<'w> Tiles<'w> {
-    pub fn new(rw: &'w RenderWindow, scalables: &mut Scalables) -> Self {
+impl Tiles {
+    pub fn new(rw: &Arc<RenderWindow>, scalables: &mut Scalables) -> Self {
         let (white_transforms, black_transforms) = make_white_black_tranforms(rw);
         let white = SingleColorTiles::new(rw, scalables, Color::splat(0.45), white_transforms);
         let black = SingleColorTiles::new(rw, scalables, Color::splat(0.25), black_transforms);
@@ -72,8 +73,8 @@ impl<'w> Tiles<'w> {
     }
 }
 
-impl<'e> Tiles<'_> {
-    pub fn draw(&'e mut self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
+impl Tiles {
+    pub fn draw<'e>(&'e self, drawer: &'e Drawer, render_pass: &mut wgpu::RenderPass<'e>) {
         self.white.draw(drawer, render_pass, &self.bind_group1);
         self.black.draw(drawer, render_pass, &self.bind_group1);
     }
