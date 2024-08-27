@@ -41,15 +41,15 @@ impl<E: HandleEvent, WB: WindowBuilder, RB: RenderWindowBuilder, EB: EventHandle
     }
 
     pub fn window(&self) -> Option<Arc<Window>> {
-        Some(Arc::clone(&*self.window.get()?))
+        self.window.get().as_deref().map(Arc::clone)
     }
 
     pub fn rw(&self) -> Option<Arc<RenderWindow>> {
-        Some(Arc::clone(&*self.rw.get()?))
+        self.rw.get().as_deref().map(Arc::clone)
     }
 
     pub fn event_handler(&self) -> Option<Arc<E>> {
-        Some(Arc::clone(&*self.event_handler.get()?))
+        self.event_handler.get().as_deref().map(Arc::clone)
     }
 }
 

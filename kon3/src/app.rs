@@ -193,14 +193,14 @@ impl<R, E: Element<R>> HandleEvent for EventHandler<R, E> {
                 ..Default::default()
             });
 
-        let location = {
-            let window_size = info.window.inner_size();
-            Location::new(window_size)
-        };
         let mut drawers = self.drawers.lock().unwrap();
         let mut pass = {
             let rw = Arc::clone(&self.rw);
             DrawPass::new(rw, &mut render_pass, &mut drawers)
+        };
+        let location = {
+            let window_size = info.window.inner_size();
+            Location::new(window_size)
         };
 
         self.element.draw(&mut pass, &self.resources, location);
