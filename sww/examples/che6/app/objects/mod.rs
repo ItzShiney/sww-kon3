@@ -37,11 +37,7 @@ impl Objects {
         let pieces = {
             let sheet = PiecesSheet::new(
                 rw,
-                read_image(io::Cursor::new(include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/res/pieces.png"
-                ))))
-                .unwrap(),
+                read_image(io::Cursor::new(include_bytes!("pieces.png"))).unwrap(),
             );
             let transforms = make_piece_transforms(rw, &sheet);
 
