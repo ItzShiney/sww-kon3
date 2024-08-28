@@ -15,5 +15,7 @@ pub use color::*;
 mod color;
 
 pub use glam::vec2;
+pub use glam::vec4;
 pub use glam::Mat2;
 pub use glam::Vec2;
+pub use glam::Vec4;
