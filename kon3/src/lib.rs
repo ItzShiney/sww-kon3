@@ -15,9 +15,9 @@ pub use drawer::*;
 pub use location::*;
 
 pub enum Event {
-    Click,
+    Click { point: LocationPoint },
+    Scroll {},
     _1,
-    _2,
 }
 
 pub struct Consume;
@@ -53,16 +53,17 @@ pub fn consume(ra_fixture_f: impl Fn()) -> impl Fn() -> Consume {
     }
 }
 
+// TODO add `location: LocationRect`?
 pub trait HandleEvent {
     fn handle_event(&self, event: &Event) -> EventResult;
 }
 
 pub trait Element: HandleEvent + InvalidateCache {
-    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location);
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect);
 }
 
 impl<T: Element + ?Sized> Element for Arc<T> {
-    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect) {
         self.as_ref().draw(pass, resources, location);
     }
 }

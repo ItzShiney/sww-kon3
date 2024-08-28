@@ -6,7 +6,7 @@ use crate::Drawers;
 use crate::Element;
 use crate::Event;
 use crate::InvalidateCache;
-use crate::Location;
+use crate::LocationRect;
 use std::sync as arc;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -157,7 +157,7 @@ impl<E: Element> HandleEvent for EventHandler<E> {
         };
         let location = {
             let window_size = info.window.inner_size();
-            Location::new(window_size)
+            LocationRect::new(window_size)
         };
 
         self.element.draw(&mut pass, &self.resources, location);
@@ -171,7 +171,8 @@ impl<E: Element> HandleEvent for EventHandler<E> {
         _button: MouseButton,
     ) {
         if state == ElementState::Released {
-            _ = self.element.handle_event(&Event::Click);
+            let point = todo!();
+            _ = self.element.handle_event(&Event::Click { point });
         }
     }
 }

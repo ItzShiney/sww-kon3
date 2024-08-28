@@ -8,7 +8,7 @@ use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::InvalidateCache;
-use crate::Location;
+use crate::LocationRect;
 use std::borrow::Borrow;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
@@ -37,7 +37,7 @@ macro_rules! impl_tuple {
                 &self,
                 pass: &mut DrawPass,
                 resources: &Resources,
-                location: Location,
+                location: LocationRect,
             ) {
                 #[allow(non_snake_case)]
                 let ($($T),+) = &self.elements;
@@ -76,7 +76,7 @@ fn draw_helper(
     elements: &[(usize, &dyn Element)],
     pass: &mut DrawPass,
     resources: &Resources,
-    location: Location,
+    location: LocationRect,
 ) {
     let total_weight: usize = elements.iter().map(|&(weight, _)| weight).sum();
     let fraction = 1. / total_weight as f32;

@@ -7,7 +7,7 @@ use crate::EventResult;
 use crate::HandleEvent;
 use crate::IntoEventResult;
 use crate::InvalidateCache;
-use crate::Location;
+use crate::LocationRect;
 
 pub struct OnClick<E, F> {
     element: E,
@@ -15,7 +15,7 @@ pub struct OnClick<E, F> {
 }
 
 impl<E: Element, F: Fn() -> U, U: IntoEventResult> Element for OnClick<E, F> {
-    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect) {
         self.element.draw(pass, resources, location);
     }
 }
@@ -23,8 +23,10 @@ impl<E: Element, F: Fn() -> U, U: IntoEventResult> Element for OnClick<E, F> {
 impl<E: HandleEvent, F: Fn() -> U, U: IntoEventResult> HandleEvent for OnClick<E, F> {
     fn handle_event(&self, event: &Event) -> EventResult {
         #[allow(clippy::equatable_if_let)]
-        if let Event::Click = event {
-            (self.f)().into_event_result()?;
+        if let Event::Click { point } = event {
+            if todo!("location.contains(point)") {
+                (self.f)().into_event_result()?;
+            }
         }
 
         self.element.handle_event(event)

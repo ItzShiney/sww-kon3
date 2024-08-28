@@ -6,7 +6,7 @@ use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::InvalidateCache;
-use crate::Location;
+use crate::LocationRect;
 use crate::ReversedTuple;
 
 pub struct Layers<Es> {
@@ -14,7 +14,7 @@ pub struct Layers<Es> {
 }
 
 impl<A: Element, B: Element> Element for Layers<(A, B)> {
-    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect) {
         let (a, b) = &self.elements;
         a.draw(pass, resources, location);
         b.draw(pass, resources, location);
@@ -22,7 +22,7 @@ impl<A: Element, B: Element> Element for Layers<(A, B)> {
 }
 
 impl<A: Element, B: Element, C: Element> Element for Layers<(A, B, C)> {
-    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect) {
         let (a, b, c) = &self.elements;
         a.draw(pass, resources, location);
         b.draw(pass, resources, location);

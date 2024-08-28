@@ -7,7 +7,7 @@ use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::InvalidateCache;
-use crate::Location;
+use crate::LocationRect;
 use std::borrow::Borrow;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
@@ -24,7 +24,7 @@ impl<Src> HandleEvent for Label<Src> {
 
 // FIXME
 impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
-    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect) {
         use super::rect;
         use sww::Color;
 
