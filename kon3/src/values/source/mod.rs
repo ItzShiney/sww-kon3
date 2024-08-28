@@ -52,20 +52,6 @@ impl<T: ?Sized> InvalidateCache for Shared<T> {
     }
 }
 
-impl ValueSource for &str {
-    type Value<'s> = &'s str where Self: 's;
-
-    fn value(&self) -> Self::Value<'_> {
-        self
-    }
-}
-
-impl InvalidateCache for &str {
-    fn invalidate_cache(&self, _addr: shared::Addr) -> bool {
-        false
-    }
-}
-
 pub trait ValueSourceBorrow<V: ?Sized>:
     for<'s> ValueSource<Value<'s>: Deref<Target: Borrow<V>>>
 {
