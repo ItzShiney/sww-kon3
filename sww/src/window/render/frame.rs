@@ -6,10 +6,9 @@ mod surface;
 pub use commands::*;
 pub use surface::*;
 
-// TODO make fields private
 pub struct Frame<'w> {
-    pub commands: FrameCommands<'w>,
-    pub surface: FrameSurface,
+    commands: FrameCommands<'w>,
+    surface: FrameSurface,
 }
 
 impl<'w> Frame<'w> {
@@ -22,5 +21,9 @@ impl<'w> Frame<'w> {
             commands: FrameCommands::new(info, command_encoder),
             surface: FrameSurface::new(surface_texture),
         }
+    }
+
+    pub fn commands_surface(&mut self) -> (&mut FrameCommands<'w>, &mut FrameSurface) {
+        (&mut self.commands, &mut self.surface)
     }
 }

@@ -48,21 +48,18 @@ impl EventHandler {
     }
 
     fn draw(&self, frame: &mut Frame) {
-        let mut render_pass =
-            frame
-                .commands
-                .encoder()
-                .begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: frame.surface.view(),
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    ..Default::default()
-                });
+        let (commands, surface) = frame.commands_surface();
+        let mut render_pass = (commands.encoder()).begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: surface.view(),
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            ..Default::default()
+        });
 
         self.objects.draw(&self.drawer, &mut render_pass);
     }

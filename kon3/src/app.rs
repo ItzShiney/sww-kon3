@@ -137,18 +137,18 @@ impl<E: Element> HandleEvent for EventHandler<E> {
 
     fn on_redraw_requested(&self, info: EventInfo) {
         let mut frame = self.rw.start_drawing();
-        let mut render_pass =
-            (frame.commands.encoder()).begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: frame.surface.view(),
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                ..Default::default()
-            });
+        let (commands, surface) = frame.commands_surface();
+        let mut render_pass = (commands.encoder()).begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: surface.view(),
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            ..Default::default()
+        });
 
         let mut drawers = self.drawers.lock().unwrap();
         let mut pass = {
