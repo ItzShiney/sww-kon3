@@ -1,5 +1,5 @@
 use super::Cache;
-use super::CacheRef;
+use super::CacheGuard;
 use super::ValueSource;
 use super::ValueSourceBorrow;
 use crate::shared;
@@ -14,7 +14,7 @@ pub struct Concat<Src> {
 impl<A: ValueSourceBorrow<str>, B: ValueSourceBorrow<str>, C: ValueSourceBorrow<str>> ValueSource
     for Concat<(A, B, C)>
 {
-    type Value<'s> = CacheRef<'s, String> where Self: 's;
+    type Value<'s> = CacheGuard<'s, String> where Self: 's;
 
     fn value(&self) -> Self::Value<'_> {
         self.cache.get_or_insert_with(|| {

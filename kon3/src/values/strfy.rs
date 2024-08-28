@@ -1,5 +1,5 @@
 use super::Cache;
-use super::CacheRef;
+use super::CacheGuard;
 use super::ValueSource;
 use crate::shared;
 use crate::InvalidateCache;
@@ -11,7 +11,7 @@ pub struct Strfy<Src> {
 }
 
 impl<Src: for<'s> ValueSource<Value<'s>: Deref<Target: ToString>>> ValueSource for Strfy<Src> {
-    type Value<'s> = CacheRef<'s, String> where Self: 's;
+    type Value<'s> = CacheGuard<'s, String> where Self: 's;
 
     fn value(&self) -> Self::Value<'_> {
         self.cache

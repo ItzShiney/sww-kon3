@@ -30,7 +30,6 @@ use sww::window::DefaultRenderWindowSettings;
 use sww::window::RenderWindow;
 use sww::window::RenderWindowSettings;
 
-// FIXME `Resources` -> `U::RequiredResources`
 pub fn build_settings<E: Element + 'static>(
     element_builder: impl FnOnce(&SharedBuilder) -> E,
     settings: impl RenderWindowSettings + 'static,
