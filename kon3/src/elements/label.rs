@@ -1,8 +1,5 @@
 use crate::drawer::DrawPass;
-use crate::resources::mesh::DefaultTexture;
-use crate::resources::mesh::NoGlobalTransform;
-use crate::resources::mesh::UnitSquareTopLeft;
-use crate::resources::ResourceFrom;
+use crate::prelude::Resources;
 use crate::shared;
 use crate::values::ValueSourceBorrow;
 use crate::Element;
@@ -26,13 +23,8 @@ impl<Src> HandleEvent for Label<Src> {
 }
 
 // FIXME
-impl<R, Src: ValueSourceBorrow<str>> Element<R> for Label<Src>
-where
-    UnitSquareTopLeft: ResourceFrom<R>,
-    NoGlobalTransform: ResourceFrom<R>,
-    DefaultTexture: ResourceFrom<R>,
-{
-    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
+impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
         use super::rect;
         use sww::Color;
 

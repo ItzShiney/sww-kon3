@@ -1,4 +1,5 @@
 use crate::drawer::DrawPass;
+use crate::prelude::Resources;
 use crate::shared;
 use crate::Element;
 use crate::Event;
@@ -13,8 +14,8 @@ pub struct OnClick<E, F> {
     f: F,
 }
 
-impl<R, E: Element<R>, F: Fn() -> U, U: IntoEventResult> Element<R> for OnClick<E, F> {
-    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
+impl<E: Element, F: Fn() -> U, U: IntoEventResult> Element for OnClick<E, F> {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
         self.element.draw(pass, resources, location);
     }
 }

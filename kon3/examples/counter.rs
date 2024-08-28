@@ -1,6 +1,6 @@
 use kon3::prelude::*;
 
-fn element_builder(app: &SharedBuilder) -> impl Element<Resources> {
+fn element_builder(app: &SharedBuilder) -> impl Element {
     let counter = app.shared(0_usize);
 
     column((

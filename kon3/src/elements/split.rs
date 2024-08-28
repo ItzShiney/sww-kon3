@@ -1,4 +1,5 @@
 use crate::drawer::DrawPass;
+use crate::resources::Resources;
 use crate::shared;
 use crate::values::AutoValueSource;
 use crate::values::ValueSourceBorrow;
@@ -29,13 +30,13 @@ pub struct Split<Ty, Es> {
 
 macro_rules! impl_tuple {
     ( $($T:ident)+ ) => {
-        impl<R, Ty: ValueSourceBorrow<SplitType>, $($T: Element<R>),+> Element<R>
+        impl<Ty: ValueSourceBorrow<SplitType>, $($T: Element),+> Element
             for Split<Ty, ($($T),+)>
         {
             fn draw(
                 &self,
                 pass: &mut DrawPass,
-                resources: &R,
+                resources: &Resources,
                 location: Location,
             ) {
                 #[allow(non_snake_case)]
@@ -70,11 +71,11 @@ impl<Ty: InvalidateCache, Es: InvalidateCache> InvalidateCache for Split<Ty, Es>
     }
 }
 
-fn draw_helper<R>(
+fn draw_helper(
     ty: SplitType,
-    elements: &[(usize, &dyn Element<R>)],
+    elements: &[(usize, &dyn Element)],
     pass: &mut DrawPass,
-    resources: &R,
+    resources: &Resources,
     location: Location,
 ) {
     let total_weight: usize = elements.iter().map(|&(weight, _)| weight).sum();

@@ -1,6 +1,7 @@
 pub use crate::app::*;
 pub use crate::elements::events::*;
 pub use crate::elements::*;
+pub use crate::resources::*;
 pub use crate::shared::*;
 pub use crate::values::*;
 pub use crate::*;

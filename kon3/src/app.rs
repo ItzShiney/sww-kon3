@@ -1,3 +1,4 @@
+use crate::resources::Resources;
 use crate::shared;
 use crate::shared::Shared;
 use crate::DrawPass;
@@ -29,56 +30,12 @@ use sww::window::DefaultRenderWindowSettings;
 use sww::window::RenderWindow;
 use sww::window::RenderWindowSettings;
 
-// FIXME autogenerate from UI
-mod resources {
-    #[allow(clippy::wildcard_imports)]
-    use crate::resources::mesh::*;
-    use crate::resources::Resource;
-    use crate::resources::ResourceFrom;
-    use sww::window::RenderWindow;
-
-    pub struct Resources(&'static (UnitSquareTopLeft, NoGlobalTransform, DefaultTexture));
-
-    impl Resources {
-        pub fn new(rw: &RenderWindow) -> Self {
-            Self(Box::leak(Box::new((
-                Resource::new(rw),
-                Resource::new(rw),
-                Resource::new(rw),
-            ))))
-        }
-    }
-
-    impl ResourceFrom<Resources> for UnitSquareTopLeft {
-        fn resource_from(resources: &Resources) -> &'static Self {
-            &(resources.0).0
-        }
-    }
-
-    impl ResourceFrom<Resources> for NoGlobalTransform {
-        fn resource_from(resources: &Resources) -> &'static Self {
-            &(resources.0).1
-        }
-    }
-
-    impl ResourceFrom<Resources> for DefaultTexture {
-        fn resource_from(resources: &Resources) -> &'static Self {
-            &(resources.0).2
-        }
-    }
-}
-pub use resources::*;
-
 // FIXME `Resources` -> `U::RequiredResources`
-pub fn build_settings<E: Element<Resources> + 'static>(
+pub fn build_settings<E: Element + 'static>(
     element_builder: impl FnOnce(&SharedBuilder) -> E,
     settings: impl RenderWindowSettings + 'static,
-) -> App<
-    E,
-    impl WindowBuilder,
-    impl RenderWindowBuilder,
-    impl EventHandlerBuilder<EventHandler<Resources, E>>,
-> {
+) -> App<E, impl WindowBuilder, impl RenderWindowBuilder, impl EventHandlerBuilder<EventHandler<E>>>
+{
     App(Arc::new_cyclic(|app| {
         let app = arc::Weak::<SwwApp<_, _, _, _>>::clone(app);
         let app = &SharedBuilder(app);
@@ -94,21 +51,21 @@ pub fn build_settings<E: Element<Resources> + 'static>(
             |rw| EventHandler {
                 rw: Arc::clone(rw),
                 element,
-                resources: Resources::new(rw),
+                resources: Resources::new(Arc::clone(rw)),
                 drawers: Mutex::new(Drawers::default()),
             },
         )
     }))
 }
 
-pub fn run_settings<E: Element<Resources> + 'static>(
+pub fn run_settings<E: Element + 'static>(
     element_builder: impl FnOnce(&SharedBuilder) -> E,
     settings: impl RenderWindowSettings + 'static,
 ) -> Result<(), EventLoopError> {
     build_settings(element_builder, settings).run()
 }
 
-pub fn run<E: Element<Resources> + 'static>(
+pub fn run<E: Element + 'static>(
     element_builder: impl FnOnce(&SharedBuilder) -> E,
 ) -> Result<(), EventLoopError> {
     build_settings(element_builder, DefaultRenderWindowSettings).run()
@@ -116,18 +73,18 @@ pub fn run<E: Element<Resources> + 'static>(
 
 #[allow(clippy::type_complexity)]
 pub struct App<
-    E: Element<Resources>,
+    E: Element,
     WB: WindowBuilder,
     RB: RenderWindowBuilder,
-    EB: EventHandlerBuilder<EventHandler<Resources, E>>,
->(Arc<SwwApp<EventHandler<Resources, E>, WB, RB, EB>>);
+    EB: EventHandlerBuilder<EventHandler<E>>,
+>(Arc<SwwApp<EventHandler<E>, WB, RB, EB>>);
 
 impl<
-        E: Element<Resources>,
+        E: Element,
         WB: WindowBuilder,
         RB: RenderWindowBuilder,
-        EB: EventHandlerBuilder<EventHandler<Resources, E>>,
-    > InvalidateCache for SwwApp<EventHandler<Resources, E>, WB, RB, EB>
+        EB: EventHandlerBuilder<EventHandler<E>>,
+    > InvalidateCache for SwwApp<EventHandler<E>, WB, RB, EB>
 {
     fn invalidate_cache(&self, addr: shared::Addr) -> bool {
         if self.event_handler().unwrap().element.invalidate_cache(addr) {
@@ -156,10 +113,10 @@ impl InvalidateCache for SharedBuilder {
 }
 
 impl<
-        E: Element<Resources>,
+        E: Element,
         WB: WindowBuilder,
         RB: RenderWindowBuilder,
-        EB: EventHandlerBuilder<EventHandler<Resources, E>>,
+        EB: EventHandlerBuilder<EventHandler<E>>,
     > App<E, WB, RB, EB>
 {
     pub fn run(&mut self) -> Result<(), EventLoopError> {
@@ -167,14 +124,14 @@ impl<
     }
 }
 
-pub struct EventHandler<R, E: Element<R>> {
+pub struct EventHandler<E: Element> {
     rw: Arc<RenderWindow>,
     element: E,
-    resources: R,
+    resources: Resources,
     drawers: Mutex<Drawers>,
 }
 
-impl<R, E: Element<R>> HandleEvent for EventHandler<R, E> {
+impl<E: Element> HandleEvent for EventHandler<E> {
     fn on_resized(&self, _info: EventInfo, new_size: PhysicalSize) {
         self.rw.resize_surface(new_size);
     }

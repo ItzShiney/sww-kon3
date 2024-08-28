@@ -1,8 +1,8 @@
 use crate::drawer::DrawPass;
+use crate::prelude::Resources;
 use crate::resources::mesh::DefaultTexture;
 use crate::resources::mesh::NoGlobalTransform;
 use crate::resources::mesh::UnitSquareTopLeft;
-use crate::resources::ResourceFrom;
 use crate::shared;
 use crate::Element;
 use crate::Event;
@@ -21,23 +21,18 @@ pub struct Rect {
     color: Color,
 }
 
-impl<R> Element<R> for Rect
-where
-    UnitSquareTopLeft: ResourceFrom<R>,
-    NoGlobalTransform: ResourceFrom<R>,
-    DefaultTexture: ResourceFrom<R>,
-{
-    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
+impl Element for Rect {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
         let rect = location.rect();
         let transform =
             Transform::new_scale(rect.top_left, rect.size, self.color, Rectangle::default());
 
         pass.mesh().draw(
             &MeshDrawingInfo {
-                mesh: UnitSquareTopLeft::resource_from(resources),
+                mesh: resources.get::<UnitSquareTopLeft>(),
                 bind_groups: BindGroups {
-                    bind_group0: NoGlobalTransform::resource_from(resources),
-                    bind_group1: DefaultTexture::resource_from(resources),
+                    bind_group0: resources.get::<NoGlobalTransform>(),
+                    bind_group1: resources.get::<DefaultTexture>(),
                 },
             },
             transform,

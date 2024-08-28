@@ -4,6 +4,7 @@ pub mod prelude;
 pub mod shared;
 pub mod values;
 
+use resources::Resources;
 use shared::Shared;
 use std::sync::Arc;
 
@@ -56,12 +57,12 @@ pub trait HandleEvent {
     fn handle_event(&self, event: &Event) -> EventResult;
 }
 
-pub trait Element<R>: HandleEvent + InvalidateCache {
-    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location);
+pub trait Element: HandleEvent + InvalidateCache {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location);
 }
 
-impl<R, T: Element<R> + ?Sized> Element<R> for Arc<T> {
-    fn draw(&self, pass: &mut DrawPass, resources: &R, location: Location) {
+impl<T: Element + ?Sized> Element for Arc<T> {
+    fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: Location) {
         self.as_ref().draw(pass, resources, location);
     }
 }
