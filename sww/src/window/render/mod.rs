@@ -76,7 +76,7 @@ impl RenderWindow {
         Frame::new(self, command_encoder, surface_texture)
     }
 
-    pub fn resize_surface(&self, new_size: PhysicalSize) {
+    pub fn resize_surface(&self, new_size: IntSize) {
         let mut surface_config = self.surface_config.lock().unwrap();
 
         surface_config.width = new_size.width.max(1);

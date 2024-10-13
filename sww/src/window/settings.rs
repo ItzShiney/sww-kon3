@@ -1,4 +1,4 @@
-use crate::window::event::PhysicalSize;
+use crate::window::event::IntSize;
 
 pub trait RenderWindowSettings {
     fn instance_descriptor(&self) -> wgpu::InstanceDescriptor {
@@ -32,7 +32,7 @@ pub trait RenderWindowSettings {
 
     fn surface_config(
         &self,
-        size: PhysicalSize,
+        size: IntSize,
         swapchain_format: wgpu::TextureFormat,
         swapchain_alpha_mode: wgpu::CompositeAlphaMode,
     ) -> wgpu::SurfaceConfiguration {

@@ -7,6 +7,7 @@ pub mod values;
 use resources::Resources;
 use shared::Shared;
 use std::sync::Arc;
+use sww::window::event::MouseButton;
 
 mod drawer;
 mod location;
@@ -15,9 +16,12 @@ pub use drawer::*;
 pub use location::*;
 
 pub enum Event {
-    Click { point: LocationPoint },
-    Scroll {},
+    Click {
+        point: LocationPoint,
+        button: MouseButton,
+    },
     _1,
+    _2,
 }
 
 pub struct Consume;

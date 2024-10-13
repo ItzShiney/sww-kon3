@@ -1,7 +1,11 @@
 use crate::utility::Lazy;
 use crate::window::event::ActiveEventLoop;
+use crate::window::event::DeviceEvent;
+use crate::window::event::DeviceId;
+use crate::window::event::WindowEvent;
 use crate::window::RenderWindow;
 use crate::window::Window;
+use crate::window::WindowId;
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
 
@@ -9,67 +13,88 @@ mod handle_event;
 
 pub use handle_event::*;
 
-pub trait WindowBuilder: FnOnce(&ActiveEventLoop) -> Window {}
-impl<T: FnOnce(&ActiveEventLoop) -> Window> WindowBuilder for T {}
+pub trait EventHandlerBuilder<E: EventHandler>: FnOnce(&Arc<RenderWindow>) -> E {}
+impl<E: EventHandler, T: FnOnce(&Arc<RenderWindow>) -> E> EventHandlerBuilder<E> for T {}
 
-pub trait RenderWindowBuilder: FnOnce(&Arc<Window>) -> RenderWindow {}
-impl<T: FnOnce(&Arc<Window>) -> RenderWindow> RenderWindowBuilder for T {}
+pub trait WindowInfoBuilder: FnOnce(&ActiveEventLoop) -> WindowInfo {}
+impl<T: FnOnce(&ActiveEventLoop) -> WindowInfo> WindowInfoBuilder for T {}
 
-pub trait EventHandlerBuilder<E: HandleEvent>: FnOnce(&Arc<RenderWindow>) -> E {}
-impl<E: HandleEvent, T: FnOnce(&Arc<RenderWindow>) -> E> EventHandlerBuilder<E> for T {}
-
-pub struct App<
-    E: HandleEvent,
-    WB: WindowBuilder,
-    RB: RenderWindowBuilder,
-    EB: EventHandlerBuilder<E>,
-> {
-    window: Lazy<Arc<Window>, WB>,
-    rw: Lazy<Arc<RenderWindow>, RB>,
-    event_handler: Lazy<Arc<E>, EB>,
+// TODO rename
+pub struct WindowInfo {
+    window: Arc<Window>,
+    rw: Arc<RenderWindow>,
 }
 
-impl<E: HandleEvent, WB: WindowBuilder, RB: RenderWindowBuilder, EB: EventHandlerBuilder<E>>
-    App<E, WB, RB, EB>
-{
-    pub fn new(window_builder: WB, rw_builder: RB, event_handler_builder: EB) -> Self {
-        Self {
-            window: Lazy::new(window_builder),
-            rw: Lazy::new(rw_builder),
-            event_handler: Lazy::new(event_handler_builder),
-        }
+impl WindowInfo {
+    pub fn window(&self) -> &Window {
+        &self.window
     }
 
-    pub fn window(&self) -> Option<Arc<Window>> {
-        self.window.get().as_deref().map(Arc::clone)
-    }
-
-    pub fn rw(&self) -> Option<Arc<RenderWindow>> {
-        self.rw.get().as_deref().map(Arc::clone)
-    }
-
-    pub fn event_handler(&self) -> Option<Arc<E>> {
-        self.event_handler.get().as_deref().map(Arc::clone)
+    pub fn rw(&self) -> &RenderWindow {
+        &self.rw
     }
 }
 
-impl<E: HandleEvent, WB: WindowBuilder, RB: RenderWindowBuilder, EB: EventHandlerBuilder<E>>
-    ApplicationHandler for &App<E, WB, RB, EB>
+pub struct App<WIB: WindowInfoBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> {
+    window_info: Lazy<Arc<WindowInfo>, WIB>,
+    event_handler: Lazy<E, EB>,
+}
+
+// TODO rename
+pub fn app_new<E: EventHandler, EB: EventHandlerBuilder<E>>(
+    window_builder: impl FnOnce(&ActiveEventLoop) -> Window,
+    rw_builder: impl FnOnce(&Arc<Window>) -> RenderWindow,
+    event_handler_builder: EB,
+) -> App<impl WindowInfoBuilder, E, EB> {
+    App {
+        window_info: Lazy::new(move |event_loop: &_| {
+            let window = Arc::new(window_builder(event_loop));
+            let rw = Arc::new(rw_builder(&window));
+            WindowInfo { window, rw }
+        }),
+        event_handler: Lazy::new(event_handler_builder),
+    }
+}
+
+impl<WIB: WindowInfoBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> App<WIB, E, EB> {
+    pub fn window_info(&self) -> Option<&Arc<WindowInfo>> {
+        self.window_info.get()
+    }
+
+    pub fn event_handler(&self) -> Option<&E> {
+        self.event_handler.get()
+    }
+
+    pub fn event_handler_mut(&mut self) -> Option<&mut E> {
+        self.event_handler.get_mut()
+    }
+}
+
+impl<WIB: WindowInfoBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> ApplicationHandler
+    for App<WIB, E, EB>
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window = &*self.window.get_or_init_map(event_loop, Arc::new);
-        let rw = &*self.rw.get_or_init_map(window, Arc::new);
-        self.event_handler.get_or_init_map(rw, Arc::new);
+        let window_info = &*self.window_info.get_or_init_map(event_loop, Arc::new);
+        self.event_handler.get_or_init(&window_info.rw);
     }
 
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
-        window_id: winit::window::WindowId,
-        event: winit::event::WindowEvent,
+        window_id: WindowId,
+        event: WindowEvent,
     ) {
-        let window = &*self.window().unwrap();
-        let event_handler = self.event_handler().unwrap();
-        event_handler.handle_event(window, event_loop, window_id, event)
+        let event_handler = self.event_handler_mut().unwrap();
+        event_handler.handle_event(event_loop, window_id, event);
+    }
+
+    fn device_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        device_id: DeviceId,
+        event: DeviceEvent,
+    ) {
+        let event_handler = self.event_handler_mut().unwrap();
+        event_handler.device_event(event_loop, device_id, event);
     }
 }

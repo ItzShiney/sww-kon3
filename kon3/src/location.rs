@@ -1,33 +1,33 @@
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
-use sww::window::event::PhysicalPosition;
-use sww::window::event::PhysicalSize;
-use sww::Vec2;
+use sww::window::event::IntPosition;
+use sww::window::event::IntSize;
+use sww::DVec2;
 
 #[derive(Clone, Copy)]
 pub struct LocationPoint {
-    point: Vec2,
-    window_size: PhysicalSize,
+    point: DVec2,
+    window_size: IntSize,
 }
 
 impl LocationPoint {
-    pub const fn new(point: Vec2, window_size: PhysicalSize) -> Self {
+    pub const fn new(point: DVec2, window_size: IntSize) -> Self {
         Self { point, window_size }
     }
 
-    pub const fn point(self) -> Vec2 {
+    pub const fn point(self) -> DVec2 {
         self.point
     }
 
-    pub const fn window_size(self) -> PhysicalSize {
+    pub const fn window_size(self) -> IntSize {
         self.window_size
     }
 
-    pub fn window_point(self) -> PhysicalPosition {
-        let point = (self.point + Vec2::ONE) / 2.;
-        PhysicalPosition::new(
-            (point.x * self.window_size.width as f32) as _,
-            (point.y * self.window_size.height as f32) as _,
+    pub fn window_point(self) -> IntPosition {
+        let point = (self.point + DVec2::ONE) / 2.;
+        IntPosition::new(
+            (point.x * self.window_size.width as f64) as _,
+            (point.y * self.window_size.height as f64) as _,
         )
     }
 }
@@ -35,11 +35,11 @@ impl LocationPoint {
 #[derive(Clone, Copy)]
 pub struct LocationRect {
     rect: Rectangle,
-    window_size: PhysicalSize,
+    window_size: IntSize,
 }
 
 impl LocationRect {
-    pub const fn new(window_size: PhysicalSize) -> Self {
+    pub const fn new(window_size: IntSize) -> Self {
         Self {
             // FIXME
             rect: Rectangle {
@@ -54,13 +54,13 @@ impl LocationRect {
         self.rect
     }
 
-    pub const fn window_size(self) -> PhysicalSize {
+    pub const fn window_size(self) -> IntSize {
         self.window_size
     }
 
-    pub fn window_rect_size(self) -> PhysicalSize {
+    pub fn window_rect_size(self) -> IntSize {
         let rect_size = self.rect.size / 2.;
-        PhysicalSize::new(
+        IntSize::new(
             (rect_size.x * self.window_size.width as f32) as _,
             (rect_size.y * self.window_size.height as f32) as _,
         )

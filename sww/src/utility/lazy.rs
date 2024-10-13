@@ -1,70 +1,48 @@
-use std::ops::Deref;
-use std::ops::DerefMut;
-use std::sync::Mutex;
-use std::sync::MutexGuard;
-
 enum Inner<T, B> {
     Builder(Option<B>),
     Value(T),
 }
 
-pub struct Lazy<T, B>(Mutex<Inner<T, B>>);
+pub struct Lazy<T, B>(Inner<T, B>);
 
 impl<T, B> Lazy<T, B> {
     pub fn new(builder: B) -> Self {
-        Self(Mutex::new(Inner::Builder(Some(builder))))
+        Self(Inner::Builder(Some(builder)))
     }
 
-    pub fn get(&self) -> Option<LazyGuard<'_, T, B>> {
-        let guard = self.0.lock().unwrap();
-
-        if matches!(&*guard, Inner::Value(_)) {
-            Some(LazyGuard(guard))
-        } else {
-            None
+    pub fn get(&self) -> Option<&T> {
+        match &self.0 {
+            Inner::Builder(_) => None,
+            Inner::Value(value) => Some(value),
         }
     }
 
-    pub fn get_or_init<In>(&self, arg: In) -> LazyGuard<'_, T, B>
+    pub fn get_mut(&mut self) -> Option<&mut T> {
+        match &mut self.0 {
+            Inner::Builder(_) => None,
+            Inner::Value(value) => Some(value),
+        }
+    }
+
+    pub fn get_or_init<In>(&mut self, arg: In) -> &mut T
     where
         B: FnOnce(In) -> T,
     {
         self.get_or_init_map(arg, |value| value)
     }
 
-    pub fn get_or_init_map<In, R>(&self, arg: In, map: impl FnOnce(R) -> T) -> LazyGuard<'_, T, B>
+    pub fn get_or_init_map<In, R>(&mut self, arg: In, map: impl FnOnce(R) -> T) -> &mut T
     where
         B: FnOnce(In) -> R,
     {
-        let mut guard = self.0.lock().unwrap();
-
-        if let Inner::Builder(builder) = &mut *guard {
+        if let Inner::Builder(builder) = &mut self.0 {
             let f = builder.take().unwrap();
-            *guard = Inner::Value(map(f(arg)));
+            self.0 = Inner::Value(map(f(arg)));
         }
 
-        LazyGuard(guard)
-    }
-}
-
-pub struct LazyGuard<'s, T, B>(MutexGuard<'s, Inner<T, B>>);
-
-impl<T, B> Deref for LazyGuard<'_, T, B> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        match &*self.0 {
-            Inner::Builder(_) => unreachable!(),
-            Inner::Value(value) => value,
-        }
-    }
-}
-
-impl<T, B> DerefMut for LazyGuard<'_, T, B> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        match &mut *self.0 {
-            Inner::Builder(_) => unreachable!(),
-            Inner::Value(value) => value,
-        }
+        let Inner::Value(value) = &mut self.0 else {
+            unreachable!();
+        };
+        value
     }
 }

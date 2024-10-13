@@ -8,6 +8,7 @@ use crate::HandleEvent;
 use crate::IntoEventResult;
 use crate::InvalidateCache;
 use crate::LocationRect;
+use sww::window::event::MouseButton;
 
 pub struct OnClick<E, F> {
     element: E,
@@ -22,9 +23,9 @@ impl<E: Element, F: Fn() -> U, U: IntoEventResult> Element for OnClick<E, F> {
 
 impl<E: HandleEvent, F: Fn() -> U, U: IntoEventResult> HandleEvent for OnClick<E, F> {
     fn handle_event(&self, event: &Event) -> EventResult {
-        #[allow(clippy::equatable_if_let)]
-        if let Event::Click { point } = event {
-            if todo!("location.contains(point)") {
+        if let Event::Click { point: _, button } = *event {
+            // TODO && location.contains(point)
+            if button == MouseButton::Left {
                 (self.f)().into_event_result()?;
             }
         }

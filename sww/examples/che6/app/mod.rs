@@ -2,8 +2,7 @@ use crate::pieces::PieceColor;
 use crate::pieces::PieceType;
 use event::*;
 use std::sync::Arc;
-use sww::app::EventInfo;
-use sww::app::HandleEvent;
+use sww::app::EventHandler as SwwEventHandler;
 use sww::vec2;
 use sww::window::*;
 use sww::Vec2;
@@ -65,16 +64,39 @@ impl EventHandler {
     }
 }
 
-impl HandleEvent for EventHandler {
-    fn on_resized(&self, _info: EventInfo, new_size: PhysicalSize) {
-        self.rw.resize_surface(new_size);
-        self.rw.window().request_redraw();
+impl SwwEventHandler for EventHandler {
+    fn handle_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        match event {
+            WindowEvent::Resized(new_size) => {
+                self.rw.resize_surface(new_size);
+                self.rw.window().request_redraw();
+            }
+
+            WindowEvent::RedrawRequested => {
+                let mut frame = self.rw.start_drawing();
+
+                self.objects.scale(self.rw.window().ratio());
+                self.draw(&mut frame);
+            }
+
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
+            }
+
+            _ => {}
+        }
     }
 
-    fn on_redraw_requested(&self, _info: EventInfo) {
-        let mut frame = self.rw.start_drawing();
-
-        self.objects.scale(self.rw.window().ratio());
-        self.draw(&mut frame);
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        _event: DeviceEvent,
+    ) {
     }
 }

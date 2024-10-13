@@ -1,5 +1,5 @@
-use crate::app::SharedBuilder;
-use crate::InvalidateCache;
+use crate::app::Signal;
+use crate::app::SignalSender;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -11,23 +11,23 @@ pub struct Addr(usize);
 
 pub struct Shared<T: ?Sized + 'static> {
     value: Arc<Mutex<T>>,
-    app: SharedBuilder,
+    signal_sender: SignalSender,
 }
 
 impl<T: ?Sized> Clone for Shared<T> {
     fn clone(&self) -> Self {
         Self {
             value: Arc::clone(&self.value),
-            app: SharedBuilder::clone(&self.app),
+            signal_sender: SignalSender::clone(&self.signal_sender),
         }
     }
 }
 
 impl<T> Shared<T> {
-    pub fn new(value: T, app: SharedBuilder) -> Self {
+    pub fn new(value: T, signal_sender: SignalSender) -> Self {
         Self {
             value: Arc::new(Mutex::new(value)),
-            app,
+            signal_sender,
         }
     }
 }
@@ -37,7 +37,7 @@ impl<T: ?Sized> Shared<T> {
         SharedGuard {
             addr: self.addr(),
             guard: self.value.lock().expect("shared value was already locked"),
-            app: SharedBuilder::clone(&self.app),
+            signal_sender: SignalSender::clone(&self.signal_sender),
         }
     }
 
@@ -48,7 +48,7 @@ impl<T: ?Sized> Shared<T> {
 
 pub struct SharedGuard<'s, T: ?Sized + 'static> {
     guard: MutexGuard<'s, T>,
-    app: SharedBuilder,
+    signal_sender: SignalSender,
     addr: Addr,
 }
 
@@ -62,7 +62,7 @@ impl<T: ?Sized> Deref for SharedGuard<'_, T> {
 
 impl<T: ?Sized> DerefMut for SharedGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.app.invalidate_cache(self.addr);
+        self.signal_sender.send(Signal::InvalidateCache(self.addr));
         &mut self.guard
     }
 }
