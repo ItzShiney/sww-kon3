@@ -1,7 +1,8 @@
 use super::ValueSource;
 use super::ValueSourceMut;
 use crate::shared;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
+use std::collections::BTreeSet;
 use sww::Color;
 use sww::Mat2;
 use sww::Vec2;
@@ -25,8 +26,8 @@ impl<T: AutoValueSource + ?Sized> ValueSourceMut for T {
     }
 }
 
-impl<T: AutoValueSource + ?Sized> InvalidateCache for T {
-    fn invalidate_cache(&self, _addr: shared::Addr) -> bool {
+impl<T: AutoValueSource + ?Sized> InvalidateCaches for T {
+    fn invalidate_caches(&self, _addrs: &BTreeSet<shared::Addr>) -> bool {
         false
     }
 }

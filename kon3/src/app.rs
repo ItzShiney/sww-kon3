@@ -7,6 +7,7 @@ use crate::Element;
 use crate::Event;
 use crate::LocationPoint;
 use crate::LocationRect;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Receiver;
@@ -50,6 +51,7 @@ pub fn build_settings<E: Element + 'static>(
     App {
         app,
         signal_receiver,
+        invalidated_caches: Default::default(),
     }
 }
 
@@ -69,6 +71,7 @@ pub fn run<E: Element + 'static>(
 pub struct App<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>>> {
     app: SwwApp<WIB, EventHandler<E>, EB>,
     signal_receiver: Receiver<Signal>,
+    invalidated_caches: BTreeSet<shared::Addr>,
 }
 
 impl<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>>>
@@ -89,6 +92,7 @@ impl<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Signal {
     Redraw,
     InvalidateCache(shared::Addr),
@@ -115,17 +119,22 @@ impl<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>
     fn handle_signals(&mut self) {
         for signal in self.signal_receiver.try_iter() {
             match signal {
-                Signal::Redraw => self.app.window_info().unwrap().window().request_redraw(),
+                Signal::Redraw => {
+                    self.app.window_info().unwrap().window().request_redraw();
+                }
 
                 Signal::InvalidateCache(addr) => {
-                    self.app
-                        .event_handler()
-                        .unwrap()
-                        .element
-                        .invalidate_cache(addr);
+                    self.invalidated_caches.insert(addr);
                 }
             }
         }
+
+        self.app
+            .event_handler()
+            .unwrap()
+            .element
+            .invalidate_caches(&self.invalidated_caches);
+        self.invalidated_caches.clear();
     }
 }
 

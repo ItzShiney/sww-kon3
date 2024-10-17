@@ -9,10 +9,11 @@ use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
 use crate::LocationRect;
 use crate::MeshDrawingInfo;
 use std::borrow::Borrow;
+use std::collections::BTreeSet;
 use sww::shaders::mesh::BindGroups;
 use sww::shaders::mesh::Rectangle;
 use sww::shaders::mesh::Transform;
@@ -47,8 +48,8 @@ impl<Clr> HandleEvent for Rect<Clr> {
     }
 }
 
-impl<Clr> InvalidateCache for Rect<Clr> {
-    fn invalidate_cache(&self, _addr: shared::Addr) -> bool {
+impl<Clr> InvalidateCaches for Rect<Clr> {
+    fn invalidate_caches(&self, _addrs: &BTreeSet<shared::Addr>) -> bool {
         false
     }
 }

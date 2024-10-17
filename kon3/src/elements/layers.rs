@@ -5,9 +5,10 @@ use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
 use crate::LocationRect;
 use crate::ReversedTuple;
+use std::collections::BTreeSet;
 
 pub struct Layers<Es> {
     elements: Es,
@@ -39,9 +40,9 @@ where
     }
 }
 
-impl<Es: InvalidateCache> InvalidateCache for Layers<Es> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        self.elements.invalidate_cache(addr)
+impl<Es: InvalidateCaches> InvalidateCaches for Layers<Es> {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        self.elements.invalidate_caches(addrs)
     }
 }
 

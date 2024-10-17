@@ -6,6 +6,7 @@ pub mod values;
 
 use resources::Resources;
 use shared::Shared;
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use sww::window::event::MouseButton;
 
@@ -62,7 +63,7 @@ pub trait HandleEvent {
     fn handle_event(&self, event: &Event) -> EventResult;
 }
 
-pub trait Element: HandleEvent + InvalidateCache {
+pub trait Element: HandleEvent + InvalidateCaches {
     fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect);
 }
 
@@ -78,20 +79,20 @@ impl<T: HandleEvent + ?Sized> HandleEvent for Arc<T> {
     }
 }
 
-impl<T: InvalidateCache + ?Sized> InvalidateCache for Arc<T> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        self.as_ref().invalidate_cache(addr)
+impl<T: InvalidateCaches + ?Sized> InvalidateCaches for Arc<T> {
+    fn invalidate_caches(&self, addr: &BTreeSet<shared::Addr>) -> bool {
+        self.as_ref().invalidate_caches(addr)
     }
 }
 
-pub trait InvalidateCache {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool;
+pub trait InvalidateCaches {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool;
 }
 
 pub struct ReversedTuple<T>(pub T);
 
 macro_rules! impl_tuple {
-    ( $($T:ident)+ ; $($Reversed:tt)+ ) => {
+    ( $($T:ident)+ | $($Reversed:tt)+ ) => {
         impl<$($T: HandleEvent),+> HandleEvent for ($($T),+) {
             fn handle_event(&self, event: &Event) -> EventResult {
                 #[allow(non_snake_case)]
@@ -109,25 +110,25 @@ macro_rules! impl_tuple {
             }
         }
 
-        impl<$($T: InvalidateCache),+> InvalidateCache for ($($T),+) {
-            fn invalidate_cache(&self, addr: shared::Addr) -> bool {
+        impl<$($T: InvalidateCaches),+> InvalidateCaches for ($($T),+) {
+            fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 
-                $( $T.invalidate_cache(addr) )||+
+                $( $T.invalidate_caches(addrs) )||+
             }
         }
     };
 }
 
-impl_tuple!(A B; 1 0);
-impl_tuple!(A B C; 2 1 0);
-impl_tuple!(A B C D; 3 2 1 0);
-impl_tuple!(A B C D E; 4 3 2 1 0);
-impl_tuple!(A B C D E F; 5 4 3 2 1 0);
-impl_tuple!(A B C D E F G; 6 5 4 3 2 1 0);
-impl_tuple!(A B C D E F G H; 7 6 5 4 3 2 1 0);
-impl_tuple!(A B C D E F G H I; 8 7 6 5 4 3 2 1 0);
-impl_tuple!(A B C D E F G H I J; 9 8 7 6 5 4 3 2 1 0);
-impl_tuple!(A B C D E F G H I J K; 10 9 8 7 6 5 4 3 2 1 0);
-impl_tuple!(A B C D E F G H I J K L; 11 10 9 8 7 6 5 4 3 2 1 0);
+impl_tuple!(A B                     |                       1 0);
+impl_tuple!(A B C                   |                     2 1 0);
+impl_tuple!(A B C D                 |                   3 2 1 0);
+impl_tuple!(A B C D E               |                 4 3 2 1 0);
+impl_tuple!(A B C D E F             |               5 4 3 2 1 0);
+impl_tuple!(A B C D E F G           |             6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H         |           7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I       |         8 7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I J     |       9 8 7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I J K   |    10 9 8 7 6 5 4 3 2 1 0);
+impl_tuple!(A B C D E F G H I J K L | 11 10 9 8 7 6 5 4 3 2 1 0);

@@ -2,7 +2,8 @@ use super::Cache;
 use super::CacheGuard;
 use super::ValueSource;
 use crate::shared;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
+use std::collections::BTreeSet;
 use std::ops::Deref;
 
 pub struct Strfy<Src> {
@@ -19,9 +20,9 @@ impl<Src: for<'s> ValueSource<Value<'s>: Deref<Target: ToString>>> ValueSource f
     }
 }
 
-impl<Src: InvalidateCache> InvalidateCache for Strfy<Src> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        if self.source.invalidate_cache(addr) {
+impl<Src: InvalidateCaches> InvalidateCaches for Strfy<Src> {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        if self.source.invalidate_caches(addrs) {
             self.cache.reset();
             true
         } else {

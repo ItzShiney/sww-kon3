@@ -6,9 +6,10 @@ use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
 use crate::LocationRect;
 use std::borrow::Borrow;
+use std::collections::BTreeSet;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 
@@ -47,9 +48,9 @@ impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
     }
 }
 
-impl<Src: InvalidateCache> InvalidateCache for Label<Src> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        self.source.invalidate_cache(addr)
+impl<Src: InvalidateCaches> InvalidateCaches for Label<Src> {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        self.source.invalidate_caches(addrs)
     }
 }
 

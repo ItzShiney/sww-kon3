@@ -7,9 +7,10 @@ use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
 use crate::LocationRect;
 use std::borrow::Borrow;
+use std::collections::BTreeSet;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 use sww::Vec2;
@@ -65,9 +66,9 @@ impl_tuple!(A B C D E F G H I J);
 impl_tuple!(A B C D E F G H I J K);
 impl_tuple!(A B C D E F G H I J K L);
 
-impl<Ty: InvalidateCache, Es: InvalidateCache> InvalidateCache for Split<Ty, Es> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        self.ty.invalidate_cache(addr) || self.elements.invalidate_cache(addr)
+impl<Ty: InvalidateCaches, Es: InvalidateCaches> InvalidateCaches for Split<Ty, Es> {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        self.ty.invalidate_caches(addrs) || self.elements.invalidate_caches(addrs)
     }
 }
 

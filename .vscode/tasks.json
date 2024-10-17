@@ -21,11 +21,11 @@
 			"command": "cargo run --example counter",
 			"label": "@kon3"
 		},
-		{
+		/* {
 			"type": "shell",
 			"command": "cargo run --example che6",
 			"label": "@che6"
-		},
+		}, */
 		{
 			"type": "shell",
 			"command": "cargo test --all-targets",

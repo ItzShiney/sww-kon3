@@ -6,8 +6,9 @@ use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
 use crate::IntoEventResult;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
 use crate::LocationRect;
+use std::collections::BTreeSet;
 use sww::window::event::MouseButton;
 
 pub struct OnClick<E, F> {
@@ -34,9 +35,9 @@ impl<E: HandleEvent, F: Fn() -> U, U: IntoEventResult> HandleEvent for OnClick<E
     }
 }
 
-impl<E: InvalidateCache, F> InvalidateCache for OnClick<E, F> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        self.element.invalidate_cache(addr)
+impl<E: InvalidateCaches, F> InvalidateCaches for OnClick<E, F> {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        self.element.invalidate_caches(addrs)
     }
 }
 

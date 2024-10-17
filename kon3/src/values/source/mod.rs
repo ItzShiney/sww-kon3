@@ -1,8 +1,9 @@
 use crate::shared;
 use crate::shared::SharedGuard;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
 use crate::Shared;
 use std::borrow::Borrow;
+use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
@@ -10,7 +11,7 @@ mod auto;
 
 pub use auto::*;
 
-pub trait ValueSource: InvalidateCache {
+pub trait ValueSource: InvalidateCaches {
     type Value<'s>: Deref + 's
     where
         Self: 's;
@@ -46,9 +47,9 @@ impl<T: ?Sized> ValueSourceMut for Shared<T> {
     }
 }
 
-impl<T: ?Sized> InvalidateCache for Shared<T> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        self.addr() == addr
+impl<T: ?Sized> InvalidateCaches for Shared<T> {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        addrs.contains(&self.addr())
     }
 }
 

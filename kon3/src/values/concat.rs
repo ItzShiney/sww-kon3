@@ -3,8 +3,9 @@ use super::CacheGuard;
 use super::ValueSource;
 use super::ValueSourceBorrow;
 use crate::shared;
-use crate::InvalidateCache;
+use crate::InvalidateCaches;
 use std::borrow::Borrow;
+use std::collections::BTreeSet;
 
 pub struct Concat<Src> {
     sources: Src,
@@ -28,9 +29,9 @@ impl<A: ValueSourceBorrow<str>, B: ValueSourceBorrow<str>, C: ValueSourceBorrow<
     }
 }
 
-impl<Src: InvalidateCache> InvalidateCache for Concat<Src> {
-    fn invalidate_cache(&self, addr: shared::Addr) -> bool {
-        if self.sources.invalidate_cache(addr) {
+impl<Src: InvalidateCaches> InvalidateCaches for Concat<Src> {
+    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        if self.sources.invalidate_caches(addrs) {
             self.cache.reset();
             true
         } else {
