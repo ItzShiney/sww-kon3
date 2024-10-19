@@ -13,7 +13,7 @@ use sww::app::EventHandlerBuilder;
 use sww::app::RenderWindowBuilder;
 use sww::window::event::*;
 use sww::window::*;
-use sww::winit::application::ApplicationHandler;
+use sww::ApplicationHandler;
 
 mod event_handler;
 mod signals;
@@ -64,15 +64,15 @@ pub fn app<E: Element + 'static>(
 impl<WIB: RenderWindowBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>>>
     ApplicationHandler for App<WIB, E, EB>
 {
-    fn resumed(&mut self, event_loop: &sww::winit::event_loop::ActiveEventLoop) {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         self.app.resumed(event_loop);
     }
 
     fn window_event(
         &mut self,
-        event_loop: &sww::winit::event_loop::ActiveEventLoop,
-        window_id: sww::winit::window::WindowId,
-        event: sww::winit::event::WindowEvent,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
     ) {
         self.app.window_event(event_loop, window_id, event);
         self.handle_signals();

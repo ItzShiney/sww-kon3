@@ -1,6 +1,4 @@
-#![forbid(unsafe_code)]
 pub use wgpu;
-pub use winit;
 
 pub mod app;
 pub mod buffers;
@@ -21,3 +19,4 @@ pub use glam::DVec2;
 pub use glam::Mat2;
 pub use glam::Vec2;
 pub use glam::Vec4;
+pub use winit::application::ApplicationHandler;

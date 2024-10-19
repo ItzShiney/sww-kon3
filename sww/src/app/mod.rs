@@ -6,8 +6,8 @@ use crate::window::event::WindowEvent;
 use crate::window::RenderWindow;
 use crate::window::Window;
 use crate::window::WindowId;
+use crate::ApplicationHandler;
 use std::sync::Arc;
-use winit::application::ApplicationHandler;
 
 mod handle_event;
 
