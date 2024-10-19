@@ -1,4 +1,4 @@
-use super::SignalSender;
+use super::Signaler;
 use crate::resources::Resources;
 use crate::DrawPass;
 use crate::Drawers;
@@ -21,7 +21,7 @@ pub struct EventHandler<E: Element> {
     resources: Resources,
     drawers: Drawers,
     cursor_positions: HashMap<DeviceId, DVec2>,
-    signal_sender: SignalSender,
+    signaler: Signaler,
 }
 
 impl<E: Element> EventHandler<E> {
@@ -31,7 +31,7 @@ impl<E: Element> EventHandler<E> {
         resources: Resources,
         drawers: Drawers,
         cursor_positions: HashMap<DeviceId, DVec2>,
-        signal_sender: SignalSender,
+        signaler: Signaler,
     ) -> Self {
         Self {
             rw,
@@ -39,7 +39,7 @@ impl<E: Element> EventHandler<E> {
             resources,
             drawers,
             cursor_positions,
-            signal_sender,
+            signaler,
         }
     }
 
@@ -47,8 +47,8 @@ impl<E: Element> EventHandler<E> {
         &self.element
     }
 
-    pub fn signal_sender(&self) -> &SignalSender {
-        &self.signal_sender
+    pub fn signaler(&self) -> &Signaler {
+        &self.signaler
     }
 }
 
@@ -118,7 +118,7 @@ impl<E: Element> SwwEventHandler for EventHandler<E> {
                         _ => return, // FIXME
                     };
 
-                    _ = self.element.handle_event(&self.signal_sender, &event);
+                    _ = self.element.handle_event(&self.signaler, &event);
                 }
             }
 

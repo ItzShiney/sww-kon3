@@ -1,5 +1,5 @@
 use crate::app::Signal;
-use crate::app::SignalSender;
+use crate::app::Signaler;
 use parking_lot::Mutex;
 use parking_lot::MutexGuard;
 use std::ops::Deref;
@@ -29,11 +29,11 @@ impl<T: ?Sized> Shared<T> {
         SharedReadGuard(self.0.try_lock().expect("shared value was already locked"))
     }
 
-    pub fn write<'s>(&'s self, signal_sender: &'s SignalSender) -> SharedWriteGuard<'s, T> {
+    pub fn write<'s>(&'s self, signaler: &'s Signaler) -> SharedWriteGuard<'s, T> {
         SharedWriteGuard {
             guard: self.0.try_lock().expect("shared value was already locked"),
             addr: self.addr(),
-            signal_sender,
+            signaler,
         }
     }
 
@@ -54,7 +54,7 @@ impl<T: ?Sized> Deref for SharedReadGuard<'_, T> {
 
 pub struct SharedWriteGuard<'s, T: ?Sized + 'static> {
     guard: MutexGuard<'s, T>,
-    signal_sender: &'s SignalSender,
+    signaler: &'s Signaler,
     addr: SharedAddr,
 }
 
@@ -68,7 +68,7 @@ impl<T: ?Sized> Deref for SharedWriteGuard<'_, T> {
 
 impl<T: ?Sized> DerefMut for SharedWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.signal_sender.send(Signal::SharedUpdated(self.addr));
+        self.signaler.send(Signal::SharedUpdated(self.addr));
         &mut self.guard
     }
 }

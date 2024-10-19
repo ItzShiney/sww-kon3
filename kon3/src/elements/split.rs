@@ -95,12 +95,8 @@ fn draw_helper(
 }
 
 impl<Ty, Es: HandleEvent> HandleEvent for Split<Ty, Es> {
-    fn handle_event(
-        &self,
-        signal_sender: &crate::prelude::SignalSender,
-        event: &Event,
-    ) -> EventResult {
-        self.elements.handle_event(signal_sender, event)
+    fn handle_event(&self, signaler: &crate::prelude::Signaler, event: &Event) -> EventResult {
+        self.elements.handle_event(signaler, event)
     }
 }
 

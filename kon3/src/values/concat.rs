@@ -2,7 +2,7 @@ use super::Cache;
 use super::CacheGuard;
 use super::ValueSource;
 use super::ValueSourceBorrow;
-use crate::app::SignalSender;
+use crate::app::Signaler;
 use crate::shared::SharedAddr;
 use crate::ContainsShared;
 use crate::Event;
@@ -42,9 +42,9 @@ impl<Src: ContainsShared> ContainsShared for Concat<Src> {
 }
 
 impl<Src: HandleEvent> HandleEvent for Concat<Src> {
-    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+    fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult {
         self.cache.reset();
-        self.sources.handle_event(signal_sender, event)
+        self.sources.handle_event(signaler, event)
     }
 }
 

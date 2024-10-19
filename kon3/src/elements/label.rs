@@ -1,5 +1,5 @@
 use crate::app::Signal;
-use crate::app::SignalSender;
+use crate::app::Signaler;
 use crate::drawer::resources::Resources;
 use crate::drawer::DrawPass;
 use crate::values::ValueSourceBorrow;
@@ -44,16 +44,16 @@ impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
 }
 
 impl<Src: ContainsShared + HandleEvent> HandleEvent for Label<Src> {
-    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+    fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult {
         match *event {
             Event::SharedUpdated(addr) if self.source.contains_shared(addr) => {
-                signal_sender.send(Signal::Redraw);
+                signaler.send(Signal::Redraw);
             }
 
             _ => {}
         }
 
-        self.source.handle_event(signal_sender, event)
+        self.source.handle_event(signaler, event)
     }
 }
 

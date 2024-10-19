@@ -1,4 +1,4 @@
-use crate::app::SignalSender;
+use crate::app::Signaler;
 use crate::shared::SharedAddr;
 use crate::shared::SharedReadGuard;
 use crate::shared::SharedWriteGuard;
@@ -31,7 +31,7 @@ pub trait ValueSourceMut: ValueSource {
     where
         Self: 's;
 
-    fn value_mut<'s>(&'s mut self, signal_sender: &'s SignalSender) -> Self::ValueMut<'s>;
+    fn value_mut<'s>(&'s mut self, signaler: &'s Signaler) -> Self::ValueMut<'s>;
 }
 
 impl<T: ?Sized> ValueSource for Shared<T> {
@@ -52,7 +52,7 @@ impl<T: ?Sized> ContainsShared for Shared<T> {
 }
 
 impl<T: ?Sized> HandleEvent for Shared<T> {
-    fn handle_event(&self, _signal_sender: &SignalSender, _event: &Event) -> EventResult {
+    fn handle_event(&self, _signal_sender: &Signaler, _event: &Event) -> EventResult {
         Ok(())
     }
 }
@@ -63,8 +63,8 @@ impl<T: ?Sized> ValueSourceMut for Shared<T> {
     where
         Self: 's;
 
-    fn value_mut<'s>(&'s mut self, signal_sender: &'s SignalSender) -> Self::ValueMut<'s> {
-        self.write(signal_sender)
+    fn value_mut<'s>(&'s mut self, signaler: &'s Signaler) -> Self::ValueMut<'s> {
+        self.write(signaler)
     }
 }
 

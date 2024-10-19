@@ -4,7 +4,7 @@ pub mod prelude;
 pub mod shared;
 pub mod values;
 
-use app::SignalSender;
+use app::Signaler;
 use resources::Resources;
 use shared::Shared;
 use shared::SharedAddr;
@@ -55,7 +55,7 @@ impl IntoEventResult for Consume {
 
 // TODO add `location: LocationRect`?
 pub trait HandleEvent {
-    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult;
+    fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult;
 }
 
 pub trait Element: HandleEvent {
@@ -69,8 +69,8 @@ impl<T: Element + ?Sized> Element for Arc<T> {
 }
 
 impl<T: HandleEvent + ?Sized> HandleEvent for Arc<T> {
-    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
-        self.as_ref().handle_event(signal_sender, event)
+    fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult {
+        self.as_ref().handle_event(signaler, event)
     }
 }
 
@@ -79,18 +79,18 @@ pub struct ReversedTuple<T>(pub T);
 macro_rules! impl_tuple {
     ( $($T:ident)+ | $($Reversed:tt)+ ) => {
         impl<$($T: HandleEvent),+> HandleEvent for ($($T),+) {
-            fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+            fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 
-                $( $T.handle_event(signal_sender, event)?; )+
+                $( $T.handle_event(signaler, event)?; )+
                 Ok(())
             }
         }
 
         impl<$($T: HandleEvent),+> HandleEvent for ReversedTuple<&($($T),+)> {
-            fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
-                $( self.0 .$Reversed.handle_event(signal_sender, event)?; )+
+            fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult {
+                $( self.0 .$Reversed.handle_event(signaler, event)?; )+
                 Ok(())
             }
         }

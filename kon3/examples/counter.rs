@@ -15,8 +15,8 @@ fn main() {
         '_button: {
             on_click(
                 layers((rect(Color::GREEN), label("click me!"))),
-                move |signal_sender| {
-                    *counter.write(signal_sender) += 1;
+                move |signaler| {
+                    *counter.write(signaler) += 1;
                     Consume
                 },
             )

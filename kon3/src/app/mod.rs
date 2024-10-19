@@ -18,7 +18,7 @@ use sww::ApplicationHandler;
 mod event_handler;
 mod signals;
 
-pub use event_handler::*;
+use event_handler::*;
 pub use signals::*;
 
 pub struct App<WIB: RenderWindowBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>>> {
@@ -31,8 +31,8 @@ pub fn app<E: Element + 'static>(
     element: E,
     settings: impl WindowSettings + 'static,
 ) -> App<impl RenderWindowBuilder, E, impl EventHandlerBuilder<EventHandler<E>>> {
-    let (signal_sender, signal_receiver) = channel();
-    let signal_sender = SignalSender(signal_sender);
+    let (signaler, signal_receiver) = channel();
+    let signaler = Signaler(signaler);
 
     let window_attributes = settings.window_attributes();
     let app = sww_app_new(
@@ -49,7 +49,7 @@ pub fn app<E: Element + 'static>(
                 Resources::new(Arc::clone(rw)),
                 Drawers::default(),
                 Default::default(),
-                signal_sender,
+                signaler,
             )
         },
     );
@@ -111,10 +111,10 @@ impl<WIB: RenderWindowBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<
             }
 
             let element = &self.app.event_handler().unwrap().element();
-            let signal_sender = &self.app.event_handler().unwrap().signal_sender();
+            let signaler = &self.app.event_handler().unwrap().signaler();
 
             for addr in updated_shareds {
-                _ = element.handle_event(signal_sender, &Event::SharedUpdated(addr));
+                _ = element.handle_event(signaler, &Event::SharedUpdated(addr));
             }
             self.updated_shareds.clear();
         }

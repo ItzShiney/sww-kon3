@@ -7,9 +7,9 @@ pub enum Signal {
     SharedUpdated(SharedAddr),
 }
 
-pub struct SignalSender(pub(super) Sender<Signal>);
+pub struct Signaler(pub(super) Sender<Signal>);
 
-impl SignalSender {
+impl Signaler {
     pub fn send(&self, signal: Signal) {
         self.0.send(signal).unwrap();
     }

@@ -42,7 +42,7 @@ impl<Clr: ValueSourceBorrow<Color>> Element for Rect<Clr> {
 impl<Clr> HandleEvent for Rect<Clr> {
     fn handle_event(
         &self,
-        _signal_sender: &crate::prelude::SignalSender,
+        _signal_sender: &crate::prelude::Signaler,
         _event: &Event,
     ) -> EventResult {
         Ok(())

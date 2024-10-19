@@ -1,6 +1,6 @@
 use super::ValueSource;
 use super::ValueSourceMut;
-use crate::app::SignalSender;
+use crate::app::Signaler;
 use crate::shared::SharedAddr;
 use crate::ContainsShared;
 use crate::Event;
@@ -32,7 +32,7 @@ impl<T: AutoValueSource + ?Sized> ValueSourceMut for T {
 
     fn value_mut<'s>(
         &'s mut self,
-        _signal_sender: &'s crate::prelude::SignalSender,
+        _signal_sender: &'s crate::prelude::Signaler,
     ) -> Self::ValueMut<'s> {
         self
     }
@@ -45,7 +45,7 @@ impl<T: AutoValueSource + ?Sized> ContainsShared for T {
 }
 
 impl<T: AutoValueSource + ?Sized> HandleEvent for T {
-    fn handle_event(&self, _signal_sender: &SignalSender, _event: &Event) -> EventResult {
+    fn handle_event(&self, _signal_sender: &Signaler, _event: &Event) -> EventResult {
         Ok(())
     }
 }

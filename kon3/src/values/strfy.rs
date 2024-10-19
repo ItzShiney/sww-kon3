@@ -2,7 +2,7 @@ use super::Cache;
 use super::CacheGuard;
 use super::ContainsShared;
 use super::ValueSource;
-use crate::app::SignalSender;
+use crate::app::Signaler;
 use crate::shared::SharedAddr;
 use crate::Event;
 use crate::EventResult;
@@ -33,9 +33,9 @@ impl<Src: ContainsShared> ContainsShared for Strfy<Src> {
 }
 
 impl<Src: HandleEvent> HandleEvent for Strfy<Src> {
-    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+    fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult {
         self.cache.reset();
-        self.source.handle_event(signal_sender, event)
+        self.source.handle_event(signaler, event)
     }
 }
 

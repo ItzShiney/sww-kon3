@@ -1,4 +1,4 @@
-use crate::app::SignalSender;
+use crate::app::Signaler;
 use crate::drawer::resources::Resources;
 use crate::drawer::DrawPass;
 use crate::Element;
@@ -33,8 +33,8 @@ impl<Es: HandleEvent> HandleEvent for Layers<Es>
 where
     for<'s> ReversedTuple<&'s Es>: HandleEvent,
 {
-    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
-        ReversedTuple(&self.elements).handle_event(signal_sender, event)
+    fn handle_event(&self, signaler: &Signaler, event: &Event) -> EventResult {
+        ReversedTuple(&self.elements).handle_event(signaler, event)
     }
 }
 
