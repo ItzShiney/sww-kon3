@@ -1,11 +1,11 @@
 use crate::buffers::create_buffer_partially_init;
 use crate::window::RenderWindow;
+use parking_lot::Mutex;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice::SliceIndex;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 #[derive(Default)]
 struct Cache {
@@ -97,14 +97,14 @@ impl<T> MutVecBuffer<T> {
     }
 
     fn values_mut(&mut self) -> &mut Vec<T> {
-        self.cache.lock().unwrap().is_up_to_date = false;
+        self.cache.lock().is_up_to_date = false;
         &mut self.values
     }
 }
 
 impl<T: bytemuck::NoUninit> MutVecBuffer<T> {
     pub fn buffer(&self) -> Arc<wgpu::Buffer> {
-        let mut cache = self.cache.lock().unwrap();
+        let mut cache = self.cache.lock();
 
         if let Some(buffer) = &cache.buffer {
             let buffer_capacity = buffer.size() as usize / mem::size_of::<T>();

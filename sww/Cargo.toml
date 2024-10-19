@@ -5,18 +5,17 @@ edition = "2021"
 
 [dependencies]
 bytemuck = { version = "*", features = ["derive"] }
-winit = "*"
-env_logger = "*"
-memoffset = "*"
-pollster = "*"
-image = "*"
-wgpu = "*"
 glam = { version = "*", features = ["bytemuck"] }
-log = { version = "*", features = ["release_max_level_off"] }
+image = "*"
+memoffset = "*"
+parking_lot = "*"
+pollster = "*"
+wgpu = "*"
+winit = "*"
 
 [build-dependencies]
-wgsl_to_wgpu = "*"
 cargo-emit = "*"
+wgsl_to_wgpu = "*"
 
 [dev-dependencies]
 strum = "*"

@@ -4,11 +4,13 @@ pub mod prelude;
 pub mod shared;
 pub mod values;
 
+use app::SignalSender;
 use resources::Resources;
 use shared::Shared;
-use std::collections::BTreeSet;
+use shared::SharedAddr;
 use std::sync::Arc;
 use sww::window::event::MouseButton;
+use values::ContainsShared;
 
 mod drawer;
 mod location;
@@ -16,13 +18,13 @@ mod location;
 pub use drawer::*;
 pub use location::*;
 
+#[derive(Clone, Copy)]
 pub enum Event {
     Click {
         point: LocationPoint,
         button: MouseButton,
     },
-    _1,
-    _2,
+    SharedUpdated(SharedAddr),
 }
 
 pub struct Consume;
@@ -51,19 +53,12 @@ impl IntoEventResult for Consume {
     }
 }
 
-pub fn consume(ra_fixture_f: impl Fn()) -> impl Fn() -> Consume {
-    move || {
-        ra_fixture_f();
-        Consume
-    }
-}
-
 // TODO add `location: LocationRect`?
 pub trait HandleEvent {
-    fn handle_event(&self, event: &Event) -> EventResult;
+    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult;
 }
 
-pub trait Element: HandleEvent + InvalidateCaches {
+pub trait Element: HandleEvent {
     fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect);
 }
 
@@ -74,19 +69,9 @@ impl<T: Element + ?Sized> Element for Arc<T> {
 }
 
 impl<T: HandleEvent + ?Sized> HandleEvent for Arc<T> {
-    fn handle_event(&self, event: &Event) -> EventResult {
-        self.as_ref().handle_event(event)
+    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+        self.as_ref().handle_event(signal_sender, event)
     }
-}
-
-impl<T: InvalidateCaches + ?Sized> InvalidateCaches for Arc<T> {
-    fn invalidate_caches(&self, addr: &BTreeSet<shared::Addr>) -> bool {
-        self.as_ref().invalidate_caches(addr)
-    }
-}
-
-pub trait InvalidateCaches {
-    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool;
 }
 
 pub struct ReversedTuple<T>(pub T);
@@ -94,28 +79,28 @@ pub struct ReversedTuple<T>(pub T);
 macro_rules! impl_tuple {
     ( $($T:ident)+ | $($Reversed:tt)+ ) => {
         impl<$($T: HandleEvent),+> HandleEvent for ($($T),+) {
-            fn handle_event(&self, event: &Event) -> EventResult {
+            fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 
-                $( $T.handle_event(event)?; )+
+                $( $T.handle_event(signal_sender, event)?; )+
                 Ok(())
             }
         }
 
         impl<$($T: HandleEvent),+> HandleEvent for ReversedTuple<&($($T),+)> {
-            fn handle_event(&self, event: &Event) -> EventResult {
-                $( self.0 .$Reversed.handle_event(event)?; )+
+            fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+                $( self.0 .$Reversed.handle_event(signal_sender, event)?; )+
                 Ok(())
             }
         }
 
-        impl<$($T: InvalidateCaches),+> InvalidateCaches for ($($T),+) {
-            fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
+        impl<$($T: ContainsShared),+> ContainsShared for ($($T),+) {
+            fn contains_shared(&self, addr: SharedAddr) -> bool {
                 #[allow(non_snake_case)]
                 let ($($T),+) = self;
 
-                $( $T.invalidate_caches(addrs) )||+
+                $( $T.contains_shared(addr) )||+
             }
         }
     };

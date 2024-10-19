@@ -1,16 +1,13 @@
 use crate::drawer::DrawPass;
 use crate::resources::Resources;
-use crate::shared;
 use crate::values::AutoValueSource;
 use crate::values::ValueSourceBorrow;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCaches;
 use crate::LocationRect;
 use std::borrow::Borrow;
-use std::collections::BTreeSet;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 use sww::Vec2;
@@ -66,12 +63,6 @@ impl_tuple!(A B C D E F G H I J);
 impl_tuple!(A B C D E F G H I J K);
 impl_tuple!(A B C D E F G H I J K L);
 
-impl<Ty: InvalidateCaches, Es: InvalidateCaches> InvalidateCaches for Split<Ty, Es> {
-    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
-        self.ty.invalidate_caches(addrs) || self.elements.invalidate_caches(addrs)
-    }
-}
-
 fn draw_helper(
     ty: SplitType,
     elements: &[(usize, &dyn Element)],
@@ -104,8 +95,12 @@ fn draw_helper(
 }
 
 impl<Ty, Es: HandleEvent> HandleEvent for Split<Ty, Es> {
-    fn handle_event(&self, event: &Event) -> EventResult {
-        self.elements.handle_event(event)
+    fn handle_event(
+        &self,
+        signal_sender: &crate::prelude::SignalSender,
+        event: &Event,
+    ) -> EventResult {
+        self.elements.handle_event(signal_sender, event)
     }
 }
 

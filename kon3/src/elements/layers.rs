@@ -1,14 +1,12 @@
+use crate::app::SignalSender;
+use crate::drawer::resources::Resources;
 use crate::drawer::DrawPass;
-use crate::prelude::Resources;
-use crate::shared;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCaches;
 use crate::LocationRect;
 use crate::ReversedTuple;
-use std::collections::BTreeSet;
 
 pub struct Layers<Es> {
     elements: Es,
@@ -35,14 +33,8 @@ impl<Es: HandleEvent> HandleEvent for Layers<Es>
 where
     for<'s> ReversedTuple<&'s Es>: HandleEvent,
 {
-    fn handle_event(&self, event: &Event) -> EventResult {
-        ReversedTuple(&self.elements).handle_event(event)
-    }
-}
-
-impl<Es: InvalidateCaches> InvalidateCaches for Layers<Es> {
-    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
-        self.elements.invalidate_caches(addrs)
+    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+        ReversedTuple(&self.elements).handle_event(signal_sender, event)
     }
 }
 

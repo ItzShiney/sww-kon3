@@ -120,7 +120,7 @@ pub struct MeshDrawer<'s, 'e> {
     info: &'s mut MeshDrawerInfo,
 }
 
-impl<'e> MeshDrawer<'_, 'e> {
+impl MeshDrawer<'_, '_> {
     pub fn draw(&mut self, mesh_info: &MeshDrawingInfo, transform: Transform) {
         if self.info.current_mesh_info.as_ref() == Some(mesh_info) {
             self.flush();

@@ -1,19 +1,16 @@
+use crate::drawer::resources::Resources;
 use crate::drawer::DrawPass;
-use crate::prelude::Resources;
 use crate::resources::mesh::DefaultTexture;
 use crate::resources::mesh::NoGlobalTransform;
 use crate::resources::mesh::UnitSquareTopLeft;
-use crate::shared;
 use crate::values::ValueSourceBorrow;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCaches;
 use crate::LocationRect;
 use crate::MeshDrawingInfo;
 use std::borrow::Borrow;
-use std::collections::BTreeSet;
 use sww::shaders::mesh::BindGroups;
 use sww::shaders::mesh::Rectangle;
 use sww::shaders::mesh::Transform;
@@ -43,14 +40,12 @@ impl<Clr: ValueSourceBorrow<Color>> Element for Rect<Clr> {
 }
 
 impl<Clr> HandleEvent for Rect<Clr> {
-    fn handle_event(&self, _event: &Event) -> EventResult {
+    fn handle_event(
+        &self,
+        _signal_sender: &crate::prelude::SignalSender,
+        _event: &Event,
+    ) -> EventResult {
         Ok(())
-    }
-}
-
-impl<Clr> InvalidateCaches for Rect<Clr> {
-    fn invalidate_caches(&self, _addrs: &BTreeSet<shared::Addr>) -> bool {
-        false
     }
 }
 

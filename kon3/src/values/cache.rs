@@ -2,10 +2,11 @@ use std::ops::Deref;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 
+// TODO reuse the allocation for Vec, Box, etc.
 pub struct Cache<T>(RwLock<Option<T>>);
 
 impl<T> Cache<T> {
-    #[allow(clippy::new_without_default)]
+    #[expect(clippy::new_without_default)]
     pub const fn new() -> Self {
         Self(RwLock::new(None))
     }

@@ -6,8 +6,6 @@ use sww::app::app_new;
 use sww::window::*;
 
 fn main() {
-    env_logger::init();
-
     let mut app = app_new(
         |event_loop| {
             event_loop

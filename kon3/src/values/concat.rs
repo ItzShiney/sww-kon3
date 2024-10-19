@@ -2,10 +2,13 @@ use super::Cache;
 use super::CacheGuard;
 use super::ValueSource;
 use super::ValueSourceBorrow;
-use crate::shared;
-use crate::InvalidateCaches;
+use crate::app::SignalSender;
+use crate::shared::SharedAddr;
+use crate::ContainsShared;
+use crate::Event;
+use crate::EventResult;
+use crate::HandleEvent;
 use std::borrow::Borrow;
-use std::collections::BTreeSet;
 
 pub struct Concat<Src> {
     sources: Src,
@@ -15,7 +18,10 @@ pub struct Concat<Src> {
 impl<A: ValueSourceBorrow<str>, B: ValueSourceBorrow<str>, C: ValueSourceBorrow<str>> ValueSource
     for Concat<(A, B, C)>
 {
-    type Value<'s> = CacheGuard<'s, String> where Self: 's;
+    type Value<'s>
+        = CacheGuard<'s, String>
+    where
+        Self: 's;
 
     fn value(&self) -> Self::Value<'_> {
         self.cache.get_or_insert_with(|| {
@@ -29,14 +35,16 @@ impl<A: ValueSourceBorrow<str>, B: ValueSourceBorrow<str>, C: ValueSourceBorrow<
     }
 }
 
-impl<Src: InvalidateCaches> InvalidateCaches for Concat<Src> {
-    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
-        if self.sources.invalidate_caches(addrs) {
-            self.cache.reset();
-            true
-        } else {
-            false
-        }
+impl<Src: ContainsShared> ContainsShared for Concat<Src> {
+    fn contains_shared(&self, addr: SharedAddr) -> bool {
+        self.sources.contains_shared(addr)
+    }
+}
+
+impl<Src: HandleEvent> HandleEvent for Concat<Src> {
+    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+        self.cache.reset();
+        self.sources.handle_event(signal_sender, event)
     }
 }
 

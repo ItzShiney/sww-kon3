@@ -1,15 +1,15 @@
+use crate::app::Signal;
+use crate::app::SignalSender;
+use crate::drawer::resources::Resources;
 use crate::drawer::DrawPass;
-use crate::prelude::Resources;
-use crate::shared;
 use crate::values::ValueSourceBorrow;
+use crate::ContainsShared;
 use crate::Element;
 use crate::Event;
 use crate::EventResult;
 use crate::HandleEvent;
-use crate::InvalidateCaches;
 use crate::LocationRect;
 use std::borrow::Borrow;
-use std::collections::BTreeSet;
 use sww::shaders::mesh::Rectangle;
 use sww::vec2;
 
@@ -17,15 +17,9 @@ pub struct Label<Src> {
     source: Src,
 }
 
-impl<Src> HandleEvent for Label<Src> {
-    fn handle_event(&self, _event: &Event) -> EventResult {
-        Ok(())
-    }
-}
-
-// FIXME
 impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
     fn draw(&self, pass: &mut DrawPass, resources: &Resources, location: LocationRect) {
+        // FIXME
         use super::rect;
         use sww::Color;
 
@@ -36,10 +30,11 @@ impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
 
             let mut hasher = DefaultHasher::default();
             (*self.source.value()).borrow().hash(&mut hasher);
-            (hasher.finish() % 16) as usize
+            (hasher.finish() % 64) as usize
         };
+        let hash = hash as f32 / 64.;
 
-        let padding = 1. / hash as f32;
+        let padding = 1. - hash;
         let location = location.subrect(Rectangle {
             top_left: vec2(padding, 0.),
             size: vec2(padding.mul_add(-2., 1.), 1.),
@@ -48,9 +43,17 @@ impl<Src: ValueSourceBorrow<str>> Element for Label<Src> {
     }
 }
 
-impl<Src: InvalidateCaches> InvalidateCaches for Label<Src> {
-    fn invalidate_caches(&self, addrs: &BTreeSet<shared::Addr>) -> bool {
-        self.source.invalidate_caches(addrs)
+impl<Src: ContainsShared + HandleEvent> HandleEvent for Label<Src> {
+    fn handle_event(&self, signal_sender: &SignalSender, event: &Event) -> EventResult {
+        match *event {
+            Event::SharedUpdated(addr) if self.source.contains_shared(addr) => {
+                signal_sender.send(Signal::Redraw);
+            }
+
+            _ => {}
+        }
+
+        self.source.handle_event(signal_sender, event)
     }
 }
 

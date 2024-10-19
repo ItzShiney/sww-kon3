@@ -1,6 +1,5 @@
 use crate::resources::Resources;
-use crate::shared;
-use crate::shared::Shared;
+use crate::shared::SharedAddr;
 use crate::DrawPass;
 use crate::Drawers;
 use crate::Element;
@@ -25,13 +24,12 @@ use sww::window::*;
 use sww::DVec2;
 
 pub fn build_settings<E: Element + 'static>(
-    element_builder: impl FnOnce(&SignalSender) -> E,
+    element: E,
     settings: impl RenderWindowSettings + 'static,
 ) -> App<impl WindowInfoBuilder, E, impl EventHandlerBuilder<EventHandler<E>>> {
     let (signal_sender, signal_receiver) = channel();
     let signal_sender = SignalSender(signal_sender);
 
-    let element = element_builder(&signal_sender);
     let app = app_new(
         |event_loop: &ActiveEventLoop| {
             event_loop
@@ -45,33 +43,32 @@ pub fn build_settings<E: Element + 'static>(
             resources: Resources::new(Arc::clone(rw)),
             drawers: Drawers::default(),
             cursor_positions: Default::default(),
+            signal_sender,
         },
     );
 
     App {
         app,
         signal_receiver,
-        invalidated_caches: Default::default(),
+        updated_shareds: Default::default(),
     }
 }
 
 pub fn run_settings<E: Element + 'static>(
-    element_builder: impl FnOnce(&SignalSender) -> E,
+    element_builder: E,
     settings: impl RenderWindowSettings + 'static,
 ) -> Result<(), EventLoopError> {
     build_settings(element_builder, settings).run()
 }
 
-pub fn run<E: Element + 'static>(
-    element_builder: impl FnOnce(&SignalSender) -> E,
-) -> Result<(), EventLoopError> {
+pub fn run<E: Element + 'static>(element_builder: E) -> Result<(), EventLoopError> {
     build_settings(element_builder, DefaultRenderWindowSettings).run()
 }
 
 pub struct App<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>>> {
     app: SwwApp<WIB, EventHandler<E>, EB>,
     signal_receiver: Receiver<Signal>,
-    invalidated_caches: BTreeSet<shared::Addr>,
+    updated_shareds: BTreeSet<SharedAddr>,
 }
 
 impl<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>>>
@@ -95,18 +92,13 @@ impl<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Signal {
     Redraw,
-    InvalidateCache(shared::Addr),
+    SharedUpdated(SharedAddr),
 }
 
-#[derive(Clone)]
 pub struct SignalSender(Sender<Signal>);
 
 impl SignalSender {
-    pub fn shared<T>(&self, value: T) -> Shared<T> {
-        Shared::new(value, self.clone())
-    }
-
-    pub fn send(&mut self, signal: Signal) {
+    pub fn send(&self, signal: Signal) {
         self.0.send(signal).unwrap();
     }
 }
@@ -117,24 +109,37 @@ impl<WIB: WindowInfoBuilder, E: Element, EB: EventHandlerBuilder<EventHandler<E>
     }
 
     fn handle_signals(&mut self) {
-        for signal in self.signal_receiver.try_iter() {
-            match signal {
-                Signal::Redraw => {
-                    self.app.window_info().unwrap().window().request_redraw();
-                }
+        loop {
+            let mut signals = self.signal_receiver.try_iter().peekable();
+            if signals.peek().is_none() {
+                break;
+            }
 
-                Signal::InvalidateCache(addr) => {
-                    self.invalidated_caches.insert(addr);
+            for signal in signals {
+                match signal {
+                    Signal::Redraw => {
+                        self.app.window_info().unwrap().window().request_redraw();
+                    }
+
+                    Signal::SharedUpdated(addr) => {
+                        self.updated_shareds.insert(addr);
+                    }
                 }
             }
-        }
 
-        self.app
-            .event_handler()
-            .unwrap()
-            .element
-            .invalidate_caches(&self.invalidated_caches);
-        self.invalidated_caches.clear();
+            let updated_shareds = self.updated_shareds.iter().copied();
+            if !updated_shareds.len() == 0 {
+                break;
+            }
+
+            let element = &self.app.event_handler().unwrap().element;
+            let signal_sender = &self.app.event_handler().unwrap().signal_sender;
+
+            for addr in updated_shareds {
+                _ = element.handle_event(signal_sender, &Event::SharedUpdated(addr));
+            }
+            self.updated_shareds.clear();
+        }
     }
 }
 
@@ -144,6 +149,7 @@ pub struct EventHandler<E: Element> {
     resources: Resources,
     drawers: Drawers,
     cursor_positions: HashMap<DeviceId, DVec2>,
+    signal_sender: SignalSender,
 }
 
 impl<E: Element> SwwEventHandler for EventHandler<E> {
@@ -212,7 +218,7 @@ impl<E: Element> SwwEventHandler for EventHandler<E> {
                         _ => return, // FIXME
                     };
 
-                    _ = self.element.handle_event(&event);
+                    _ = self.element.handle_event(&self.signal_sender, &event);
                 }
             }
 

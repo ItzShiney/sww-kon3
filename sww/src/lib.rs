@@ -1,5 +1,4 @@
 #![forbid(unsafe_code)]
-pub use env_logger;
 pub use wgpu;
 pub use winit;
 

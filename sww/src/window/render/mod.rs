@@ -1,8 +1,8 @@
 use crate::window::*;
 use event::*;
+use parking_lot::Mutex;
 use pollster::FutureExt;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 mod frame;
 
@@ -77,7 +77,7 @@ impl RenderWindow {
     }
 
     pub fn resize_surface(&self, new_size: IntSize) {
-        let mut surface_config = self.surface_config.lock().unwrap();
+        let mut surface_config = self.surface_config.lock();
 
         surface_config.width = new_size.width.max(1);
         surface_config.height = new_size.height.max(1);

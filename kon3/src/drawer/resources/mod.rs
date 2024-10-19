@@ -1,8 +1,9 @@
+use parking_lot::RwLock;
+use parking_lot::RwLockUpgradableReadGuard;
 use std::any::Any;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::Mutex;
 use sww::window::RenderWindow;
 
 pub mod mesh;
@@ -13,7 +14,7 @@ pub trait Resource: 'static {
 
 pub struct Resources {
     rw: Arc<RenderWindow>,
-    resources: Mutex<HashMap<TypeId, &'static dyn Any>>,
+    resources: RwLock<HashMap<TypeId, &'static dyn Any>>,
 }
 
 impl Resources {
@@ -25,12 +26,17 @@ impl Resources {
     }
 
     pub fn get<T: Resource>(&self) -> &'static T {
-        self.resources
-            .lock()
-            .unwrap()
-            .entry(TypeId::of::<T>())
-            .or_insert_with(|| Box::<dyn Any>::leak(Box::new(T::new(&self.rw))))
-            .downcast_ref()
-            .unwrap()
+        let guard = self.resources.upgradable_read();
+        let key = TypeId::of::<T>();
+
+        if let Some(&res) = guard.get(&key) {
+            res
+        } else {
+            let mut guard = RwLockUpgradableReadGuard::upgrade(guard);
+            guard.insert(key, Box::<dyn Any>::leak(Box::new(T::new(&self.rw))));
+            guard[&key]
+        }
+        .downcast_ref()
+        .unwrap()
     }
 }

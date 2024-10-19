@@ -3,9 +3,9 @@ use crate::pieces::PieceType;
 use crate::pieces::PiecesSheet;
 use crate::translation;
 use crate::Drawer;
+use parking_lot::Mutex;
 use std::io;
 use std::sync::Arc;
-use std::sync::Mutex;
 use sww::buffers::MutVecBuffer;
 use sww::media::read_image;
 use sww::shaders::mesh::Transform;
@@ -60,7 +60,7 @@ impl Objects {
         for &mut Scalable {
             ref mut transform_buffer,
             base_scale,
-        } in &mut *self.scalables.lock().unwrap()
+        } in &mut *self.scalables.lock()
         {
             let mut transform = transform_buffer.value_mut(self.rw.queue());
             transform.matrix = matrix * Mat2::from_diagonal(base_scale);

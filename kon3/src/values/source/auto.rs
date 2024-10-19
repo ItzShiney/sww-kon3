@@ -1,8 +1,11 @@
 use super::ValueSource;
 use super::ValueSourceMut;
-use crate::shared;
-use crate::InvalidateCaches;
-use std::collections::BTreeSet;
+use crate::app::SignalSender;
+use crate::shared::SharedAddr;
+use crate::ContainsShared;
+use crate::Event;
+use crate::EventResult;
+use crate::HandleEvent;
 use sww::Color;
 use sww::Mat2;
 use sww::Vec2;
@@ -11,7 +14,10 @@ use sww::Vec4;
 pub trait AutoValueSource {}
 
 impl<T: AutoValueSource + ?Sized> ValueSource for T {
-    type Value<'s> = &'s T where Self: 's;
+    type Value<'s>
+        = &'s T
+    where
+        Self: 's;
 
     fn value(&self) -> Self::Value<'_> {
         self
@@ -19,16 +25,28 @@ impl<T: AutoValueSource + ?Sized> ValueSource for T {
 }
 
 impl<T: AutoValueSource + ?Sized> ValueSourceMut for T {
-    type ValueMut<'s> = &'s mut T where Self: 's;
+    type ValueMut<'s>
+        = &'s mut T
+    where
+        Self: 's;
 
-    fn value_mut(&mut self) -> Self::ValueMut<'_> {
+    fn value_mut<'s>(
+        &'s mut self,
+        _signal_sender: &'s crate::prelude::SignalSender,
+    ) -> Self::ValueMut<'s> {
         self
     }
 }
 
-impl<T: AutoValueSource + ?Sized> InvalidateCaches for T {
-    fn invalidate_caches(&self, _addrs: &BTreeSet<shared::Addr>) -> bool {
+impl<T: AutoValueSource + ?Sized> ContainsShared for T {
+    fn contains_shared(&self, _addr: SharedAddr) -> bool {
         false
+    }
+}
+
+impl<T: AutoValueSource + ?Sized> HandleEvent for T {
+    fn handle_event(&self, _signal_sender: &SignalSender, _event: &Event) -> EventResult {
+        Ok(())
     }
 }
 
