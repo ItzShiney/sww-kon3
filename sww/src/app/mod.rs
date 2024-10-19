@@ -16,49 +16,31 @@ pub use handle_event::*;
 pub trait EventHandlerBuilder<E: EventHandler>: FnOnce(&Arc<RenderWindow>) -> E {}
 impl<E: EventHandler, T: FnOnce(&Arc<RenderWindow>) -> E> EventHandlerBuilder<E> for T {}
 
-pub trait WindowInfoBuilder: FnOnce(&ActiveEventLoop) -> WindowInfo {}
-impl<T: FnOnce(&ActiveEventLoop) -> WindowInfo> WindowInfoBuilder for T {}
+pub trait RenderWindowBuilder: FnOnce(&ActiveEventLoop) -> RenderWindow {}
+impl<T: FnOnce(&ActiveEventLoop) -> RenderWindow> RenderWindowBuilder for T {}
 
-// TODO rename
-pub struct WindowInfo {
-    window: Arc<Window>,
-    rw: Arc<RenderWindow>,
-}
-
-impl WindowInfo {
-    pub fn window(&self) -> &Window {
-        &self.window
-    }
-
-    pub fn rw(&self) -> &RenderWindow {
-        &self.rw
-    }
-}
-
-pub struct App<WIB: WindowInfoBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> {
-    window_info: Lazy<Arc<WindowInfo>, WIB>,
+pub struct App<WIB: RenderWindowBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> {
+    rw: Lazy<Arc<RenderWindow>, WIB>,
     event_handler: Lazy<E, EB>,
 }
 
-// TODO rename
 pub fn app_new<E: EventHandler, EB: EventHandlerBuilder<E>>(
     window_builder: impl FnOnce(&ActiveEventLoop) -> Window,
     rw_builder: impl FnOnce(&Arc<Window>) -> RenderWindow,
     event_handler_builder: EB,
-) -> App<impl WindowInfoBuilder, E, EB> {
+) -> App<impl RenderWindowBuilder, E, EB> {
     App {
-        window_info: Lazy::new(move |event_loop: &_| {
+        rw: Lazy::new(move |event_loop: &_| {
             let window = Arc::new(window_builder(event_loop));
-            let rw = Arc::new(rw_builder(&window));
-            WindowInfo { window, rw }
+            rw_builder(&window)
         }),
         event_handler: Lazy::new(event_handler_builder),
     }
 }
 
-impl<WIB: WindowInfoBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> App<WIB, E, EB> {
-    pub fn window_info(&self) -> Option<&Arc<WindowInfo>> {
-        self.window_info.get()
+impl<WIB: RenderWindowBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> App<WIB, E, EB> {
+    pub fn rw(&self) -> Option<&Arc<RenderWindow>> {
+        self.rw.get()
     }
 
     pub fn event_handler(&self) -> Option<&E> {
@@ -70,12 +52,12 @@ impl<WIB: WindowInfoBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> App<WI
     }
 }
 
-impl<WIB: WindowInfoBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> ApplicationHandler
+impl<WIB: RenderWindowBuilder, E: EventHandler, EB: EventHandlerBuilder<E>> ApplicationHandler
     for App<WIB, E, EB>
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window_info = &*self.window_info.get_or_init_map(event_loop, Arc::new);
-        self.event_handler.get_or_init(&window_info.rw);
+        let rw = &*self.rw.get_or_init_map(event_loop, Arc::new);
+        self.event_handler.get_or_init(rw);
     }
 
     fn window_event(

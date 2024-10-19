@@ -1,9 +1,16 @@
 use kon3::prelude::*;
 
-fn element_builder() -> impl Element {
+struct Settings;
+impl WindowSettings for Settings {
+    fn window_attributes(&self) -> WindowAttributes {
+        window_attributes("counter", 550, 310)
+    }
+}
+
+fn main() {
     let counter = Shared::new(0_usize);
 
-    column((
+    let element = column((
         '_counter: { label(concat(("clicked ", strfy(counter.clone()), " times"))) },
         '_button: {
             on_click(
@@ -14,9 +21,7 @@ fn element_builder() -> impl Element {
                 },
             )
         },
-    ))
-}
+    ));
 
-fn main() {
-    app::run(element_builder()).unwrap();
+    app(element, Settings).run().unwrap();
 }

@@ -18,10 +18,7 @@ pub struct RenderWindow {
 }
 
 impl RenderWindow {
-    pub fn new(
-        window: Arc<Window>,
-        settings: &impl RenderWindowSettings,
-    ) -> Result<Self, AppInfoError> {
+    pub fn new(window: Arc<Window>, settings: &impl WindowSettings) -> Result<Self, AppInfoError> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(settings.instance_descriptor());
@@ -90,10 +87,6 @@ impl RenderWindow {
     }
 }
 
-pub fn rw_builder(settings: impl RenderWindowSettings) -> impl Fn(&Arc<Window>) -> RenderWindow {
+pub fn rw_builder(settings: impl WindowSettings) -> impl Fn(&Arc<Window>) -> RenderWindow {
     move |window| RenderWindow::new(Arc::clone(window), &settings).unwrap()
-}
-
-pub fn rw_builder_default() -> fn(&Arc<Window>) -> RenderWindow {
-    move |window| RenderWindow::new(Arc::clone(window), &DefaultRenderWindowSettings).unwrap()
 }

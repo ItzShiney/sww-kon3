@@ -1,6 +1,9 @@
+use super::WindowAttributes;
 use crate::window::event::IntSize;
 
-pub trait RenderWindowSettings {
+pub trait WindowSettings {
+    fn window_attributes(&self) -> WindowAttributes;
+
     fn instance_descriptor(&self) -> wgpu::InstanceDescriptor {
         Default::default()
     }
@@ -48,7 +51,3 @@ pub trait RenderWindowSettings {
         }
     }
 }
-
-pub struct DefaultRenderWindowSettings;
-
-impl RenderWindowSettings for DefaultRenderWindowSettings {}
